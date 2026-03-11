@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Propostas from "./pages/Propostas";
+import PropostaNova from "./pages/PropostaNova";
 import Clientes from "./pages/Clientes";
 import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
