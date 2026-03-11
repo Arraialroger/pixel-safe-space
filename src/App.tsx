@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Propostas from "./pages/Propostas";
+import PropostaNova from "./pages/PropostaNova";
 import Clientes from "./pages/Clientes";
 import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout><Propostas /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/propostas/nova"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><PropostaNova /></AppLayout>
                 </ProtectedRoute>
               }
             />
