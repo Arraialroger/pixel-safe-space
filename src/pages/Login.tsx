@@ -32,7 +32,7 @@ export default function Login() {
         <div className="max-w-md space-y-4 p-8">
           <div className="flex items-center gap-3">
             <Shield className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">Pixel Safe</h1>
+            <h1 className="text-3xl font-bold text-foreground">PixelSafe</h1>
           </div>
           <p className="text-muted-foreground text-lg leading-relaxed">
             Gerencie suas propostas e clientes com elegância e simplicidade.
@@ -60,8 +60,8 @@ export default function Login() {
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+                required />
+              
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -71,8 +71,8 @@ export default function Login() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+                required />
+              
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Entrando..." : "Entrar"}
@@ -87,6 +87,6 @@ export default function Login() {
           </p>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
