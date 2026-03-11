@@ -71,6 +71,50 @@ export type Database = {
         }
         Relationships: []
       }
+      proposals: {
+        Row: {
+          ai_generated_scope: string | null
+          client_id: string
+          created_at: string
+          deadline: string | null
+          id: string
+          price: number | null
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          ai_generated_scope?: string | null
+          client_id: string
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          price?: number | null
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          ai_generated_scope?: string | null
+          client_id?: string
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          price?: number | null
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
