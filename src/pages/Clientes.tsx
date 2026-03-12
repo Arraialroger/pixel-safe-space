@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Plus, Loader2 } from "lucide-react";
@@ -17,7 +17,7 @@ export interface Client {
 }
 
 export default function Clientes() {
-  const { user } = useAuth();
+  const { workspaceId } = useWorkspace();
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,10 +26,11 @@ export default function Clientes() {
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
 
   const fetchClients = async () => {
-    if (!user) return;
+    if (!workspaceId) return;
     const { data, error } = await supabase
       .from("clients")
       .select("*")
+      .eq("workspace_id", workspaceId)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -42,7 +43,7 @@ export default function Clientes() {
 
   useEffect(() => {
     fetchClients();
-  }, [user]);
+  }, [workspaceId]);
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);

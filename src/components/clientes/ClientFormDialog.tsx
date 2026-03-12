@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -32,7 +32,7 @@ interface Props {
 }
 
 export default function ClientFormDialog({ open, onOpenChange, editingClient, onSaved }: Props) {
-  const { user } = useAuth();
+  const { workspaceId } = useWorkspace();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const isEditing = !!editingClient;
@@ -53,7 +53,7 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
   }, [open, editingClient]);
 
   const onSubmit = async (values: ClientFormValues) => {
-    if (!user) return;
+    if (!workspaceId) return;
     setSaving(true);
 
     const payload = {
@@ -64,7 +64,7 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
 
     const { error } = isEditing
       ? await supabase.from("clients").update(payload).eq("id", editingClient!.id)
-      : await supabase.from("clients").insert({ ...payload, user_id: user.id });
+      : await supabase.from("clients").insert({ ...payload, workspace_id: workspaceId });
 
     setSaving(false);
 

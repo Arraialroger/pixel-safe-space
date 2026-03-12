@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ type FormValues = z.infer<typeof schema>;
 type Client = { id: string; name: string };
 
 export default function PropostaNova() {
-  const { user } = useAuth();
+  const { workspaceId } = useWorkspace();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
@@ -45,16 +45,16 @@ export default function PropostaNova() {
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (!workspaceId) return;
     supabase
       .from("clients")
       .select("id, name")
-      .eq("user_id", user.id)
+      .eq("workspace_id", workspaceId)
       .order("name")
       .then(({ data }) => {
         if (data) setClients(data);
       });
-  }, [user]);
+  }, [workspaceId]);
 
   const handleGenerateScope = () => {
     const summary = form.getValues("summary");
@@ -71,10 +71,10 @@ export default function PropostaNova() {
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (!user) return;
+    if (!workspaceId) return;
     setSaving(true);
     const { error } = await supabase.from("proposals").insert({
-      user_id: user.id,
+      workspace_id: workspaceId,
       client_id: values.client_id,
       title: values.title,
       price: values.price ? parseFloat(values.price) : null,
@@ -97,7 +97,6 @@ export default function PropostaNova() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Dados Básicos */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Dados Básicos</CardTitle>
@@ -150,7 +149,6 @@ export default function PropostaNova() {
             </CardContent>
           </Card>
 
-          {/* Gerador de Escopo */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Gerador de Escopo</CardTitle>

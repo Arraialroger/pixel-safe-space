@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -26,23 +26,23 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
 };
 
 export default function Propostas() {
-  const { user } = useAuth();
+  const { workspaceId } = useWorkspace();
   const navigate = useNavigate();
   const [proposals, setProposals] = useState<ProposalWithClient[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!workspaceId) return;
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
         .select("id, title, price, deadline, status, created_at, client_id, clients(name)")
-        .eq("user_id", user.id)
+        .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: false });
 
       if (!error && data) {
         setProposals(
-          data.map((p: any) => ({
+          (data as any[]).map((p) => ({
             id: p.id,
             title: p.title,
             price: p.price,
@@ -55,7 +55,7 @@ export default function Propostas() {
       }
       setLoading(false);
     })();
-  }, [user]);
+  }, [workspaceId]);
 
   const formatCurrency = (value: number | null) =>
     value != null ? `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—";
