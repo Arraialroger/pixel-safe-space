@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
@@ -24,51 +25,53 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <AppLayout><Index /></AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/propostas"
-              element={
-                <ProtectedRoute>
-                  <AppLayout><Propostas /></AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/propostas/nova"
-              element={
-                <ProtectedRoute>
-                  <AppLayout><PropostaNova /></AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/clientes"
-              element={
-                <ProtectedRoute>
-                  <AppLayout><Clientes /></AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configuracoes"
-              element={
-                <ProtectedRoute>
-                  <AppLayout><Configuracoes /></AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <WorkspaceProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><Index /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/propostas"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><Propostas /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/propostas/nova"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><PropostaNova /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/clientes"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><Clientes /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/configuracoes"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><Configuracoes /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </WorkspaceProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
