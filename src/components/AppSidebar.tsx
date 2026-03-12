@@ -20,6 +20,7 @@ const navItems = [
   { title: "Propostas", url: "/propostas", icon: FileText },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Estúdio/Agência", url: "/configuracoes-workspace", icon: Building2 },
 ];
 
 export function AppSidebar() {

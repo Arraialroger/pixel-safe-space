@@ -70,6 +70,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/configuracoes-workspace"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><ConfiguracoesWorkspace /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </WorkspaceProvider>
