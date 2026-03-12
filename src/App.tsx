@@ -14,6 +14,7 @@ import Propostas from "./pages/Propostas";
 import PropostaNova from "./pages/PropostaNova";
 import Clientes from "./pages/Clientes";
 import Configuracoes from "./pages/Configuracoes";
+import ConfiguracoesWorkspace from "./pages/ConfiguracoesWorkspace";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AppLayout><Configuracoes /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/configuracoes-workspace"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><ConfiguracoesWorkspace /></AppLayout>
                   </ProtectedRoute>
                 }
               />
