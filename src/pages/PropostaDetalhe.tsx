@@ -75,6 +75,8 @@ export default function PropostaDetalhe() {
         ai_generated_scope: d.ai_generated_scope,
         workspace_id: d.workspace_id,
         client_name: d.clients?.name ?? "—",
+        accepted_by_name: d.accepted_by_name,
+        accepted_at: d.accepted_at,
       });
       setScope(d.ai_generated_scope ?? "");
       setLoading(false);
