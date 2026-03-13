@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Propostas from "./pages/Propostas";
 import PropostaNova from "./pages/PropostaNova";
+import PropostaDetalhe from "./pages/PropostaDetalhe";
 import Clientes from "./pages/Clientes";
 import Configuracoes from "./pages/Configuracoes";
 import ConfiguracoesWorkspace from "./pages/ConfiguracoesWorkspace";
@@ -51,6 +52,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AppLayout><PropostaNova /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/propostas/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><PropostaDetalhe /></AppLayout>
                   </ProtectedRoute>
                 }
               />
