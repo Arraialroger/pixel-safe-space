@@ -23,13 +23,19 @@ const schema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
   price: z.string().optional(),
   deadline: z.string().optional(),
+  payment_terms: z.string().optional(),
   summary: z.string().optional(),
   scope: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
-
 type Client = { id: string; name: string };
+
+const paymentOptions = [
+  { value: "50_50", label: "50% no início / 50% na entrega" },
+  { value: "100_upfront", label: "100% antecipado" },
+  { value: "custom", label: "Personalizado" },
+];
 
 export default function PropostaNova() {
   const { workspaceId } = useWorkspace();
@@ -41,7 +47,7 @@ export default function PropostaNova() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { client_id: "", title: "", price: "", deadline: "", summary: "", scope: "" },
+    defaultValues: { client_id: "", title: "", price: "", deadline: "", payment_terms: "", summary: "", scope: "" },
   });
 
   useEffect(() => {
@@ -79,9 +85,10 @@ export default function PropostaNova() {
       title: values.title,
       price: values.price ? parseFloat(values.price) : null,
       deadline: values.deadline || null,
+      payment_terms: values.payment_terms || null,
       ai_generated_scope: values.scope || null,
       status: "draft",
-    });
+    } as any);
     setSaving(false);
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
@@ -146,6 +153,25 @@ export default function PropostaNova() {
                   </FormItem>
                 )} />
               </div>
+
+              <FormField control={form.control} name="payment_terms" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Condições de Pagamento</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione as condições" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {paymentOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
             </CardContent>
           </Card>
 
