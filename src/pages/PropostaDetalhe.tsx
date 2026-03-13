@@ -53,7 +53,7 @@ export default function PropostaDetalhe() {
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, workspace_id, client_id, clients(name)")
+        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_at, clients(name)")
         .eq("id", id)
         .eq("workspace_id", workspaceId)
         .single();
