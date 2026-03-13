@@ -56,6 +56,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/propostas/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><PropostaDetalhe /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/clientes"
                 element={
                   <ProtectedRoute>
