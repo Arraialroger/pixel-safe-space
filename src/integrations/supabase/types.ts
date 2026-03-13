@@ -81,6 +81,9 @@ export type Database = {
       }
       proposals: {
         Row: {
+          accepted_at: string | null
+          accepted_by_email: string | null
+          accepted_by_name: string | null
           ai_generated_scope: string | null
           client_id: string
           created_at: string
@@ -93,6 +96,9 @@ export type Database = {
           workspace_id: string | null
         }
         Insert: {
+          accepted_at?: string | null
+          accepted_by_email?: string | null
+          accepted_by_name?: string | null
           ai_generated_scope?: string | null
           client_id: string
           created_at?: string
@@ -105,6 +111,9 @@ export type Database = {
           workspace_id?: string | null
         }
         Update: {
+          accepted_at?: string | null
+          accepted_by_email?: string | null
+          accepted_by_name?: string | null
           ai_generated_scope?: string | null
           client_id?: string
           created_at?: string
@@ -191,6 +200,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_proposal: {
+        Args: { _email: string; _name: string; _proposal_id: string }
+        Returns: undefined
+      }
       is_workspace_member: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean

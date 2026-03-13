@@ -13,6 +13,7 @@ import Register from "./pages/Register";
 import Propostas from "./pages/Propostas";
 import PropostaNova from "./pages/PropostaNova";
 import PropostaDetalhe from "./pages/PropostaDetalhe";
+import PropostaPublica from "./pages/PropostaPublica";
 import Clientes from "./pages/Clientes";
 import Configuracoes from "./pages/Configuracoes";
 import ConfiguracoesWorkspace from "./pages/ConfiguracoesWorkspace";
@@ -87,6 +88,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/p/:id" element={<PropostaPublica />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </WorkspaceProvider>

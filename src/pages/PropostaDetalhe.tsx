@@ -32,6 +32,8 @@ type ProposalDetail = {
   ai_generated_scope: string | null;
   workspace_id: string | null;
   client_name: string;
+  accepted_by_name: string | null;
+  accepted_at: string | null;
 };
 
 export default function PropostaDetalhe() {
@@ -51,7 +53,7 @@ export default function PropostaDetalhe() {
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, workspace_id, client_id, clients(name)")
+        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_at, clients(name)")
         .eq("id", id)
         .eq("workspace_id", workspaceId)
         .single();
@@ -73,6 +75,8 @@ export default function PropostaDetalhe() {
         ai_generated_scope: d.ai_generated_scope,
         workspace_id: d.workspace_id,
         client_name: d.clients?.name ?? "—",
+        accepted_by_name: d.accepted_by_name,
+        accepted_at: d.accepted_at,
       });
       setScope(d.ai_generated_scope ?? "");
       setLoading(false);
@@ -114,12 +118,26 @@ export default function PropostaDetalhe() {
   if (!proposal) return null;
 
   const sc = statusConfig[proposal.status] ?? statusConfig.draft;
+  const isAccepted = proposal.status === "accepted";
+
+  const formatDate = (iso: string | null) => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <Button variant="ghost" size="sm" onClick={() => navigate("/propostas")} className="gap-1 text-muted-foreground">
         <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
       </Button>
+
+      {isAccepted && (
+        <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
+          <span className="text-sm text-green-800">
+            ✅ Proposta aceita digitalmente por <strong>{proposal.accepted_by_name}</strong> em {formatDate(proposal.accepted_at)}. O escopo não pode mais ser editado.
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
@@ -165,12 +183,16 @@ export default function PropostaDetalhe() {
                 rows={16}
                 placeholder="Nenhum escopo definido ainda..."
                 className="font-mono text-sm"
+                readOnly={isAccepted}
+                disabled={isAccepted}
               />
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Alterações"}
-                </Button>
-              </div>
+              {!isAccepted && (
+                <div className="flex justify-end">
+                  <Button onClick={handleSave} disabled={saving}>
+                    {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Alterações"}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
