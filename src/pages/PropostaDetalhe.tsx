@@ -183,12 +183,16 @@ export default function PropostaDetalhe() {
                 rows={16}
                 placeholder="Nenhum escopo definido ainda..."
                 className="font-mono text-sm"
+                readOnly={isAccepted}
+                disabled={isAccepted}
               />
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Alterações"}
-                </Button>
-              </div>
+              {!isAccepted && (
+                <div className="flex justify-end">
+                  <Button onClick={handleSave} disabled={saving}>
+                    {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Alterações"}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
