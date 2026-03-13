@@ -118,12 +118,26 @@ export default function PropostaDetalhe() {
   if (!proposal) return null;
 
   const sc = statusConfig[proposal.status] ?? statusConfig.draft;
+  const isAccepted = proposal.status === "accepted";
+
+  const formatDate = (iso: string | null) => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <Button variant="ghost" size="sm" onClick={() => navigate("/propostas")} className="gap-1 text-muted-foreground">
         <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
       </Button>
+
+      {isAccepted && (
+        <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
+          <span className="text-sm text-green-800">
+            ✅ Proposta aceita digitalmente por <strong>{proposal.accepted_by_name}</strong> em {formatDate(proposal.accepted_at)}. O escopo não pode mais ser editado.
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
