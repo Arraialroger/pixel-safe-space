@@ -88,6 +88,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/p/:id" element={<PropostaPublica />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </WorkspaceProvider>
