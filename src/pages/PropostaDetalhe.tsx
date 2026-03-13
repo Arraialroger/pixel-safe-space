@@ -32,6 +32,8 @@ type ProposalDetail = {
   ai_generated_scope: string | null;
   workspace_id: string | null;
   client_name: string;
+  accepted_by_name: string | null;
+  accepted_at: string | null;
 };
 
 export default function PropostaDetalhe() {
