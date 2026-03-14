@@ -147,17 +147,6 @@ export default function PropostaPublica() {
     toast({ title: "Proposta aceita com sucesso!" });
   };
 
-  const formatCurrency = (value: number | null) =>
-    value != null ? `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—";
-
-  const formatDate = (iso: string | null) => {
-    if (!iso) return "";
-    return new Date(iso).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
 
   if (loading) {
     return (

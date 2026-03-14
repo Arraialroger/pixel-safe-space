@@ -107,10 +107,6 @@ export default function PropostaDetalhe() {
   const sc = statusConfig[proposal.status] ?? statusConfig.draft;
   const isAccepted = proposal.status === "accepted";
 
-  const formatDate = (iso: string | null) => {
-    if (!iso) return "";
-    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
-  };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
