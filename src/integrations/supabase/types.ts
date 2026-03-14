@@ -204,6 +204,18 @@ export type Database = {
         Args: { _email: string; _name: string; _proposal_id: string }
         Returns: undefined
       }
+      get_workspace_public: {
+        Args: { _workspace_id: string }
+        Returns: {
+          id: string
+          logo_url: string
+          name: string
+        }[]
+      }
+      is_workspace_admin: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
+      }
       is_workspace_member: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { statusConfig, formatCurrency } from "@/lib/proposal-utils";
 
 type ProposalWithClient = {
   id: string;
@@ -19,11 +20,6 @@ type ProposalWithClient = {
   client_name: string;
 };
 
-const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className?: string }> = {
-  draft: { label: "Rascunho", variant: "secondary", className: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100" },
-  sent: { label: "Enviada", variant: "default", className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100" },
-  accepted: { label: "Aceita", variant: "default", className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-100" },
-};
 
 export default function Propostas() {
   const { workspaceId } = useWorkspace();
@@ -57,8 +53,6 @@ export default function Propostas() {
     })();
   }, [workspaceId]);
 
-  const formatCurrency = (value: number | null) =>
-    value != null ? `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—";
 
   if (loading) {
     return (

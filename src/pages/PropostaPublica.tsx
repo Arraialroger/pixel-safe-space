@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { paymentLabels, formatCurrency, formatDate } from "@/lib/proposal-utils";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,11 +30,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-const paymentLabels: Record<string, string> = {
-  "50_50": "50% no início / 50% na entrega",
-  "100_upfront": "100% antecipado",
-  custom: "Personalizado",
-};
 
 const acceptSchema = z.object({
   name: z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres").max(100),
@@ -77,7 +73,7 @@ export default function PropostaPublica() {
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, accepted_by_name, accepted_by_email, accepted_at, client_id, clients(name), workspace_id, workspaces(name, owner_id)")
+        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, accepted_by_name, accepted_by_email, accepted_at, client_id, clients(name), workspace_id")
         .eq("id", id)
         .single();
 
@@ -89,15 +85,15 @@ export default function PropostaPublica() {
 
       const d = data as any;
 
-      // Fetch owner profile for logo
+      // Use secure RPC to get workspace public info (name + logo, no tokens exposed)
+      let wsName = "Estúdio";
       let logoUrl: string | null = null;
-      if (d.workspaces?.owner_id) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("logo_url")
-          .eq("id", d.workspaces.owner_id)
-          .single();
-        logoUrl = profile?.logo_url ?? null;
+      if (d.workspace_id) {
+        const { data: wsData } = await supabase.rpc("get_workspace_public", { _workspace_id: d.workspace_id });
+        if (wsData && wsData.length > 0) {
+          wsName = wsData[0].name;
+          logoUrl = wsData[0].logo_url ?? null;
+        }
       }
 
       setProposal({
@@ -112,7 +108,7 @@ export default function PropostaPublica() {
         accepted_by_email: d.accepted_by_email,
         accepted_at: d.accepted_at,
         client_name: d.clients?.name ?? "—",
-        workspace_name: d.workspaces?.name ?? "Estúdio",
+        workspace_name: wsName,
         workspace_logo: logoUrl,
       });
       setLoading(false);
@@ -151,17 +147,6 @@ export default function PropostaPublica() {
     toast({ title: "Proposta aceita com sucesso!" });
   };
 
-  const formatCurrency = (value: number | null) =>
-    value != null ? `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—";
-
-  const formatDate = (iso: string | null) => {
-    if (!iso) return "";
-    return new Date(iso).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
 
   if (loading) {
     return (
