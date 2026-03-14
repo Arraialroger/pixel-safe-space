@@ -85,33 +85,14 @@ export default function PropostaPublica() {
 
       const d = data as any;
 
-      // Use secure RPC to get workspace name (tokens not exposed)
+      // Use secure RPC to get workspace public info (name + logo, no tokens exposed)
       let wsName = "Estúdio";
+      let logoUrl: string | null = null;
       if (d.workspace_id) {
         const { data: wsData } = await supabase.rpc("get_workspace_public", { _workspace_id: d.workspace_id });
         if (wsData && wsData.length > 0) {
           wsName = wsData[0].name;
-        }
-      }
-
-      // Fetch owner profile for logo
-      let logoUrl: string | null = null;
-      if (d.workspace_id) {
-        // Get owner_id from workspace via RPC is not needed for logo;
-        // profiles are readable by anon, so we find the workspace owner through workspace_members
-        const { data: members } = await supabase
-          .from("workspace_members")
-          .select("user_id")
-          .eq("workspace_id", d.workspace_id)
-          .eq("role", "admin")
-          .limit(1);
-        if (members && members.length > 0) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("logo_url")
-            .eq("id", members[0].user_id)
-            .single();
-          logoUrl = profile?.logo_url ?? null;
+          logoUrl = wsData[0].logo_url ?? null;
         }
       }
 
