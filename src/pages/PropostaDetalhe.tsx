@@ -92,8 +92,6 @@ export default function PropostaDetalhe() {
     toast({ title: "Link copiado!" });
   };
 
-  const formatCurrency = (value: number | null) =>
-    value != null ? `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—";
 
   if (loading) {
     return (
