@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { statusConfig, formatCurrency } from "@/lib/proposal-utils";
 
 type ProposalWithClient = {
   id: string;
