@@ -208,6 +208,7 @@ export type Database = {
         Args: { _workspace_id: string }
         Returns: {
           id: string
+          logo_url: string
           name: string
         }[]
       }
