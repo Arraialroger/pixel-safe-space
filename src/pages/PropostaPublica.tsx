@@ -73,7 +73,7 @@ export default function PropostaPublica() {
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, accepted_by_name, accepted_by_email, accepted_at, client_id, clients(name), workspace_id, workspaces(name, owner_id)")
+        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, accepted_by_name, accepted_by_email, accepted_at, client_id, clients(name), workspace_id")
         .eq("id", id)
         .single();
 
@@ -85,15 +85,34 @@ export default function PropostaPublica() {
 
       const d = data as any;
 
+      // Use secure RPC to get workspace name (tokens not exposed)
+      let wsName = "Estúdio";
+      if (d.workspace_id) {
+        const { data: wsData } = await supabase.rpc("get_workspace_public", { _workspace_id: d.workspace_id });
+        if (wsData && wsData.length > 0) {
+          wsName = wsData[0].name;
+        }
+      }
+
       // Fetch owner profile for logo
       let logoUrl: string | null = null;
-      if (d.workspaces?.owner_id) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("logo_url")
-          .eq("id", d.workspaces.owner_id)
-          .single();
-        logoUrl = profile?.logo_url ?? null;
+      if (d.workspace_id) {
+        // Get owner_id from workspace via RPC is not needed for logo;
+        // profiles are readable by anon, so we find the workspace owner through workspace_members
+        const { data: members } = await supabase
+          .from("workspace_members")
+          .select("user_id")
+          .eq("workspace_id", d.workspace_id)
+          .eq("role", "admin")
+          .limit(1);
+        if (members && members.length > 0) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("logo_url")
+            .eq("id", members[0].user_id)
+            .single();
+          logoUrl = profile?.logo_url ?? null;
+        }
       }
 
       setProposal({
