@@ -47,13 +47,6 @@ export type Database = {
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "clients_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
@@ -147,13 +140,6 @@ export type Database = {
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "proposals_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       workspace_members: {
@@ -178,13 +164,6 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "workspace_members_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces_public"
             referencedColumns: ["id"]
           },
         ]
@@ -218,28 +197,14 @@ export type Database = {
       }
     }
     Views: {
-      workspaces_public: {
-        Row: {
-          id: string | null
-          name: string | null
-        }
-        Insert: {
-          id?: string | null
-          name?: string | null
-        }
-        Update: {
-          id?: string | null
-          name?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       accept_proposal: {
         Args: { _email: string; _name: string; _proposal_id: string }
         Returns: undefined
       }
-      get_workspace_public_info: {
+      get_workspace_public: {
         Args: { _workspace_id: string }
         Returns: {
           id: string
