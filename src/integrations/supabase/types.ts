@@ -47,6 +47,13 @@ export type Database = {
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clients_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -140,6 +147,13 @@ export type Database = {
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "proposals_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       workspace_members: {
@@ -164,6 +178,13 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces_public"
             referencedColumns: ["id"]
           },
         ]
@@ -197,12 +218,37 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      workspaces_public: {
+        Row: {
+          id: string | null
+          name: string | null
+        }
+        Insert: {
+          id?: string | null
+          name?: string | null
+        }
+        Update: {
+          id?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_proposal: {
         Args: { _email: string; _name: string; _proposal_id: string }
         Returns: undefined
+      }
+      get_workspace_public_info: {
+        Args: { _workspace_id: string }
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
+      is_workspace_admin: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
       }
       is_workspace_member: {
         Args: { _user_id: string; _workspace_id: string }
