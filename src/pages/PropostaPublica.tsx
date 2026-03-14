@@ -30,11 +30,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-const paymentLabels: Record<string, string> = {
-  "50_50": "50% no início / 50% na entrega",
-  "100_upfront": "100% antecipado",
-  custom: "Personalizado",
-};
 
 const acceptSchema = z.object({
   name: z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres").max(100),
