@@ -127,7 +127,7 @@ export default function PropostaPublica() {
         accepted_by_email: d.accepted_by_email,
         accepted_at: d.accepted_at,
         client_name: d.clients?.name ?? "—",
-        workspace_name: d.workspaces?.name ?? "Estúdio",
+        workspace_name: wsName,
         workspace_logo: logoUrl,
       });
       setLoading(false);
