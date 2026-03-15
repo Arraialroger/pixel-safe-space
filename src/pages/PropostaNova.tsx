@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,11 +40,13 @@ const paymentOptions = [
 
 export default function PropostaNova() {
   const { workspaceId } = useWorkspace();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [generatingAI, setGeneratingAI] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [languagePref, setLanguagePref] = useState("PT");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -62,18 +65,67 @@ export default function PropostaNova() {
       });
   }, [workspaceId]);
 
-  const handleGenerateScope = () => {
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("language_preference")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.language_preference) setLanguagePref(data.language_preference);
+      });
+  }, [user]);
+
+  const handleGenerateScope = async () => {
     const summary = form.getValues("summary");
     if (!summary?.trim()) {
       toast({ title: "Preencha o resumo", description: "Descreva brevemente o que será feito para gerar o escopo.", variant: "destructive" });
       return;
     }
+
+    const clientId = form.getValues("client_id");
+    const selectedClient = clients.find((c) => c.id === clientId);
+    const paymentTermsValue = form.getValues("payment_terms");
+    const paymentLabel = paymentOptions.find((o) => o.value === paymentTermsValue)?.label || paymentTermsValue || "";
+
     setGeneratingAI(true);
-    setTimeout(() => {
-      form.setValue("scope", `## Escopo do Projeto\n\nCom base na descrição fornecida ("${summary}"), o escopo deste projeto inclui:\n\n### 1. Levantamento de Requisitos\n- Reunião inicial para alinhamento de expectativas\n- Documentação detalhada dos requisitos funcionais e não-funcionais\n\n### 2. Desenvolvimento\n- Implementação das funcionalidades descritas\n- Integração com sistemas existentes\n- Testes unitários e de integração\n\n### 3. Entrega e Suporte\n- Deploy em ambiente de produção\n- Treinamento para a equipe do cliente\n- 30 dias de suporte técnico incluso\n\n---\n*Escopo gerado automaticamente por IA — revise antes de enviar.*`);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-proposal", {
+        body: {
+          title: form.getValues("title"),
+          clientName: selectedClient?.name || "",
+          briefing: summary,
+          paymentTerms: paymentLabel,
+          language: languagePref,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || "Falha na comunicação com a IA.");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (data?.scope) {
+        form.setValue("scope", data.scope);
+        toast({ title: "Escopo gerado com sucesso!", description: "Revise o texto gerado pela IA antes de salvar." });
+      } else {
+        throw new Error("A IA não retornou conteúdo. Tente novamente.");
+      }
+    } catch (err: any) {
+      console.error("AI generation error:", err);
+      toast({
+        title: "Erro ao gerar escopo",
+        description: err.message || "Não foi possível gerar o escopo. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
       setGeneratingAI(false);
-      toast({ title: "Escopo gerado!", description: "Revise o texto gerado antes de salvar." });
-    }, 2000);
+    }
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -177,7 +229,7 @@ export default function PropostaNova() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Gerador de Escopo</CardTitle>
+              <CardTitle className="text-lg">Gerador de Escopo com IA</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField control={form.control} name="summary" render={({ field }) => (
@@ -193,7 +245,7 @@ export default function PropostaNova() {
               <Button type="button" variant="outline" onClick={handleGenerateScope} disabled={generatingAI}
                 className="border-primary/30 text-primary hover:bg-primary/5">
                 {generatingAI ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando...</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando com IA...</>
                 ) : (
                   <><Sparkles className="mr-2 h-4 w-4" /> Gerar Escopo Profissional com IA</>
                 )}
