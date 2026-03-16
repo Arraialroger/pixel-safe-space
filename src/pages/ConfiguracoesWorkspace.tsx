@@ -58,7 +58,7 @@ export default function ConfiguracoesWorkspace() {
       // Load workspace data
       const { data: ws } = await supabase
         .from("workspaces")
-        .select("name, mercado_pago_token, stripe_token")
+        .select("name, company_document, company_address, mercado_pago_token, stripe_token")
         .eq("id", workspaceId)
         .single();
 
