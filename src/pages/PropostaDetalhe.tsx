@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Loader2, ExternalLink } from "lucide-react";
+import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +34,7 @@ export default function PropostaDetalhe() {
   const [loading, setLoading] = useState(true);
   const [scope, setScope] = useState("");
   const [saving, setSaving] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
 
   const publicLink = `${window.location.origin}/p/${id}`;
 
@@ -92,6 +93,22 @@ export default function PropostaDetalhe() {
     toast({ title: "Link copiado!" });
   };
 
+  const handleStatusChange = async (newStatus: "pending" | "draft") => {
+    if (!id) return;
+    setChangingStatus(true);
+    const { error } = await supabase
+      .from("proposals")
+      .update({ status: newStatus } as any)
+      .eq("id", id);
+    setChangingStatus(false);
+    if (error) {
+      toast({ title: "Erro ao alterar status", description: error.message, variant: "destructive" });
+    } else {
+      setProposal((prev) => prev ? { ...prev, status: newStatus } : prev);
+      toast({ title: newStatus === "pending" ? "Proposta liberada para o cliente!" : "Proposta revertida para rascunho." });
+    }
+  };
+
 
   if (loading) {
     return (
@@ -105,14 +122,32 @@ export default function PropostaDetalhe() {
   if (!proposal) return null;
 
   const sc = statusConfig[proposal.status] ?? statusConfig.draft;
+  const isDraft = proposal.status === "draft";
+  const isPending = proposal.status === "pending";
   const isAccepted = proposal.status === "accepted";
 
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/propostas")} className="gap-1 text-muted-foreground">
-        <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
-      </Button>
+      <div className="flex items-center justify-between gap-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/propostas")} className="gap-1 text-muted-foreground">
+          <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
+        </Button>
+        <div className="flex gap-2">
+          {isDraft && (
+            <Button onClick={() => handleStatusChange("pending")} disabled={changingStatus} className="gap-2">
+              {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Liberar para o Cliente
+            </Button>
+          )}
+          {isPending && (
+            <Button variant="outline" onClick={() => handleStatusChange("draft")} disabled={changingStatus} className="gap-2">
+              {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+              Reverter para Rascunho
+            </Button>
+          )}
+        </div>
+      </div>
 
       {isAccepted && (
         <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
@@ -189,12 +224,24 @@ export default function PropostaDetalhe() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {isDraft && (
+                <div className="flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-yellow-700">O link está desativado pois a proposta é um rascunho. Libere-a para ativar o acesso público.</p>
+                </div>
+              )}
+              {(isPending || isAccepted) && (
+                <div className="flex items-start gap-2 rounded-md border border-green-200 bg-green-50 p-3">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-green-700">O link público está ativo e pronto para envio.</p>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
                 Envie este link para o cliente visualizar a proposta.
               </p>
               <div className="flex gap-2">
                 <Input value={publicLink} readOnly className="text-xs" />
-                <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link">
+                <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link" disabled={isDraft}>
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
