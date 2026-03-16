@@ -121,7 +121,8 @@ export default function PropostaDetalhe() {
 
   if (!proposal) return null;
 
-  const sc = statusConfig[proposal.status] ?? statusConfig.draft;
+  const isDraft = proposal.status === "draft";
+  const isPending = proposal.status === "pending";
   const isAccepted = proposal.status === "accepted";
 
 
