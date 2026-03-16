@@ -121,6 +121,7 @@ export default function PropostaDetalhe() {
 
   if (!proposal) return null;
 
+  const sc = statusConfig[proposal.status] ?? statusConfig.draft;
   const isDraft = proposal.status === "draft";
   const isPending = proposal.status === "pending";
   const isAccepted = proposal.status === "accepted";
@@ -128,9 +129,25 @@ export default function PropostaDetalhe() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/propostas")} className="gap-1 text-muted-foreground">
-        <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
-      </Button>
+      <div className="flex items-center justify-between gap-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/propostas")} className="gap-1 text-muted-foreground">
+          <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
+        </Button>
+        <div className="flex gap-2">
+          {isDraft && (
+            <Button onClick={() => handleStatusChange("pending")} disabled={changingStatus} className="gap-2">
+              {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Liberar para o Cliente
+            </Button>
+          )}
+          {isPending && (
+            <Button variant="outline" onClick={() => handleStatusChange("draft")} disabled={changingStatus} className="gap-2">
+              {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+              Reverter para Rascunho
+            </Button>
+          )}
+        </div>
+      </div>
 
       {isAccepted && (
         <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
