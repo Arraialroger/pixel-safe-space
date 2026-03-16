@@ -92,6 +92,7 @@ export type Database = {
           payment_terms: string | null
           price: number | null
           status: string
+          summary: string | null
           title: string
           workspace_id: string | null
         }
@@ -107,6 +108,7 @@ export type Database = {
           payment_terms?: string | null
           price?: number | null
           status?: string
+          summary?: string | null
           title: string
           workspace_id?: string | null
         }
@@ -122,6 +124,7 @@ export type Database = {
           payment_terms?: string | null
           price?: number | null
           status?: string
+          summary?: string | null
           title?: string
           workspace_id?: string | null
         }
@@ -170,6 +173,8 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          company_address: string | null
+          company_document: string | null
           created_at: string
           id: string
           mercado_pago_token: string | null
@@ -178,6 +183,8 @@ export type Database = {
           stripe_token: string | null
         }
         Insert: {
+          company_address?: string | null
+          company_document?: string | null
           created_at?: string
           id?: string
           mercado_pago_token?: string | null
@@ -186,6 +193,8 @@ export type Database = {
           stripe_token?: string | null
         }
         Update: {
+          company_address?: string | null
+          company_document?: string | null
           created_at?: string
           id?: string
           mercado_pago_token?: string | null

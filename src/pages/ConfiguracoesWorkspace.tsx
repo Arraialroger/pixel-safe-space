@@ -14,6 +14,8 @@ import { Loader2, Building2, CreditCard, ShieldAlert } from "lucide-react";
 
 const workspaceSchema = z.object({
   name: z.string().min(1, "Nome do estúdio é obrigatório").max(100),
+  company_document: z.string().max(20).optional().or(z.literal("")),
+  company_address: z.string().max(300).optional().or(z.literal("")),
   mercado_pago_token: z.string().max(500).optional().or(z.literal("")),
   stripe_token: z.string().max(500).optional().or(z.literal("")),
 });
@@ -30,7 +32,7 @@ export default function ConfiguracoesWorkspace() {
 
   const form = useForm<WorkspaceFormValues>({
     resolver: zodResolver(workspaceSchema),
-    defaultValues: { name: "", mercado_pago_token: "", stripe_token: "" },
+    defaultValues: { name: "", company_document: "", company_address: "", mercado_pago_token: "", stripe_token: "" },
   });
 
   useEffect(() => {
@@ -56,13 +58,15 @@ export default function ConfiguracoesWorkspace() {
       // Load workspace data
       const { data: ws } = await supabase
         .from("workspaces")
-        .select("name, mercado_pago_token, stripe_token")
+        .select("name, company_document, company_address, mercado_pago_token, stripe_token")
         .eq("id", workspaceId)
         .single();
 
       if (ws) {
         form.reset({
           name: ws.name ?? "",
+          company_document: (ws as any).company_document ?? "",
+          company_address: (ws as any).company_address ?? "",
           mercado_pago_token: ws.mercado_pago_token ?? "",
           stripe_token: ws.stripe_token ?? "",
         });
@@ -81,9 +85,11 @@ export default function ConfiguracoesWorkspace() {
       .from("workspaces")
       .update({
         name: values.name,
+        company_document: values.company_document || null,
+        company_address: values.company_address || null,
         mercado_pago_token: values.mercado_pago_token || null,
         stripe_token: values.stripe_token || null,
-      })
+      } as any)
       .eq("id", workspaceId);
 
     if (error) {
@@ -135,7 +141,7 @@ export default function ConfiguracoesWorkspace() {
               </div>
               <CardDescription>Informações básicas do seu workspace.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -149,6 +155,36 @@ export default function ConfiguracoesWorkspace() {
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="company_document"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CNPJ / CPF da Agência</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: 12.345.678/0001-90" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="company_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Endereço Completo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Rua das Flores, 123 - São Paulo/SP" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 
