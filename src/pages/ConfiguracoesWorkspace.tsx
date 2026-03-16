@@ -85,9 +85,11 @@ export default function ConfiguracoesWorkspace() {
       .from("workspaces")
       .update({
         name: values.name,
+        company_document: values.company_document || null,
+        company_address: values.company_address || null,
         mercado_pago_token: values.mercado_pago_token || null,
         stripe_token: values.stripe_token || null,
-      })
+      } as any)
       .eq("id", workspaceId);
 
     if (error) {
