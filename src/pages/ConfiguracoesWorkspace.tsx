@@ -32,7 +32,7 @@ export default function ConfiguracoesWorkspace() {
 
   const form = useForm<WorkspaceFormValues>({
     resolver: zodResolver(workspaceSchema),
-    defaultValues: { name: "", mercado_pago_token: "", stripe_token: "" },
+    defaultValues: { name: "", company_document: "", company_address: "", mercado_pago_token: "", stripe_token: "" },
   });
 
   useEffect(() => {
