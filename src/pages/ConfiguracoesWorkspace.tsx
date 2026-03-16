@@ -65,6 +65,8 @@ export default function ConfiguracoesWorkspace() {
       if (ws) {
         form.reset({
           name: ws.name ?? "",
+          company_document: (ws as any).company_document ?? "",
+          company_address: (ws as any).company_address ?? "",
           mercado_pago_token: ws.mercado_pago_token ?? "",
           stripe_token: ws.stripe_token ?? "",
         });
