@@ -224,12 +224,24 @@ export default function PropostaDetalhe() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {isDraft && (
+                <div className="flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-yellow-700">O link está desativado pois a proposta é um rascunho. Libere-a para ativar o acesso público.</p>
+                </div>
+              )}
+              {(isPending || isAccepted) && (
+                <div className="flex items-start gap-2 rounded-md border border-green-200 bg-green-50 p-3">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-green-700">O link público está ativo e pronto para envio.</p>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
                 Envie este link para o cliente visualizar a proposta.
               </p>
               <div className="flex gap-2">
                 <Input value={publicLink} readOnly className="text-xs" />
-                <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link">
+                <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link" disabled={isDraft}>
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
