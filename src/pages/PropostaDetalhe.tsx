@@ -93,6 +93,22 @@ export default function PropostaDetalhe() {
     toast({ title: "Link copiado!" });
   };
 
+  const handleStatusChange = async (newStatus: "pending" | "draft") => {
+    if (!id) return;
+    setChangingStatus(true);
+    const { error } = await supabase
+      .from("proposals")
+      .update({ status: newStatus } as any)
+      .eq("id", id);
+    setChangingStatus(false);
+    if (error) {
+      toast({ title: "Erro ao alterar status", description: error.message, variant: "destructive" });
+    } else {
+      setProposal((prev) => prev ? { ...prev, status: newStatus } : prev);
+      toast({ title: newStatus === "pending" ? "Proposta liberada para o cliente!" : "Proposta revertida para rascunho." });
+    }
+  };
+
 
   if (loading) {
     return (
