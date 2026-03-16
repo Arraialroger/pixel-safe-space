@@ -141,7 +141,7 @@ export default function ConfiguracoesWorkspace() {
               </div>
               <CardDescription>Informações básicas do seu workspace.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -155,6 +155,36 @@ export default function ConfiguracoesWorkspace() {
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="company_document"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CNPJ / CPF da Agência</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: 12.345.678/0001-90" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="company_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Endereço Completo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Rua das Flores, 123 - São Paulo/SP" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 
