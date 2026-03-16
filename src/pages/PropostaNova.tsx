@@ -138,6 +138,7 @@ export default function PropostaNova() {
       price: values.price ? parseFloat(values.price) : null,
       deadline: values.deadline || null,
       payment_terms: values.payment_terms || null,
+      summary: values.summary || null,
       ai_generated_scope: values.scope || null,
       status: "draft",
     } as any);
