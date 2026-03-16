@@ -34,6 +34,7 @@ export default function PropostaDetalhe() {
   const [loading, setLoading] = useState(true);
   const [scope, setScope] = useState("");
   const [saving, setSaving] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
 
   const publicLink = `${window.location.origin}/p/${id}`;
 
