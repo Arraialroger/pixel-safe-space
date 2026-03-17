@@ -57,7 +57,7 @@ export default function PropostaNova() {
     if (!workspaceId) return;
     supabase
       .from("clients")
-      .select("id, name")
+      .select("id, name, document, address, phone, email, company")
       .eq("workspace_id", workspaceId)
       .order("name")
       .then(({ data }) => {
