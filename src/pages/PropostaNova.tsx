@@ -30,7 +30,7 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-type Client = { id: string; name: string };
+type Client = { id: string; name: string; document: string | null; address: string | null; phone: string | null; email: string | null; company: string | null };
 
 const paymentOptions = [
   { value: "50_50", label: "50% no início / 50% na entrega" },
