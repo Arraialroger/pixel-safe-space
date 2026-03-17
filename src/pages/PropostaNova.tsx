@@ -25,7 +25,12 @@ const schema = z.object({
   price: z.string().optional(),
   deadline: z.string().optional(),
   payment_terms: z.string().optional(),
-  summary: z.string().optional(),
+  context: z.string().min(1, "Campo obrigatório"),
+  objectives: z.string().min(1, "Campo obrigatório"),
+  deliverables: z.string().min(1, "Campo obrigatório"),
+  exclusions: z.string().min(1, "Campo obrigatório"),
+  revisions: z.string().min(1, "Campo obrigatório"),
+  pricing_tiers: z.string().min(1, "Campo obrigatório"),
   scope: z.string().optional(),
 });
 
@@ -36,6 +41,15 @@ const paymentOptions = [
   { value: "50_50", label: "50% no início / 50% na entrega" },
   { value: "100_upfront", label: "100% antecipado" },
   { value: "custom", label: "Personalizado" },
+];
+
+const briefingFields = [
+  { name: "context" as const, label: "Contexto e Dores do Cliente", placeholder: "Descreva o cenário atual do cliente, seus problemas e dores que motivam este projeto..." },
+  { name: "objectives" as const, label: "Objetivos de Negócio (Retorno Esperado)", placeholder: "Quais resultados de negócio o cliente espera? Ex: aumentar conversão, fortalecer marca..." },
+  { name: "deliverables" as const, label: "Entregáveis Rígidos (Escopo Positivo)", placeholder: "Liste todos os itens que serão entregues. Ex: 5 páginas de site, logo principal + variações..." },
+  { name: "exclusions" as const, label: "Exclusões (O que NÃO está incluso)", placeholder: "O que está fora do escopo? Ex: textos/copywriting, fotografia, hospedagem..." },
+  { name: "revisions" as const, label: "Limites de Revisão e Regras de Alteração", placeholder: "Quantas rodadas de revisão? Ex: 2 rodadas inclusas, alterações extras orçadas à parte..." },
+  { name: "pricing_tiers" as const, label: "Estrutura de Investimento (Pacotes)", placeholder: "Descreva os pacotes/valores. Ex: Pacote Básico R$3.000, Pacote Premium R$6.000..." },
 ];
 
 export default function PropostaNova() {
@@ -50,7 +64,11 @@ export default function PropostaNova() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { client_id: "", title: "", price: "", deadline: "", payment_terms: "", summary: "", scope: "" },
+    defaultValues: {
+      client_id: "", title: "", price: "", deadline: "", payment_terms: "",
+      context: "", objectives: "", deliverables: "", exclusions: "", revisions: "", pricing_tiers: "",
+      scope: "",
+    },
   });
 
   useEffect(() => {
@@ -60,9 +78,7 @@ export default function PropostaNova() {
       .select("id, name, document, address, phone, email, company")
       .eq("workspace_id", workspaceId)
       .order("name")
-      .then(({ data }) => {
-        if (data) setClients(data);
-      });
+      .then(({ data }) => { if (data) setClients(data); });
   }, [workspaceId]);
 
   useEffect(() => {
@@ -72,44 +88,42 @@ export default function PropostaNova() {
       .select("language_preference")
       .eq("id", user.id)
       .single()
-      .then(({ data }) => {
-        if (data?.language_preference) setLanguagePref(data.language_preference);
-      });
+      .then(({ data }) => { if (data?.language_preference) setLanguagePref(data.language_preference); });
   }, [user]);
 
   const handleGenerateScope = async () => {
-    const summary = form.getValues("summary");
-    if (!summary?.trim()) {
-      toast({ title: "Preencha o resumo", description: "Descreva brevemente o que será feito para gerar o escopo.", variant: "destructive" });
+    const values = form.getValues();
+    const missingFields = briefingFields.filter((f) => !values[f.name]?.trim());
+    if (missingFields.length > 0) {
+      toast({
+        title: "Preencha todos os campos do briefing",
+        description: `Campos faltando: ${missingFields.map((f) => f.label).join(", ")}`,
+        variant: "destructive",
+      });
       return;
     }
 
-    const clientId = form.getValues("client_id");
-    const selectedClient = clients.find((c) => c.id === clientId);
-    const paymentTermsValue = form.getValues("payment_terms");
-    const paymentLabel = paymentOptions.find((o) => o.value === paymentTermsValue)?.label || paymentTermsValue || "";
+    const selectedClient = clients.find((c) => c.id === values.client_id);
 
     setGeneratingAI(true);
-
     try {
       const { data, error } = await supabase.functions.invoke("generate-proposal", {
         body: {
-          title: form.getValues("title"),
-          clientName: selectedClient?.name || "",
-          briefing: summary,
-          paymentTerms: paymentLabel,
+          context: values.context,
+          objectives: values.objectives,
+          deliverables: values.deliverables,
+          exclusions: values.exclusions,
+          revisions: values.revisions,
+          pricing_tiers: values.pricing_tiers,
+          deadline: values.deadline || "",
           language: languagePref,
+          clientName: selectedClient?.name || "",
+          title: values.title,
         },
       });
 
-      if (error) {
-        throw new Error(error.message || "Falha na comunicação com a IA.");
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
+      if (error) throw new Error(error.message || "Falha na comunicação com a IA.");
+      if (data?.error) throw new Error(data.error);
       if (data?.scope) {
         form.setValue("scope", data.scope);
         toast({ title: "Escopo gerado com sucesso!", description: "Revise o texto gerado pela IA antes de salvar." });
@@ -118,11 +132,7 @@ export default function PropostaNova() {
       }
     } catch (err: any) {
       console.error("AI generation error:", err);
-      toast({
-        title: "Erro ao gerar escopo",
-        description: err.message || "Não foi possível gerar o escopo. Tente novamente.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao gerar escopo", description: err.message || "Não foi possível gerar o escopo.", variant: "destructive" });
     } finally {
       setGeneratingAI(false);
     }
@@ -131,6 +141,16 @@ export default function PropostaNova() {
   const onSubmit = async (values: FormValues) => {
     if (!workspaceId) return;
     setSaving(true);
+
+    const summary = [
+      `## Contexto e Dores do Cliente\n${values.context}`,
+      `## Objetivos de Negócio\n${values.objectives}`,
+      `## Entregáveis Rígidos\n${values.deliverables}`,
+      `## Exclusões\n${values.exclusions}`,
+      `## Limites de Revisão\n${values.revisions}`,
+      `## Estrutura de Investimento\n${values.pricing_tiers}`,
+    ].join("\n\n");
+
     const { error } = await supabase.from("proposals").insert({
       workspace_id: workspaceId,
       client_id: values.client_id,
@@ -138,10 +158,11 @@ export default function PropostaNova() {
       price: values.price ? parseFloat(values.price) : null,
       deadline: values.deadline || null,
       payment_terms: values.payment_terms || null,
-      summary: values.summary || null,
+      summary,
       ai_generated_scope: values.scope || null,
       status: "draft",
     } as any);
+
     setSaving(false);
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
@@ -230,18 +251,20 @@ export default function PropostaNova() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Gerador de Escopo com IA</CardTitle>
+              <CardTitle className="text-lg">Briefing Estruturado para IA</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField control={form.control} name="summary" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Resumo do que será feito</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Descreva brevemente o serviço ou projeto..." rows={3} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {briefingFields.map((bf) => (
+                <FormField key={bf.name} control={form.control} name={bf.name} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{bf.label} *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder={bf.placeholder} rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              ))}
 
               <Button type="button" variant="outline" onClick={handleGenerateScope} disabled={generatingAI}
                 className="border-primary/30 text-primary hover:bg-primary/5">
