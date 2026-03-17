@@ -20,6 +20,9 @@ const clientSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("E-mail inválido").or(z.literal("")),
   company: z.string().optional(),
+  document: z.string().min(1, "CPF/CNPJ é obrigatório"),
+  address: z.string().min(1, "Endereço é obrigatório"),
+  phone: z.string().optional(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -39,7 +42,7 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
-    defaultValues: { name: "", email: "", company: "" },
+    defaultValues: { name: "", email: "", company: "", document: "", address: "", phone: "" },
   });
 
   useEffect(() => {
@@ -48,6 +51,9 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
         name: editingClient?.name ?? "",
         email: editingClient?.email ?? "",
         company: editingClient?.company ?? "",
+        document: editingClient?.document ?? "",
+        address: editingClient?.address ?? "",
+        phone: editingClient?.phone ?? "",
       });
     }
   }, [open, editingClient]);
@@ -60,6 +66,9 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
       name: values.name,
       email: values.email || null,
       company: values.company || null,
+      document: values.document,
+      address: values.address,
+      phone: values.phone || null,
     };
 
     const { error } = isEditing
@@ -83,7 +92,7 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
           <DialogDescription>
@@ -92,45 +101,56 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nome *</FormLabel>
+                <FormControl><Input placeholder="Nome do cliente" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField control={form.control} name="document" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome do cliente" {...field} />
-                  </FormControl>
+                  <FormLabel>CPF/CNPJ *</FormLabel>
+                  <FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
+              )} />
+
+              <FormField control={form.control} name="phone" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>E-mail</FormLabel>
-                  <FormControl>
-                    <Input placeholder="email@exemplo.com" {...field} />
-                  </FormControl>
+                  <FormLabel>WhatsApp/Telefone</FormLabel>
+                  <FormControl><Input placeholder="(00) 00000-0000" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="company"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Empresa</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome da empresa" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              )} />
+            </div>
+
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem>
+                <FormLabel>E-mail</FormLabel>
+                <FormControl><Input placeholder="email@exemplo.com" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="company" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Empresa</FormLabel>
+                <FormControl><Input placeholder="Nome da empresa" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="address" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Endereço Completo *</FormLabel>
+                <FormControl><Input placeholder="Rua, nº, bairro, cidade - UF, CEP" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onOpenChange}>
                 Cancelar

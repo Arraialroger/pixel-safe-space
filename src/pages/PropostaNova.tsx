@@ -30,7 +30,7 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-type Client = { id: string; name: string };
+type Client = { id: string; name: string; document: string | null; address: string | null; phone: string | null; email: string | null; company: string | null };
 
 const paymentOptions = [
   { value: "50_50", label: "50% no início / 50% na entrega" },
@@ -57,7 +57,7 @@ export default function PropostaNova() {
     if (!workspaceId) return;
     supabase
       .from("clients")
-      .select("id, name")
+      .select("id, name, document, address, phone, email, company")
       .eq("workspace_id", workspaceId)
       .order("name")
       .then(({ data }) => {

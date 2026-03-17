@@ -23,8 +23,9 @@ export default function ClientTable({ clients, onEdit, onDelete }: Props) {
         <TableHeader>
           <TableRow>
             <TableHead>Nome</TableHead>
+            <TableHead>CPF/CNPJ</TableHead>
             <TableHead>E-mail</TableHead>
-            <TableHead>Empresa</TableHead>
+            <TableHead>Telefone</TableHead>
             <TableHead>Criado em</TableHead>
             <TableHead className="w-12" />
           </TableRow>
@@ -33,8 +34,9 @@ export default function ClientTable({ clients, onEdit, onDelete }: Props) {
           {clients.map((c) => (
             <TableRow key={c.id}>
               <TableCell className="font-medium">{c.name}</TableCell>
+              <TableCell>{c.document ?? "—"}</TableCell>
               <TableCell>{c.email ?? "—"}</TableCell>
-              <TableCell>{c.company ?? "—"}</TableCell>
+              <TableCell>{c.phone ?? "—"}</TableCell>
               <TableCell>
                 {format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}
               </TableCell>
