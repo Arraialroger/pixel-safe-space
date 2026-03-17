@@ -16,6 +16,33 @@ import {
 } from "@/components/ui/form";
 import type { Client } from "@/pages/Clientes";
 
+function maskDocument(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
+function maskPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 10) {
+    return digits
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d{1,4})$/, "$1-$2");
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+}
+
 const clientSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("E-mail inválido").or(z.literal("")),
@@ -113,7 +140,16 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
               <FormField control={form.control} name="document" render={({ field }) => (
                 <FormItem>
                   <FormLabel>CPF/CNPJ *</FormLabel>
-                  <FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl>
+                  <FormControl>
+                    <Input
+                      placeholder="000.000.000-00"
+                      value={field.value}
+                      onChange={(e) => field.onChange(maskDocument(e.target.value))}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -121,7 +157,16 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
               <FormField control={form.control} name="phone" render={({ field }) => (
                 <FormItem>
                   <FormLabel>WhatsApp/Telefone</FormLabel>
-                  <FormControl><Input placeholder="(00) 00000-0000" {...field} /></FormControl>
+                  <FormControl>
+                    <Input
+                      placeholder="(00) 00000-0000"
+                      value={field.value}
+                      onChange={(e) => field.onChange(maskPhone(e.target.value))}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

@@ -44,38 +44,60 @@ serve(async (req) => {
       throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    const { title, clientName, briefing, paymentTerms, language } = await req.json();
+    const { context, objectives, deliverables, exclusions, revisions, pricing_tiers, deadline, language } = await req.json();
 
-    if (!briefing?.trim()) {
+    if (!context?.trim()) {
       return new Response(
-        JSON.stringify({ error: "O campo briefing é obrigatório." }),
+        JSON.stringify({ error: "O campo 'Contexto e Dores do Cliente' é obrigatório." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const lang = language === "EN" ? "English" : "Portuguese (Brazil)";
 
-    const systemPrompt = `You are a Senior Art Director and B2B Contract Specialist with 15+ years of experience crafting professional proposals for creative agencies.
+    const systemPrompt = `Você é um Diretor de Criação Sênior e um Consultor Estratégico de Negócios B2B experiente. Sua tarefa é redigir uma proposta comercial de design gráfico altamente persuasiva, focada em resultados de negócios e com uma linguagem jurídica/comercial inatacável para proteger o designer contra aumento de escopo.
 
-Your task is to transform a short client briefing into a detailed, persuasive, and legally sound project scope document.
+Regras de Tom e Estilo:
 
-Rules:
-- ALWAYS respond in ${lang}.
-- Organize the scope into clear sections using Markdown headings (##).
-- Required sections: Objective, Deliverables, Timeline/Phases, Payment Terms, Out of Scope, Acceptance Criteria.
-- Be specific and professional. Use bullet points for clarity.
-- The tone should be confident, consultative, and premium.
-- Include a disclaimer at the end stating this is an AI-generated draft for review.
-- Do NOT invent specific prices or deadlines unless provided in the briefing.`;
+Use uma linguagem corporativa, assertiva e empática. Evite jargões de design (não fale sobre 'kerning' ou 'vetorização'), fale sobre conversão, retenção, autoridade e resolução de problemas.
 
-    const userPrompt = `Generate a professional project scope based on the following information:
+O foco principal deve ser o cliente e não o portfólio do designer.
 
-**Proposal Title:** ${title || "Not specified"}
-**Client:** ${clientName || "Not specified"}
-**Briefing:** ${briefing}
-**Payment Terms:** ${paymentTerms || "To be defined"}
+Seja extremamente claro e limitador nas seções de Escopo e Revisões, usando um tom profissional que não deixe brechas para interpretações duplas.
 
-Transform this into a complete, detailed, and persuasive scope document.`;
+RESPONDA SEMPRE EM ${lang}.
+
+Estruture a proposta rigorosamente na seguinte ordem usando formatação Markdown (##):
+
+Introdução e Sumário Executivo
+
+Contexto do Cliente
+
+Objetivos do Projeto
+
+Solução Proposta
+
+Escopo de Entregas (Adicione uma seção explícita e destacada sobre o que está EXCLUÍDO do projeto)
+
+Cronograma e Revisões (Deixe claro que pedidos extras serão orçados à parte)
+
+Investimento
+
+Diferenciais do Trabalho
+
+Próximos Passos`;
+
+    const userPrompt = `Gere uma proposta profissional com base nas seguintes informações:
+
+Dores do Cliente: ${context}
+Objetivos de Negócio: ${objectives}
+Entregáveis do Escopo: ${deliverables}
+Exclusões do Escopo: ${exclusions}
+Limite de Revisões: ${revisions}
+Investimento/Pacotes: ${pricing_tiers}
+Cronograma/Prazos: ${deadline || "A definir"}
+
+Transforme isso num documento de escopo completo, detalhado e persuasivo.`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -90,7 +112,7 @@ Transform this into a complete, detailed, and persuasive scope document.`;
           { role: "user", content: userPrompt },
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 3000,
       }),
     });
 
