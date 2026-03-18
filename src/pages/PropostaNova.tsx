@@ -261,6 +261,9 @@ export default function PropostaNova() {
                     <FormControl>
                       <Textarea placeholder={bf.placeholder} rows={3} {...field} />
                     </FormControl>
+                    {"description" in bf && bf.description && (
+                      <FormDescription>{bf.description}</FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )} />
