@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2, FileDown, Eye, Pencil } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { statusConfig, paymentLabels, formatCurrency, formatDate } from "@/lib/proposal-utils";
+import ContratoPDF from "@/components/propostas/ContratoPDF";
 
 type ProposalDetail = {
   id: string;
@@ -21,8 +23,19 @@ type ProposalDetail = {
   ai_generated_scope: string | null;
   workspace_id: string | null;
   client_name: string;
+  client_company: string | null;
+  client_document: string | null;
+  client_address: string | null;
   accepted_by_name: string | null;
+  accepted_by_email: string | null;
   accepted_at: string | null;
+};
+
+type WorkspaceInfo = {
+  name: string;
+  company_document: string | null;
+  company_address: string | null;
+  logo_url: string | null;
 };
 
 export default function PropostaDetalhe() {
@@ -31,30 +44,41 @@ export default function PropostaDetalhe() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [proposal, setProposal] = useState<ProposalDetail | null>(null);
+  const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [scope, setScope] = useState("");
   const [saving, setSaving] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const publicLink = `${window.location.origin}/p/${id}`;
 
   useEffect(() => {
     if (!workspaceId || !id) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("proposals")
-        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_at, clients(name)")
-        .eq("id", id)
-        .eq("workspace_id", workspaceId)
-        .single();
+      const [proposalRes, wsRes] = await Promise.all([
+        supabase
+          .from("proposals")
+          .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_by_email, accepted_at, clients(name, company, document, address)")
+          .eq("id", id)
+          .eq("workspace_id", workspaceId)
+          .single(),
+        supabase
+          .from("workspaces")
+          .select("name, company_document, company_address")
+          .eq("id", workspaceId)
+          .single(),
+      ]);
 
-      if (error || !data) {
+      if (proposalRes.error || !proposalRes.data) {
         toast({ title: "Proposta não encontrada", description: "Verifique se ela pertence ao seu workspace.", variant: "destructive" });
         navigate("/propostas");
         return;
       }
 
-      const d = data as any;
+      const d = proposalRes.data as any;
       setProposal({
         id: d.id,
         title: d.title,
@@ -65,10 +89,30 @@ export default function PropostaDetalhe() {
         ai_generated_scope: d.ai_generated_scope,
         workspace_id: d.workspace_id,
         client_name: d.clients?.name ?? "—",
+        client_company: d.clients?.company ?? null,
+        client_document: d.clients?.document ?? null,
+        client_address: d.clients?.address ?? null,
         accepted_by_name: d.accepted_by_name,
+        accepted_by_email: d.accepted_by_email,
         accepted_at: d.accepted_at,
       });
       setScope(d.ai_generated_scope ?? "");
+
+      if (wsRes.data) {
+        const ws = wsRes.data as any;
+        // Fetch logo from profiles of workspace owner or use workspace data
+        let logoUrl: string | null = null;
+        const { data: pubData } = await supabase.rpc("get_workspace_public", { _workspace_id: workspaceId });
+        if (pubData && pubData.length > 0) logoUrl = pubData[0].logo_url ?? null;
+
+        setWorkspace({
+          name: ws.name,
+          company_document: ws.company_document,
+          company_address: ws.company_address,
+          logo_url: logoUrl,
+        });
+      }
+
       setLoading(false);
     })();
   }, [workspaceId, id]);
@@ -109,6 +153,28 @@ export default function PropostaDetalhe() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!pdfRef.current) return;
+    setGeneratingPdf(true);
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      await html2pdf()
+        .set({
+          margin: 0,
+          filename: `contrato-${proposal?.title?.replace(/\s+/g, "-").toLowerCase() ?? "proposta"}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(pdfRef.current)
+        .save();
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast({ title: "Erro ao gerar PDF", variant: "destructive" });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -126,14 +192,17 @@ export default function PropostaDetalhe() {
   const isPending = proposal.status === "pending";
   const isAccepted = proposal.status === "accepted";
 
-
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <Button variant="ghost" size="sm" onClick={() => navigate("/propostas")} className="gap-1 text-muted-foreground">
           <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
         </Button>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={handleDownloadPdf} disabled={generatingPdf} className="gap-2">
+            {generatingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+            Baixar Contrato (PDF)
+          </Button>
           {isDraft && (
             <Button onClick={() => handleStatusChange("pending")} disabled={changingStatus} className="gap-2">
               {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -160,7 +229,6 @@ export default function PropostaDetalhe() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Header card */}
           <Card>
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
@@ -189,22 +257,38 @@ export default function PropostaDetalhe() {
             </CardContent>
           </Card>
 
-          {/* Scope editor */}
+          {/* Scope editor / preview */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Escopo do Projeto</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Escopo do Projeto</CardTitle>
+                {!isAccepted && scope && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPreviewMode(!previewMode)}
+                    className="gap-1 text-muted-foreground"
+                  >
+                    {previewMode ? <><Pencil className="h-4 w-4" /> Editar</> : <><Eye className="h-4 w-4" /> Visualizar</>}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Textarea
-                value={scope}
-                onChange={(e) => setScope(e.target.value)}
-                rows={16}
-                placeholder="Nenhum escopo definido ainda..."
-                className="font-mono text-sm"
-                readOnly={isAccepted}
-                disabled={isAccepted}
-              />
-              {!isAccepted && (
+              {isAccepted || previewMode ? (
+                <div className="prose prose-sm max-w-none dark:prose-invert rounded-lg border border-border bg-card p-6">
+                  <ReactMarkdown>{scope || "*Nenhum escopo definido ainda...*"}</ReactMarkdown>
+                </div>
+              ) : (
+                <Textarea
+                  value={scope}
+                  onChange={(e) => setScope(e.target.value)}
+                  rows={16}
+                  placeholder="Nenhum escopo definido ainda..."
+                  className="font-mono text-sm"
+                />
+              )}
+              {!isAccepted && !previewMode && (
                 <div className="flex justify-end">
                   <Button onClick={handleSave} disabled={saving}>
                     {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Alterações"}
@@ -249,6 +333,23 @@ export default function PropostaDetalhe() {
           </Card>
         </div>
       </div>
+
+      {/* Hidden PDF template */}
+      {proposal && workspace && (
+        <div className="fixed left-[-9999px] top-0">
+          <ContratoPDF
+            ref={pdfRef}
+            proposal={proposal}
+            workspace={workspace}
+            client={{
+              name: proposal.client_name,
+              company: proposal.client_company,
+              document: proposal.client_document,
+              address: proposal.client_address,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

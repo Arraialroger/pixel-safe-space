@@ -236,8 +236,8 @@ export default function PropostaPublica() {
             <Separator />
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-foreground">Escopo do Projeto</h3>
-              <div className="rounded-lg border border-border bg-card p-6 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                {proposal.ai_generated_scope}
+              <div className="prose prose-sm max-w-none dark:prose-invert rounded-lg border border-border bg-card p-6">
+                <ReactMarkdown>{proposal.ai_generated_scope}</ReactMarkdown>
               </div>
             </div>
           </>
