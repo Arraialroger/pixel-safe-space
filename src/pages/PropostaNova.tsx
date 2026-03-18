@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+  Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -44,12 +44,12 @@ const paymentOptions = [
 ];
 
 const briefingFields = [
-  { name: "context" as const, label: "Contexto e Dores do Cliente", placeholder: "Descreva o cenário atual do cliente, seus problemas e dores que motivam este projeto..." },
-  { name: "objectives" as const, label: "Objetivos de Negócio (Retorno Esperado)", placeholder: "Quais resultados de negócio o cliente espera? Ex: aumentar conversão, fortalecer marca..." },
+  { name: "context" as const, label: "Contexto e Dores do Cliente", placeholder: "Descreva o cenário atual do cliente, seus problemas e dores que motivam este projeto...", description: "Ex: O cliente está com uma marca ultrapassada e perdendo vendas para o principal concorrente." },
+  { name: "objectives" as const, label: "Objetivos de Negócio (Retorno Esperado)", placeholder: "Quais resultados de negócio o cliente espera? Ex: aumentar conversão, fortalecer marca...", description: "Ex: Aumentar a percepção de valor para poder cobrar mais caro pelos produtos." },
   { name: "deliverables" as const, label: "Entregáveis Rígidos (Escopo Positivo)", placeholder: "Liste todos os itens que serão entregues. Ex: 5 páginas de site, logo principal + variações..." },
-  { name: "exclusions" as const, label: "Exclusões (O que NÃO está incluso)", placeholder: "O que está fora do escopo? Ex: textos/copywriting, fotografia, hospedagem..." },
+  { name: "exclusions" as const, label: "Exclusões (O que NÃO está incluso)", placeholder: "O que está fora do escopo? Ex: textos/copywriting, fotografia, hospedagem...", description: "A sua armadura. Ex: Não inclui redação de textos, banco de imagens ou gestão de tráfego." },
   { name: "revisions" as const, label: "Limites de Revisão e Regras de Alteração", placeholder: "Quantas rodadas de revisão? Ex: 2 rodadas inclusas, alterações extras orçadas à parte..." },
-  { name: "pricing_tiers" as const, label: "Estrutura de Investimento (Pacotes)", placeholder: "Descreva os pacotes/valores. Ex: Pacote Básico R$3.000, Pacote Premium R$6.000..." },
+  { name: "pricing_tiers" as const, label: "Estrutura de Investimento (Pacotes)", placeholder: "Descreva os pacotes/valores. Ex: Pacote Básico R$3.000, Pacote Premium R$6.000...", description: "Ofereça pacotes para ancoragem. Ex: Pacote Essencial (R$ 2k) vs. Pacote Premium (R$ 5k)." },
 ];
 
 export default function PropostaNova() {
@@ -261,6 +261,9 @@ export default function PropostaNova() {
                     <FormControl>
                       <Textarea placeholder={bf.placeholder} rows={3} {...field} />
                     </FormControl>
+                    {"description" in bf && bf.description && (
+                      <FormDescription>{bf.description}</FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )} />
