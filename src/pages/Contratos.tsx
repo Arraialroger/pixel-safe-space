@@ -34,6 +34,7 @@ function formatCurrency(value: number | null) {
 
 export default function Contratos() {
   const { workspaceId } = useWorkspace();
+  const navigate = useNavigate();
   const [contracts, setContracts] = useState<ContractWithClient[]>([]);
   const [loading, setLoading] = useState(true);
 
