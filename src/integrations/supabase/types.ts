@@ -58,6 +58,70 @@ export type Database = {
           },
         ]
       }
+      contracts: {
+        Row: {
+          client_id: string
+          content_deliverables: string | null
+          content_exclusions: string | null
+          content_revisions: string | null
+          created_at: string
+          id: string
+          payment_link: string | null
+          payment_value: number | null
+          proposal_id: string | null
+          status: string
+          workspace_id: string
+        }
+        Insert: {
+          client_id: string
+          content_deliverables?: string | null
+          content_exclusions?: string | null
+          content_revisions?: string | null
+          created_at?: string
+          id?: string
+          payment_link?: string | null
+          payment_value?: number | null
+          proposal_id?: string | null
+          status?: string
+          workspace_id: string
+        }
+        Update: {
+          client_id?: string
+          content_deliverables?: string | null
+          content_exclusions?: string | null
+          content_revisions?: string | null
+          created_at?: string
+          id?: string
+          payment_link?: string | null
+          payment_value?: number | null
+          proposal_id?: string | null
+          status?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
