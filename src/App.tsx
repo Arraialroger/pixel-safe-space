@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Propostas from "./pages/Propostas";
 import PropostaNova from "./pages/PropostaNova";
+import Contratos from "./pages/Contratos";
 import PropostaDetalhe from "./pages/PropostaDetalhe";
 import PropostaPublica from "./pages/PropostaPublica";
 import Clientes from "./pages/Clientes";
@@ -61,6 +62,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AppLayout><PropostaDetalhe /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/contratos"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><Contratos /></AppLayout>
                   </ProtectedRoute>
                 }
               />
