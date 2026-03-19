@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FileCheck, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -33,6 +34,7 @@ function formatCurrency(value: number | null) {
 
 export default function Contratos() {
   const { workspaceId } = useWorkspace();
+  const navigate = useNavigate();
   const [contracts, setContracts] = useState<ContractWithClient[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -106,7 +108,7 @@ export default function Contratos() {
               {contracts.map((c) => {
                 const sc = statusConfig[c.status] ?? statusConfig.draft;
                 return (
-                  <TableRow key={c.id}>
+                  <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/contratos/${c.id}`)}>
                     <TableCell className="font-medium">{c.client_name}</TableCell>
                     <TableCell>
                       <Badge variant={sc.variant} className={sc.className}>

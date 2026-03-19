@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2, FileDown, Eye, Pencil } from "lucide-react";
+import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2, Eye, Pencil, FileCheck } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { statusConfig, paymentLabels, formatCurrency, formatDate } from "@/lib/proposal-utils";
-import ContratoPDF from "@/components/propostas/ContratoPDF";
 
 type ProposalDetail = {
   id: string;
@@ -22,6 +21,7 @@ type ProposalDetail = {
   payment_terms: string | null;
   ai_generated_scope: string | null;
   workspace_id: string | null;
+  client_id: string;
   client_name: string;
   client_company: string | null;
   client_document: string | null;
@@ -29,14 +29,32 @@ type ProposalDetail = {
   accepted_by_name: string | null;
   accepted_by_email: string | null;
   accepted_at: string | null;
+  summary: string | null;
 };
 
-type WorkspaceInfo = {
-  name: string;
-  company_document: string | null;
-  company_address: string | null;
-  logo_url: string | null;
-};
+function parseSummary(summary: string | null) {
+  if (!summary) return { deliverables: "", exclusions: "", revisions: "" };
+
+  const sections: Record<string, string> = {};
+  const parts = summary.split(/^## /m);
+  for (const part of parts) {
+    if (!part.trim()) continue;
+    const newlineIdx = part.indexOf("\n");
+    const header = (newlineIdx >= 0 ? part.slice(0, newlineIdx) : part).trim();
+    const body = newlineIdx >= 0 ? part.slice(newlineIdx + 1).trim() : "";
+    sections[header] = body;
+  }
+
+  const deliverables = sections["Entregáveis Rígidos"] ?? "";
+  const exclusions = sections["Exclusões"] ?? "";
+  const revisions = sections["Limites de Revisão"] ?? "";
+
+  if (!deliverables && !exclusions && !revisions) {
+    return { deliverables: summary, exclusions: "", revisions: "" };
+  }
+
+  return { deliverables, exclusions, revisions };
+}
 
 export default function PropostaDetalhe() {
   const { id } = useParams<{ id: string }>();
@@ -44,41 +62,32 @@ export default function PropostaDetalhe() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [proposal, setProposal] = useState<ProposalDetail | null>(null);
-  const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [scope, setScope] = useState("");
   const [saving, setSaving] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-  const pdfRef = useRef<HTMLDivElement>(null);
+  const [generatingContract, setGeneratingContract] = useState(false);
 
   const publicLink = `${window.location.origin}/p/${id}`;
 
   useEffect(() => {
     if (!workspaceId || !id) return;
     (async () => {
-      const [proposalRes, wsRes] = await Promise.all([
-        supabase
-          .from("proposals")
-          .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_by_email, accepted_at, clients(name, company, document, address)")
-          .eq("id", id)
-          .eq("workspace_id", workspaceId)
-          .single(),
-        supabase
-          .from("workspaces")
-          .select("name, company_document, company_address")
-          .eq("id", workspaceId)
-          .single(),
-      ]);
+      const { data: d, error } = await supabase
+        .from("proposals")
+        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_by_email, accepted_at, summary, clients(name, company, document, address)")
+        .eq("id", id)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
 
-      if (proposalRes.error || !proposalRes.data) {
+      if (error || !d) {
         toast({ title: "Proposta não encontrada", description: "Verifique se ela pertence ao seu workspace.", variant: "destructive" });
         navigate("/propostas");
         return;
       }
 
-      const d = proposalRes.data as any;
+      const client = (d as any).clients;
       setProposal({
         id: d.id,
         title: d.title,
@@ -88,31 +97,17 @@ export default function PropostaDetalhe() {
         payment_terms: d.payment_terms,
         ai_generated_scope: d.ai_generated_scope,
         workspace_id: d.workspace_id,
-        client_name: d.clients?.name ?? "—",
-        client_company: d.clients?.company ?? null,
-        client_document: d.clients?.document ?? null,
-        client_address: d.clients?.address ?? null,
+        client_id: d.client_id,
+        client_name: client?.name ?? "—",
+        client_company: client?.company ?? null,
+        client_document: client?.document ?? null,
+        client_address: client?.address ?? null,
         accepted_by_name: d.accepted_by_name,
         accepted_by_email: d.accepted_by_email,
         accepted_at: d.accepted_at,
+        summary: d.summary,
       });
       setScope(d.ai_generated_scope ?? "");
-
-      if (wsRes.data) {
-        const ws = wsRes.data as any;
-        // Fetch logo from profiles of workspace owner or use workspace data
-        let logoUrl: string | null = null;
-        const { data: pubData } = await supabase.rpc("get_workspace_public", { _workspace_id: workspaceId });
-        if (pubData && pubData.length > 0) logoUrl = pubData[0].logo_url ?? null;
-
-        setWorkspace({
-          name: ws.name,
-          company_document: ws.company_document,
-          company_address: ws.company_address,
-          logo_url: logoUrl,
-        });
-      }
-
       setLoading(false);
     })();
   }, [workspaceId, id]);
@@ -153,27 +148,36 @@ export default function PropostaDetalhe() {
     }
   };
 
-  const handleDownloadPdf = async () => {
-    if (!pdfRef.current) return;
-    setGeneratingPdf(true);
-    try {
-      const html2pdf = (await import("html2pdf.js")).default;
-      await html2pdf()
-        .set({
-          margin: 0,
-          filename: `contrato-${proposal?.title?.replace(/\s+/g, "-").toLowerCase() ?? "proposta"}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        })
-        .from(pdfRef.current)
-        .save();
-    } catch (err) {
-      console.error("PDF generation error:", err);
-      toast({ title: "Erro ao gerar PDF", variant: "destructive" });
-    } finally {
-      setGeneratingPdf(false);
+  const handleGenerateContract = async () => {
+    if (!proposal || !workspaceId) return;
+    setGeneratingContract(true);
+
+    const { deliverables, exclusions, revisions } = parseSummary(proposal.summary);
+
+    const { data, error } = await supabase
+      .from("contracts")
+      .insert({
+        workspace_id: workspaceId,
+        client_id: proposal.client_id,
+        proposal_id: proposal.id,
+        content_deliverables: deliverables || null,
+        content_exclusions: exclusions || null,
+        content_revisions: revisions || null,
+        payment_value: proposal.price,
+        status: "draft",
+      } as any)
+      .select("id")
+      .single();
+
+    setGeneratingContract(false);
+
+    if (error || !data) {
+      toast({ title: "Erro ao gerar contrato", description: error?.message, variant: "destructive" });
+      return;
     }
+
+    toast({ title: "Contrato criado com sucesso!" });
+    navigate(`/contratos/${data.id}`);
   };
 
   if (loading) {
@@ -199,10 +203,12 @@ export default function PropostaDetalhe() {
           <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
         </Button>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={handleDownloadPdf} disabled={generatingPdf} className="gap-2">
-            {generatingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-            Baixar Contrato (PDF)
-          </Button>
+          {isAccepted && (
+            <Button onClick={handleGenerateContract} disabled={generatingContract} className="gap-2">
+              {generatingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
+              Gerar Contrato
+            </Button>
+          )}
           {isDraft && (
             <Button onClick={() => handleStatusChange("pending")} disabled={changingStatus} className="gap-2">
               {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -227,7 +233,6 @@ export default function PropostaDetalhe() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
@@ -257,18 +262,12 @@ export default function PropostaDetalhe() {
             </CardContent>
           </Card>
 
-          {/* Scope editor / preview */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Escopo do Projeto</CardTitle>
                 {!isAccepted && scope && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setPreviewMode(!previewMode)}
-                    className="gap-1 text-muted-foreground"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setPreviewMode(!previewMode)} className="gap-1 text-muted-foreground">
                     {previewMode ? <><Pencil className="h-4 w-4" /> Editar</> : <><Eye className="h-4 w-4" /> Visualizar</>}
                   </Button>
                 )}
@@ -299,7 +298,6 @@ export default function PropostaDetalhe() {
           </Card>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -320,9 +318,7 @@ export default function PropostaDetalhe() {
                   <p className="text-xs text-green-700">O link público está ativo e pronto para envio.</p>
                 </div>
               )}
-              <p className="text-sm text-muted-foreground">
-                Envie este link para o cliente visualizar a proposta.
-              </p>
+              <p className="text-sm text-muted-foreground">Envie este link para o cliente visualizar a proposta.</p>
               <div className="flex gap-2">
                 <Input value={publicLink} readOnly className="text-xs" />
                 <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link" disabled={isDraft}>
@@ -333,23 +329,6 @@ export default function PropostaDetalhe() {
           </Card>
         </div>
       </div>
-
-      {/* Hidden PDF template */}
-      {proposal && workspace && (
-        <div className="fixed left-[-9999px] top-0">
-          <ContratoPDF
-            ref={pdfRef}
-            proposal={proposal}
-            workspace={workspace}
-            client={{
-              name: proposal.client_name,
-              company: proposal.client_company,
-              document: proposal.client_document,
-              address: proposal.client_address,
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }
