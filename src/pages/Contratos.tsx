@@ -108,7 +108,7 @@ export default function Contratos() {
               {contracts.map((c) => {
                 const sc = statusConfig[c.status] ?? statusConfig.draft;
                 return (
-                  <TableRow key={c.id}>
+                  <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/contratos/${c.id}`)}>
                     <TableCell className="font-medium">{c.client_name}</TableCell>
                     <TableCell>
                       <Badge variant={sc.variant} className={sc.className}>

@@ -75,6 +75,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/contratos/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><ContratoDetalhe /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/clientes"
                 element={
                   <ProtectedRoute>
