@@ -13,6 +13,7 @@ import Register from "./pages/Register";
 import Propostas from "./pages/Propostas";
 import PropostaNova from "./pages/PropostaNova";
 import Contratos from "./pages/Contratos";
+import ContratoDetalhe from "./pages/ContratoDetalhe";
 import PropostaDetalhe from "./pages/PropostaDetalhe";
 import PropostaPublica from "./pages/PropostaPublica";
 import Clientes from "./pages/Clientes";
