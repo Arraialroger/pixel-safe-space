@@ -18,6 +18,7 @@ import {
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Propostas", url: "/propostas", icon: FileText },
+  { title: "Contratos", url: "/contratos", icon: FileCheck },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Estúdio/Agência", url: "/configuracoes-workspace", icon: Building2 },
