@@ -8,7 +8,7 @@ export const statusConfig: Record<
     className: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100",
   },
   pending: {
-    label: "Aguardando Aceite",
+    label: "Em Negociação",
     variant: "default",
     className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100",
   },

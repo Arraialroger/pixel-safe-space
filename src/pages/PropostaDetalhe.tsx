@@ -298,13 +298,28 @@ export default function PropostaDetalhe() {
                   <p className="text-xs text-green-700">O link público está ativo e pronto para envio.</p>
                 </div>
               )}
-              <p className="text-sm text-muted-foreground">Envie este link para o cliente visualizar a proposta.</p>
-              <div className="flex gap-2">
-                <Input value={publicLink} readOnly className="text-xs" />
-                <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link" disabled={isDraft}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
+              {(() => {
+                const cleanPhone = proposal.client_phone?.replace(/\D/g, "") ?? "";
+                const whatsappMsg = encodeURIComponent(`Olá! Segue o link da proposta para você analisar: ${publicLink}`);
+                const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
+                return (
+                  <>
+                    {whatsappUrl && !isDraft && (
+                      <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                        <Button className="w-full gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white">
+                          <MessageCircle className="h-4 w-4" /> Enviar via WhatsApp
+                        </Button>
+                      </a>
+                    )}
+                    <div className="flex gap-2">
+                      <Input value={publicLink} readOnly className="text-xs" />
+                      <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link" disabled={isDraft}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>

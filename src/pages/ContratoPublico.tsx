@@ -342,7 +342,9 @@ export default function ContratoPublico() {
               <a href={contract.payment_link} target="_blank" rel="noopener noreferrer" className="block">
                 <Button size="lg" className="w-full text-lg py-6 gap-3 animate-pulse">
                   <ExternalLink className="h-5 w-5" />
-                  Pagar Entrada e Liberar Projeto
+                  {contract.down_payment != null
+                    ? `Pagar Entrada de ${formatBRL(contract.down_payment)} e Liberar Projeto`
+                    : "Pagar Entrada e Liberar Projeto"}
                 </Button>
               </a>
             )}

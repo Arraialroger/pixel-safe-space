@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Link as LinkIcon, Loader2, Save, Send } from "lucide-react";
+import { ArrowLeft, Copy, Link as LinkIcon, Loader2, MessageCircle, Save, Send } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -21,17 +21,6 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
   paid: { label: "Pago", variant: "default", className: "bg-primary" },
 };
 
-type ContractDetail = {
-  id: string;
-  status: string;
-  content_deliverables: string;
-  content_exclusions: string;
-  content_revisions: string;
-  payment_value: number | null;
-  payment_link: string;
-  client_name: string;
-};
-
 export default function ContratoDetalhe() {
   const { id } = useParams<{ id: string }>();
   const { workspaceId } = useWorkspace();
@@ -44,20 +33,24 @@ export default function ContratoDetalhe() {
 
   const [status, setStatus] = useState("draft");
   const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
   const [deliverables, setDeliverables] = useState("");
   const [exclusions, setExclusions] = useState("");
   const [revisions, setRevisions] = useState("");
   const [paymentValue, setPaymentValue] = useState<string>("");
+  const [downPayment, setDownPayment] = useState<string>("");
   const [paymentLink, setPaymentLink] = useState("");
   const [deadline, setDeadline] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
+
+  const contractLink = `${window.location.origin}/c/${id}`;
 
   useEffect(() => {
     if (!workspaceId || !id) return;
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, clients(name)")
+        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, down_payment, clients(name, phone)")
         .eq("id", id)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
@@ -71,10 +64,12 @@ export default function ContratoDetalhe() {
       const c = data as any;
       setStatus(c.status);
       setClientName(c.clients?.name ?? "—");
+      setClientPhone(c.clients?.phone ?? "");
       setDeliverables(c.content_deliverables ?? "");
       setExclusions(c.content_exclusions ?? "");
       setRevisions(c.content_revisions ?? "");
       setPaymentValue(c.payment_value != null ? String(c.payment_value) : "");
+      setDownPayment(c.down_payment != null ? String(c.down_payment) : "");
       setPaymentLink(c.payment_link ?? "");
       setDeadline(c.deadline ?? "");
       setPaymentTerms(c.payment_terms ?? "");
@@ -92,6 +87,7 @@ export default function ContratoDetalhe() {
         content_exclusions: exclusions || null,
         content_revisions: revisions || null,
         payment_value: paymentValue ? Number(paymentValue) : null,
+        down_payment: downPayment ? Number(downPayment) : null,
         payment_link: paymentLink || null,
         deadline: deadline || null,
         payment_terms: paymentTerms || null,
@@ -121,6 +117,11 @@ export default function ContratoDetalhe() {
     }
   };
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(contractLink);
+    toast({ title: "Link copiado!", description: contractLink });
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -132,6 +133,9 @@ export default function ContratoDetalhe() {
 
   const sc = statusConfig[status] ?? statusConfig.draft;
   const isDraft = status === "draft";
+  const cleanPhone = clientPhone.replace(/\D/g, "");
+  const whatsappMsg = encodeURIComponent(`Olá! O contrato do nosso projeto está pronto para assinatura digital. Segue o link: ${contractLink}`);
+  const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -140,17 +144,15 @@ export default function ContratoDetalhe() {
           <ArrowLeft className="h-4 w-4" /> Voltar para Contratos
         </Button>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1"
-            onClick={() => {
-              const url = `${window.location.origin}/c/${id}`;
-              navigator.clipboard.writeText(url);
-              toast({ title: "Link copiado!", description: url });
-            }}
-          >
-            <LinkIcon className="h-4 w-4" /> Copiar Link do Contrato
+          {whatsappUrl && (
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" className="gap-1 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white">
+                <MessageCircle className="h-4 w-4" /> Enviar Contrato (WhatsApp)
+              </Button>
+            </a>
+          )}
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink} title="Copiar link do contrato">
+            <Copy className="h-4 w-4" />
           </Button>
           <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
         </div>
@@ -178,10 +180,14 @@ export default function ContratoDetalhe() {
             <Textarea id="revisions" value={revisions} onChange={(e) => setRevisions(e.target.value)} rows={4} placeholder="Limites e regras de revisões..." />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="payment_value">Valor Total (R$)</Label>
               <Input id="payment_value" type="number" min="0" step="0.01" value={paymentValue} onChange={(e) => setPaymentValue(e.target.value)} placeholder="0,00" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="down_payment">Valor da Entrada (R$)</Label>
+              <Input id="down_payment" type="number" min="0" step="0.01" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} placeholder="0,00" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="deadline">Prazo</Label>
