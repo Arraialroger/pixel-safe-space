@@ -237,22 +237,7 @@ export default function PropostaDetalhe() {
                 <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Valor</p>
-                  <p className="font-medium">{formatCurrency(proposal.price)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Prazo</p>
-                  <p className="font-medium">{proposal.deadline ?? "—"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Pagamento</p>
-                  <p className="font-medium">{proposal.payment_terms ? (paymentLabels[proposal.payment_terms] ?? proposal.payment_terms) : "—"}</p>
-                </div>
-              </div>
-            </CardContent>
+            
           </Card>
 
           <Card>

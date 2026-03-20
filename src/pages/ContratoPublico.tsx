@@ -238,6 +238,12 @@ export default function ContratoPublico() {
             <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 6 — Do Investimento, Inadimplência e Rescisão</h2>
             <p className="text-sm leading-relaxed">
               6.1. O valor total acordado para a execução do escopo é de: <strong>{contract.payment_value != null ? formatBRL(contract.payment_value) : "a definir"}</strong>.
+              {contract.deadline && <> O prazo estimado para conclusão é de: <strong>{contract.deadline}</strong>.</>}
+              {contract.payment_terms && <> Condições de pagamento: <strong>{
+                contract.payment_terms === "50_50" ? "50% no início / 50% na entrega" :
+                contract.payment_terms === "100_upfront" ? "100% antecipado" :
+                "Personalizado"
+              }</strong>.</>}
             </p>
             <p className="text-sm leading-relaxed mt-3">
               6.2. O atraso no pagamento de qualquer parcela sujeitará o CONTRATANTE a uma multa moratória de 2% (dois por cento) sobre o valor devido, além de juros de 1% (um por cento) ao mês, e poderá acarretar a paralisação imediata dos serviços.

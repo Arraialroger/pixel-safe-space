@@ -184,6 +184,26 @@ export default function ContratoDetalhe() {
               <Input id="payment_value" type="number" min="0" step="0.01" value={paymentValue} onChange={(e) => setPaymentValue(e.target.value)} placeholder="0,00" />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="deadline">Prazo</Label>
+              <Input id="deadline" value={deadline} onChange={(e) => setDeadline(e.target.value)} placeholder="Ex: 15 dias úteis" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="payment_terms">Condições de Pagamento</Label>
+              <Select value={paymentTerms} onValueChange={setPaymentTerms}>
+                <SelectTrigger id="payment_terms">
+                  <SelectValue placeholder="Selecione as condições" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50_50">50% no início / 50% na entrega</SelectItem>
+                  <SelectItem value="100_upfront">100% antecipado</SelectItem>
+                  <SelectItem value="custom">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="payment_link">Link de Pagamento da Entrada</Label>
               <Input id="payment_link" type="url" value={paymentLink} onChange={(e) => setPaymentLink(e.target.value)} placeholder="https://..." />
             </div>

@@ -200,29 +200,6 @@ export default function PropostaPublica() {
 
         <Separator />
 
-        {/* Details grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <Card className="border-border">
-            <CardContent className="pt-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Valor</p>
-              <p className="text-xl font-semibold text-foreground">{formatCurrency(proposal.price)}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border">
-            <CardContent className="pt-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Prazo</p>
-              <p className="text-xl font-semibold text-foreground">{proposal.deadline ?? "—"}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border">
-            <CardContent className="pt-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Pagamento</p>
-              <p className="text-lg font-semibold text-foreground">
-                {proposal.payment_terms ? (paymentLabels[proposal.payment_terms] ?? proposal.payment_terms) : "—"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Scope */}
         {proposal.ai_generated_scope && (
