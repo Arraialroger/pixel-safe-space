@@ -93,6 +93,8 @@ export default function ContratoDetalhe() {
         content_revisions: revisions || null,
         payment_value: paymentValue ? Number(paymentValue) : null,
         payment_link: paymentLink || null,
+        deadline: deadline || null,
+        payment_terms: paymentTerms || null,
       } as any)
       .eq("id", id);
     setSaving(false);
