@@ -183,7 +183,7 @@ export default function ContratoPublico() {
           <section className="mb-6">
             <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 1 — Do Objeto e Escopo</h2>
             {contract.content_deliverables ? (
-              <ReactMarkdown className="text-sm leading-relaxed">{contract.content_deliverables}</ReactMarkdown>
+              <div className="text-sm leading-relaxed"><ReactMarkdown>{contract.content_deliverables}</ReactMarkdown></div>
             ) : (
               <p className="text-sm text-muted-foreground italic">Sem entregáveis definidos.</p>
             )}
