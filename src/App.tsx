@@ -108,6 +108,7 @@ const App = () => (
                 }
               />
               <Route path="/p/:id" element={<PropostaPublica />} />
+              <Route path="/c/:id" element={<ContratoPublico />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </WorkspaceProvider>

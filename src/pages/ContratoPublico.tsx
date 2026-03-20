@@ -211,7 +211,7 @@ export default function ContratoPublico() {
           <section className="mb-6">
             <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 4 — Dos Limites de Revisão e Aprovações</h2>
             {contract.content_revisions ? (
-              <ReactMarkdown className="text-sm leading-relaxed">{contract.content_revisions}</ReactMarkdown>
+              <div className="text-sm leading-relaxed"><ReactMarkdown>{contract.content_revisions}</ReactMarkdown></div>
             ) : (
               <p className="text-sm text-muted-foreground italic">Sem regras de revisão definidas.</p>
             )}
