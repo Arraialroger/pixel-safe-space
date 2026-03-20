@@ -16,6 +16,7 @@ import Contratos from "./pages/Contratos";
 import ContratoDetalhe from "./pages/ContratoDetalhe";
 import PropostaDetalhe from "./pages/PropostaDetalhe";
 import PropostaPublica from "./pages/PropostaPublica";
+import ContratoPublico from "./pages/ContratoPublico";
 import Clientes from "./pages/Clientes";
 import Configuracoes from "./pages/Configuracoes";
 import ConfiguracoesWorkspace from "./pages/ConfiguracoesWorkspace";
