@@ -88,10 +88,7 @@ export default function PropostaDetalhe() {
       setProposal({
         id: d.id,
         title: d.title,
-        price: d.price,
-        deadline: d.deadline,
         status: d.status,
-        payment_terms: d.payment_terms,
         ai_generated_scope: d.ai_generated_scope,
         workspace_id: d.workspace_id,
         client_id: d.client_id,
