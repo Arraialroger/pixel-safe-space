@@ -89,6 +89,7 @@ export default function ConfiguracoesWorkspace() {
         name: values.name,
         company_document: values.company_document || null,
         company_address: values.company_address || null,
+        whatsapp: values.whatsapp || null,
         mercado_pago_token: values.mercado_pago_token || null,
         stripe_token: values.stripe_token || null,
       } as any)
