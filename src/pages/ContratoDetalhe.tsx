@@ -76,6 +76,8 @@ export default function ContratoDetalhe() {
       setRevisions(c.content_revisions ?? "");
       setPaymentValue(c.payment_value != null ? String(c.payment_value) : "");
       setPaymentLink(c.payment_link ?? "");
+      setDeadline(c.deadline ?? "");
+      setPaymentTerms(c.payment_terms ?? "");
       setLoading(false);
     })();
   }, [workspaceId, id]);
