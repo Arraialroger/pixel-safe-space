@@ -66,6 +66,7 @@ export type Database = {
           content_revisions: string | null
           created_at: string
           deadline: string | null
+          down_payment: number | null
           id: string
           payment_link: string | null
           payment_terms: string | null
@@ -84,6 +85,7 @@ export type Database = {
           content_revisions?: string | null
           created_at?: string
           deadline?: string | null
+          down_payment?: number | null
           id?: string
           payment_link?: string | null
           payment_terms?: string | null
@@ -102,6 +104,7 @@ export type Database = {
           content_revisions?: string | null
           created_at?: string
           deadline?: string | null
+          down_payment?: number | null
           id?: string
           payment_link?: string | null
           payment_terms?: string | null
@@ -175,10 +178,7 @@ export type Database = {
           ai_generated_scope: string | null
           client_id: string
           created_at: string
-          deadline: string | null
           id: string
-          payment_terms: string | null
-          price: number | null
           status: string
           summary: string | null
           title: string
@@ -191,10 +191,7 @@ export type Database = {
           ai_generated_scope?: string | null
           client_id: string
           created_at?: string
-          deadline?: string | null
           id?: string
-          payment_terms?: string | null
-          price?: number | null
           status?: string
           summary?: string | null
           title: string
@@ -207,10 +204,7 @@ export type Database = {
           ai_generated_scope?: string | null
           client_id?: string
           created_at?: string
-          deadline?: string | null
           id?: string
-          payment_terms?: string | null
-          price?: number | null
           status?: string
           summary?: string | null
           title?: string
