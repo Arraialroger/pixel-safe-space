@@ -20,6 +20,7 @@ type ProposalDetail = {
   workspace_id: string | null;
   client_id: string;
   client_name: string;
+  client_phone: string | null;
   client_company: string | null;
   client_document: string | null;
   client_address: string | null;
