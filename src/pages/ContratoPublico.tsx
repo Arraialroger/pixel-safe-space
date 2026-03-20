@@ -193,7 +193,7 @@ export default function ContratoPublico() {
           <section className="mb-6">
             <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 2 — Das Exclusões do Escopo</h2>
             {contract.content_exclusions ? (
-              <ReactMarkdown className="text-sm leading-relaxed">{contract.content_exclusions}</ReactMarkdown>
+              <div className="text-sm leading-relaxed"><ReactMarkdown>{contract.content_exclusions}</ReactMarkdown></div>
             ) : (
               <p className="text-sm text-muted-foreground italic">Sem exclusões definidas.</p>
             )}
