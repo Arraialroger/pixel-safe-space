@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, Send } from "lucide-react";
+import { ArrowLeft, Link as LinkIcon, Loader2, Save, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useToast } from "@/hooks/use-toast";
@@ -130,7 +130,21 @@ export default function ContratoDetalhe() {
         <Button variant="ghost" size="sm" onClick={() => navigate("/contratos")} className="gap-1 text-muted-foreground">
           <ArrowLeft className="h-4 w-4" /> Voltar para Contratos
         </Button>
-        <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1"
+            onClick={() => {
+              const url = `${window.location.origin}/c/${id}`;
+              navigator.clipboard.writeText(url);
+              toast({ title: "Link copiado!", description: url });
+            }}
+          >
+            <LinkIcon className="h-4 w-4" /> Copiar Link do Contrato
+          </Button>
+          <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
+        </div>
       </div>
 
       <h1 className="text-2xl font-semibold tracking-tight">Contrato — {clientName}</h1>

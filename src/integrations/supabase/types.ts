@@ -69,6 +69,9 @@ export type Database = {
           payment_link: string | null
           payment_value: number | null
           proposal_id: string | null
+          signed_at: string | null
+          signed_by_email: string | null
+          signed_by_name: string | null
           status: string
           workspace_id: string
         }
@@ -82,6 +85,9 @@ export type Database = {
           payment_link?: string | null
           payment_value?: number | null
           proposal_id?: string | null
+          signed_at?: string | null
+          signed_by_email?: string | null
+          signed_by_name?: string | null
           status?: string
           workspace_id: string
         }
@@ -95,6 +101,9 @@ export type Database = {
           payment_link?: string | null
           payment_value?: number | null
           proposal_id?: string | null
+          signed_at?: string | null
+          signed_by_email?: string | null
+          signed_by_name?: string | null
           status?: string
           workspace_id?: string
         }
@@ -286,6 +295,16 @@ export type Database = {
         Args: { _email: string; _name: string; _proposal_id: string }
         Returns: undefined
       }
+      get_workspace_contract_info: {
+        Args: { _workspace_id: string }
+        Returns: {
+          company_address: string
+          company_document: string
+          id: string
+          logo_url: string
+          name: string
+        }[]
+      }
       get_workspace_public: {
         Args: { _workspace_id: string }
         Returns: {
@@ -301,6 +320,10 @@ export type Database = {
       is_workspace_member: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
+      }
+      sign_contract: {
+        Args: { _contract_id: string; _email: string; _name: string }
+        Returns: undefined
       }
     }
     Enums: {
