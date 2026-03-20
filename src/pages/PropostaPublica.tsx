@@ -71,7 +71,7 @@ export default function PropostaPublica() {
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, accepted_by_name, accepted_by_email, accepted_at, client_id, clients(name), workspace_id")
+        .select("id, title, status, ai_generated_scope, accepted_by_name, accepted_by_email, accepted_at, client_id, clients(name), workspace_id")
         .eq("id", id)
         .single();
 
