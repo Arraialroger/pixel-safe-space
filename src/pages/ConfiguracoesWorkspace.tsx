@@ -16,6 +16,7 @@ const workspaceSchema = z.object({
   name: z.string().min(1, "Nome do estúdio é obrigatório").max(100),
   company_document: z.string().max(20).optional().or(z.literal("")),
   company_address: z.string().max(300).optional().or(z.literal("")),
+  whatsapp: z.string().max(20).optional().or(z.literal("")),
   mercado_pago_token: z.string().max(500).optional().or(z.literal("")),
   stripe_token: z.string().max(500).optional().or(z.literal("")),
 });
