@@ -238,7 +238,8 @@ export default function ContratoPublico() {
           <section className="mb-6">
             <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 6 — Do Investimento, Inadimplência e Rescisão</h2>
             <p className="text-sm leading-relaxed">
-              6.1. O valor total acordado para a execução do escopo é de: <strong>{contract.payment_value != null ? formatBRL(contract.payment_value) : "a definir"}</strong>.
+              6.1. O valor total acordado para a execução do escopo é de: <strong>{contract.payment_value != null ? formatBRL(contract.payment_value) : "a definir"}</strong>
+              {contract.down_payment != null && <>, sendo o valor da entrada de <strong>{formatBRL(contract.down_payment)}</strong> para o início do projeto</>}.
               {contract.deadline && <> O prazo estimado para conclusão é de: <strong>{contract.deadline}</strong>.</>}
               {contract.payment_terms && <> Condições de pagamento: <strong>{
                 contract.payment_terms === "50_50" ? "50% no início / 50% na entrega" :
