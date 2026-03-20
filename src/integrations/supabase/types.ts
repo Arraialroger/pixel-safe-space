@@ -65,8 +65,10 @@ export type Database = {
           content_exclusions: string | null
           content_revisions: string | null
           created_at: string
+          deadline: string | null
           id: string
           payment_link: string | null
+          payment_terms: string | null
           payment_value: number | null
           proposal_id: string | null
           signed_at: string | null
@@ -81,8 +83,10 @@ export type Database = {
           content_exclusions?: string | null
           content_revisions?: string | null
           created_at?: string
+          deadline?: string | null
           id?: string
           payment_link?: string | null
+          payment_terms?: string | null
           payment_value?: number | null
           proposal_id?: string | null
           signed_at?: string | null
@@ -97,8 +101,10 @@ export type Database = {
           content_exclusions?: string | null
           content_revisions?: string | null
           created_at?: string
+          deadline?: string | null
           id?: string
           payment_link?: string | null
+          payment_terms?: string | null
           payment_value?: number | null
           proposal_id?: string | null
           signed_at?: string | null

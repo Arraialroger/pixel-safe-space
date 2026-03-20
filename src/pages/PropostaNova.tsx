@@ -22,9 +22,6 @@ import {
 const schema = z.object({
   client_id: z.string().min(1, "Selecione um cliente"),
   title: z.string().min(1, "Título é obrigatório"),
-  price: z.string().optional(),
-  deadline: z.string().optional(),
-  payment_terms: z.string().optional(),
   context: z.string().min(1, "Campo obrigatório"),
   objectives: z.string().min(1, "Campo obrigatório"),
   deliverables: z.string().min(1, "Campo obrigatório"),
@@ -36,12 +33,6 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 type Client = { id: string; name: string; document: string | null; address: string | null; phone: string | null; email: string | null; company: string | null };
-
-const paymentOptions = [
-  { value: "50_50", label: "50% no início / 50% na entrega" },
-  { value: "100_upfront", label: "100% antecipado" },
-  { value: "custom", label: "Personalizado" },
-];
 
 const briefingFields = [
   { name: "context" as const, label: "Contexto e Dores do Cliente", placeholder: "Descreva o cenário atual do cliente, seus problemas e dores que motivam este projeto...", description: "Ex: O cliente está com uma marca ultrapassada e perdendo vendas para o principal concorrente." },
@@ -65,7 +56,7 @@ export default function PropostaNova() {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      client_id: "", title: "", price: "", deadline: "", payment_terms: "",
+      client_id: "", title: "",
       context: "", objectives: "", deliverables: "", exclusions: "", revisions: "", pricing_tiers: "",
       scope: "",
     },
@@ -115,7 +106,7 @@ export default function PropostaNova() {
           exclusions: values.exclusions,
           revisions: values.revisions,
           pricing_tiers: values.pricing_tiers,
-          deadline: values.deadline || "",
+          deadline: "",
           language: languagePref,
           clientName: selectedClient?.name || "",
           title: values.title,
@@ -155,9 +146,6 @@ export default function PropostaNova() {
       workspace_id: workspaceId,
       client_id: values.client_id,
       title: values.title,
-      price: values.price ? parseFloat(values.price) : null,
-      deadline: values.deadline || null,
-      payment_terms: values.payment_terms || null,
       summary,
       ai_generated_scope: values.scope || null,
       status: "draft",
@@ -206,43 +194,6 @@ export default function PropostaNova() {
                 <FormItem>
                   <FormLabel>Título da Proposta</FormLabel>
                   <FormControl><Input placeholder="Ex: Redesign do site institucional" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField control={form.control} name="price" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor (R$)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" placeholder="0,00" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="deadline" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prazo</FormLabel>
-                    <FormControl><Input placeholder="Ex: 15 dias úteis" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-
-              <FormField control={form.control} name="payment_terms" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Condições de Pagamento</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione as condições" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {paymentOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )} />

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Link as LinkIcon, Loader2, Save, Send } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useToast } from "@/hooks/use-toast";
@@ -46,13 +49,15 @@ export default function ContratoDetalhe() {
   const [revisions, setRevisions] = useState("");
   const [paymentValue, setPaymentValue] = useState<string>("");
   const [paymentLink, setPaymentLink] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("");
 
   useEffect(() => {
     if (!workspaceId || !id) return;
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, clients(name)")
+        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, clients(name)")
         .eq("id", id)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
@@ -71,6 +76,8 @@ export default function ContratoDetalhe() {
       setRevisions(c.content_revisions ?? "");
       setPaymentValue(c.payment_value != null ? String(c.payment_value) : "");
       setPaymentLink(c.payment_link ?? "");
+      setDeadline(c.deadline ?? "");
+      setPaymentTerms(c.payment_terms ?? "");
       setLoading(false);
     })();
   }, [workspaceId, id]);
@@ -86,6 +93,8 @@ export default function ContratoDetalhe() {
         content_revisions: revisions || null,
         payment_value: paymentValue ? Number(paymentValue) : null,
         payment_link: paymentLink || null,
+        deadline: deadline || null,
+        payment_terms: paymentTerms || null,
       } as any)
       .eq("id", id);
     setSaving(false);
@@ -173,6 +182,26 @@ export default function ContratoDetalhe() {
             <div className="space-y-2">
               <Label htmlFor="payment_value">Valor Total (R$)</Label>
               <Input id="payment_value" type="number" min="0" step="0.01" value={paymentValue} onChange={(e) => setPaymentValue(e.target.value)} placeholder="0,00" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="deadline">Prazo</Label>
+              <Input id="deadline" value={deadline} onChange={(e) => setDeadline(e.target.value)} placeholder="Ex: 15 dias úteis" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="payment_terms">Condições de Pagamento</Label>
+              <Select value={paymentTerms} onValueChange={setPaymentTerms}>
+                <SelectTrigger id="payment_terms">
+                  <SelectValue placeholder="Selecione as condições" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50_50">50% no início / 50% na entrega</SelectItem>
+                  <SelectItem value="100_upfront">100% antecipado</SelectItem>
+                  <SelectItem value="custom">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="payment_link">Link de Pagamento da Entrada</Label>

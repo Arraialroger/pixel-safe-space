@@ -10,15 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { statusConfig, paymentLabels, formatCurrency, formatDate } from "@/lib/proposal-utils";
+import { statusConfig, formatDate } from "@/lib/proposal-utils";
 
 type ProposalDetail = {
   id: string;
   title: string;
-  price: number | null;
-  deadline: string | null;
   status: string;
-  payment_terms: string | null;
   ai_generated_scope: string | null;
   workspace_id: string | null;
   client_id: string;
@@ -76,7 +73,7 @@ export default function PropostaDetalhe() {
     (async () => {
       const { data: d, error } = await supabase
         .from("proposals")
-        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_by_email, accepted_at, summary, clients(name, company, document, address)")
+        .select("id, title, status, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_by_email, accepted_at, summary, clients(name, company, document, address)")
         .eq("id", id)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
@@ -91,10 +88,7 @@ export default function PropostaDetalhe() {
       setProposal({
         id: d.id,
         title: d.title,
-        price: d.price,
-        deadline: d.deadline,
         status: d.status,
-        payment_terms: d.payment_terms,
         ai_generated_scope: d.ai_generated_scope,
         workspace_id: d.workspace_id,
         client_id: d.client_id,
@@ -163,7 +157,6 @@ export default function PropostaDetalhe() {
         content_deliverables: deliverables || null,
         content_exclusions: exclusions || null,
         content_revisions: revisions || null,
-        payment_value: proposal.price,
         status: "draft",
       } as any)
       .select("id")
@@ -244,22 +237,7 @@ export default function PropostaDetalhe() {
                 <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Valor</p>
-                  <p className="font-medium">{formatCurrency(proposal.price)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Prazo</p>
-                  <p className="font-medium">{proposal.deadline ?? "—"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Pagamento</p>
-                  <p className="font-medium">{proposal.payment_terms ? (paymentLabels[proposal.payment_terms] ?? proposal.payment_terms) : "—"}</p>
-                </div>
-              </div>
-            </CardContent>
+            
           </Card>
 
           <Card>

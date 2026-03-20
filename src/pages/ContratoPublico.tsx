@@ -36,6 +36,8 @@ type ContractData = {
   content_revisions: string | null;
   payment_value: number | null;
   payment_link: string | null;
+  deadline: string | null;
+  payment_terms: string | null;
   workspace_id: string;
   signed_by_name: string | null;
   signed_by_email: string | null;
@@ -78,7 +80,7 @@ export default function ContratoPublico() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, workspace_id, signed_by_name, signed_by_email, signed_at, clients(name, document, company, address)")
+        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, clients(name, document, company, address)")
         .eq("id", id)
         .maybeSingle();
 
@@ -236,6 +238,12 @@ export default function ContratoPublico() {
             <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 6 — Do Investimento, Inadimplência e Rescisão</h2>
             <p className="text-sm leading-relaxed">
               6.1. O valor total acordado para a execução do escopo é de: <strong>{contract.payment_value != null ? formatBRL(contract.payment_value) : "a definir"}</strong>.
+              {contract.deadline && <> O prazo estimado para conclusão é de: <strong>{contract.deadline}</strong>.</>}
+              {contract.payment_terms && <> Condições de pagamento: <strong>{
+                contract.payment_terms === "50_50" ? "50% no início / 50% na entrega" :
+                contract.payment_terms === "100_upfront" ? "100% antecipado" :
+                "Personalizado"
+              }</strong>.</>}
             </p>
             <p className="text-sm leading-relaxed mt-3">
               6.2. O atraso no pagamento de qualquer parcela sujeitará o CONTRATANTE a uma multa moratória de 2% (dois por cento) sobre o valor devido, além de juros de 1% (um por cento) ao mês, e poderá acarretar a paralisação imediata dos serviços.

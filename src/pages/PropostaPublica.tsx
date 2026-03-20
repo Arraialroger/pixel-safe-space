@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { paymentLabels, formatCurrency, formatDate } from "@/lib/proposal-utils";
+import { formatDate } from "@/lib/proposal-utils";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,10 +42,7 @@ type AcceptForm = z.infer<typeof acceptSchema>;
 type PublicProposal = {
   id: string;
   title: string;
-  price: number | null;
-  deadline: string | null;
   status: string;
-  payment_terms: string | null;
   ai_generated_scope: string | null;
   accepted_by_name: string | null;
   accepted_by_email: string | null;
@@ -74,7 +71,7 @@ export default function PropostaPublica() {
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, title, price, deadline, status, payment_terms, ai_generated_scope, accepted_by_name, accepted_by_email, accepted_at, client_id, clients(name), workspace_id")
+        .select("id, title, status, ai_generated_scope, accepted_by_name, accepted_by_email, accepted_at, client_id, clients(name), workspace_id")
         .eq("id", id)
         .single();
 
@@ -100,10 +97,7 @@ export default function PropostaPublica() {
       setProposal({
         id: d.id,
         title: d.title,
-        price: d.price,
-        deadline: d.deadline,
         status: d.status,
-        payment_terms: d.payment_terms,
         ai_generated_scope: d.ai_generated_scope,
         accepted_by_name: d.accepted_by_name,
         accepted_by_email: d.accepted_by_email,
@@ -206,29 +200,6 @@ export default function PropostaPublica() {
 
         <Separator />
 
-        {/* Details grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <Card className="border-border">
-            <CardContent className="pt-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Valor</p>
-              <p className="text-xl font-semibold text-foreground">{formatCurrency(proposal.price)}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border">
-            <CardContent className="pt-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Prazo</p>
-              <p className="text-xl font-semibold text-foreground">{proposal.deadline ?? "—"}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border">
-            <CardContent className="pt-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Pagamento</p>
-              <p className="text-lg font-semibold text-foreground">
-                {proposal.payment_terms ? (paymentLabels[proposal.payment_terms] ?? proposal.payment_terms) : "—"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Scope */}
         {proposal.ai_generated_scope && (
