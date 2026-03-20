@@ -157,7 +157,6 @@ export default function PropostaDetalhe() {
         content_deliverables: deliverables || null,
         content_exclusions: exclusions || null,
         content_revisions: revisions || null,
-        payment_value: proposal.price,
         status: "draft",
       } as any)
       .select("id")
