@@ -42,10 +42,7 @@ type AcceptForm = z.infer<typeof acceptSchema>;
 type PublicProposal = {
   id: string;
   title: string;
-  price: number | null;
-  deadline: string | null;
   status: string;
-  payment_terms: string | null;
   ai_generated_scope: string | null;
   accepted_by_name: string | null;
   accepted_by_email: string | null;
