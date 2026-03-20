@@ -1,67 +1,67 @@
 
 
-# Plano: Pagina Publica do Contrato + Assinatura Digital + Pagamento
+# Plano: Refatoracao MVP — Proposta Persuasiva + Contrato como Fonte Juridica
 
-## 1. Database Migration
+## Analise Estrategica
 
-**Novas colunas na tabela `contracts`:**
-- `signed_by_name` (text, nullable) — nome de quem assinou
-- `signed_by_email` (text, nullable) — email de quem assinou
-- `signed_at` (timestamptz, nullable) — data/hora da assinatura
+Concordo 100% com o diagnostico. A duplicidade entre "valor global" na proposta e "pacotes" no briefing da IA confunde o cliente final. A Visao MVP e o caminho correto: a proposta encanta, o contrato blinda.
 
-**Nova RLS policy:**
-- Anon SELECT para contratos com `status != 'draft'` (mesmo padrao de proposals)
+**Visao Ideal vs MVP:** A Visao Ideal (tabela de pacotes, selecao pelo cliente, geracao automatica de contrato por pacote) e um incremento de ~2 semanas de engenharia (nova tabela `proposal_packages`, reescrita da Edge Function para gerar JSON estruturado, UI de selecao publica, logica de vinculacao). Para a V1.0, e overengineering. O MVP resolve o problema real sem tocar na Edge Function.
 
-**Nova RPC `sign_contract`** (SECURITY DEFINER):
-- Recebe `_contract_id`, `_name`, `_email`
-- Atualiza status para `signed`, grava nome/email/timestamp
-- Valida que status atual e `pending_signature`
+## Mudancas
 
-## 2. Nova Pagina `src/pages/ContratoPublico.tsx`
+### 1. PropostaNova.tsx — Remover campos financeiros
 
-**Rota:** `/c/:id` (publica, sem login)
+- Remover `price`, `deadline`, `payment_terms` do schema Zod e `defaultValues`
+- Remover o bloco de "Dados Basicos" que contem esses 3 campos (manter apenas `client_id` e `title`)
+- Remover `paymentOptions` array
+- Remover imports de `Select`, `SelectContent`, `SelectItem`, `SelectTrigger`, `SelectValue`
+- No `onSubmit`, remover `price`, `deadline`, `payment_terms` do INSERT
 
-**Fetch de dados:**
-- Contrato por `id` (com join `clients(name, document, company, address)`)
-- Workspace via RPC `get_workspace_public` + SELECT em `workspaces` para `company_document` e `company_address`
+### 2. PropostaDetalhe.tsx — Limpar exibicao financeira
 
-**Layout:** Documento oficial com classes `prose`, logo centralizada no topo
+- Remover a grid de Valor/Prazo/Pagamento (linhas 248-260)
+- Remover referencias a `price`, `deadline`, `payment_terms` do tipo `ProposalDetail`
+- Remover imports de `paymentLabels`, `formatCurrency`
 
-**Corpo do contrato com 7 clausulas:**
-- Titulo: CONTRATO DE PRESTACAO DE SERVICOS
-- Qualificacao das Partes (dados dinamicos workspace + cliente)
-- Clausula 1: `content_deliverables` via ReactMarkdown
-- Clausula 2: `content_exclusions` via ReactMarkdown
-- Clausula 3: Texto fixo sobre prazos/obrigacoes
-- Clausula 4: `content_revisions` via ReactMarkdown + texto fixo 4.2
-- Clausula 5: Texto fixo propriedade intelectual
-- Clausula 6: `payment_value` formatado + textos fixos multa/rescisao
-- Clausula 7: Texto fixo foro
+### 3. PropostaPublica.tsx — Remover cards financeiros
 
-**Area de assinatura/pagamento (rodape):**
-- `pending_signature`: Formulario (nome, email, checkbox obrigatorio) → chama RPC `sign_contract`
-- `signed`: Banner verde "Assinado digitalmente" + botao pulsante "Pagar Entrada" se `payment_link` existir
-- `paid`: Banner "Contrato Assinado e Pago. Projeto Liberado"
+- Remover a grid de 3 cards (Valor/Prazo/Pagamento) (linhas 210-231)
+- Remover `price`, `deadline`, `payment_terms` do tipo `PublicProposal`
+- Remover imports de `paymentLabels`, `formatCurrency`
 
-## 3. ContratoDetalhe.tsx — Botao "Copiar Link"
+### 4. ContratoDetalhe.tsx — Adicionar campo de prazo
 
-Adicionar botao com icone `Link` no header que copia `{origin}/c/{id}` para clipboard e mostra toast.
+- Adicionar campo `deadline` (Input text, ex: "15 dias uteis") ao formulario do contrato
+- Adicionar campo `payment_terms` (Select com as 3 opcoes) ao formulario
+- Estes campos serao salvos no contrato (requer migration)
 
-## 4. App.tsx — Nova Rota
+### 5. ContratoPublico.tsx — Atualizar clausula 6
 
-Adicionar `<Route path="/c/:id" element={<ContratoPublico />} />` (fora do ProtectedRoute).
+- Renderizar `deadline` e `payment_terms` na clausula de investimento
 
-## 5. Acesso anon ao workspace
+### 6. Migration SQL
 
-Precisamos que anon consiga ler `company_document` e `company_address` de workspaces. Vou criar uma nova RPC `get_workspace_contract_info` (SECURITY DEFINER) que retorna nome, logo, CNPJ e endereco sem expor tokens.
+```sql
+ALTER TABLE public.contracts
+  ADD COLUMN deadline text,
+  ADD COLUMN payment_terms text;
+```
 
-## Arquivos
+### 7. Edge Function — SEM ALTERACAO
+
+A Edge Function continua recebendo `pricing_tiers` e `deadline` como texto livre do briefing. O campo `deadline` do briefing alimenta a IA para gerar o texto persuasivo. O campo `deadline` do contrato e o prazo juridico real (preenchido depois pelo designer).
+
+**Nota:** As colunas `price`, `deadline`, `payment_terms` na tabela `proposals` ficam no banco sem uso ativo (nullable, sem dados novos). Nao precisa de migration destrutiva — simplesmente param de ser populadas.
+
+## Arquivos Modificados
 
 | Arquivo | Acao |
 |---------|------|
-| Migration SQL | Colunas + RLS + RPCs |
-| `src/pages/ContratoPublico.tsx` | Criar |
-| `src/pages/ContratoDetalhe.tsx` | Adicionar "Copiar Link" |
-| `src/App.tsx` | Adicionar rota `/c/:id` |
-| `src/integrations/supabase/types.ts` | Auto-atualizado |
+| Migration SQL | `deadline` + `payment_terms` em `contracts` |
+| `src/pages/PropostaNova.tsx` | Remover campos financeiros do formulario |
+| `src/pages/PropostaDetalhe.tsx` | Remover grid de valor/prazo/pagamento |
+| `src/pages/PropostaPublica.tsx` | Remover cards financeiros |
+| `src/pages/ContratoDetalhe.tsx` | Adicionar deadline + payment_terms |
+| `src/pages/ContratoPublico.tsx` | Renderizar novos campos na clausula 6 |
 
