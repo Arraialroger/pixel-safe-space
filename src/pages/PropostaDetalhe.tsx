@@ -94,6 +94,7 @@ export default function PropostaDetalhe() {
         workspace_id: d.workspace_id,
         client_id: d.client_id,
         client_name: client?.name ?? "—",
+        client_phone: client?.phone ?? null,
         client_company: client?.company ?? null,
         client_document: client?.document ?? null,
         client_address: client?.address ?? null,
