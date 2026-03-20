@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { statusConfig, paymentLabels, formatCurrency, formatDate } from "@/lib/proposal-utils";
+import { statusConfig, formatDate } from "@/lib/proposal-utils";
 
 type ProposalDetail = {
   id: string;
