@@ -1,0 +1,1 @@
+ALTER TABLE public.contracts ADD COLUMN execution_status text NOT NULL DEFAULT 'not_started';

@@ -1,0 +1,170 @@
+import ReactMarkdown from "react-markdown";
+import { Separator } from "@/components/ui/separator";
+
+type ContractDocProps = {
+  workspace: {
+    name: string;
+    logo_url?: string | null;
+    company_document?: string | null;
+    company_address?: string | null;
+  } | null;
+  client: {
+    name: string;
+    document?: string | null;
+    company?: string | null;
+    address?: string | null;
+  };
+  deliverables: string | null;
+  exclusions: string | null;
+  revisions: string | null;
+  paymentValue: number | null;
+  downPayment: number | null;
+  deadline: string | null;
+  paymentTerms: string | null;
+  signedByName?: string | null;
+  signedByEmail?: string | null;
+  signedAt?: string | null;
+};
+
+function formatBRL(value: number) {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
+
+function formatPaymentTermsLabel(terms: string | null) {
+  if (!terms) return null;
+  if (terms === "50_50") return "50% no início / 50% na entrega";
+  if (terms === "100_upfront") return "100% antecipado";
+  return "Personalizado";
+}
+
+export default function ContratoDocumento({
+  workspace,
+  client,
+  deliverables,
+  exclusions,
+  revisions,
+  paymentValue,
+  downPayment,
+  deadline,
+  paymentTerms,
+  signedByName,
+  signedByEmail,
+  signedAt,
+}: ContractDocProps) {
+  return (
+    <article className="prose prose-sm prose-neutral max-w-none">
+      <h1 className="text-center text-xl font-bold tracking-wide uppercase mb-8">
+        Contrato de Prestação de Serviços
+      </h1>
+
+      {/* Qualificação das Partes */}
+      <section className="mb-6">
+        <h2 className="text-base font-bold uppercase tracking-wide mb-2">Qualificação das Partes</h2>
+        <p className="text-sm leading-relaxed">
+          <strong>CONTRATADA:</strong> {workspace?.name ?? "—"}
+          {workspace?.company_document && <>, Documento: {workspace.company_document}</>}
+          {workspace?.company_address && <>, Endereço: {workspace.company_address}</>}.
+        </p>
+        <p className="text-sm leading-relaxed">
+          <strong>CONTRATANTE:</strong> {client.name}
+          {client.company && <> ({client.company})</>}
+          {client.document && <>, Documento: {client.document}</>}
+          {client.address && <>, Endereço: {client.address}</>}.
+        </p>
+      </section>
+
+      <Separator className="my-6" />
+
+      {/* Cláusula 1 */}
+      <section className="mb-6">
+        <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 1 — Do Objeto e Escopo</h2>
+        {deliverables ? (
+          <div className="text-sm leading-relaxed"><ReactMarkdown>{deliverables}</ReactMarkdown></div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">Sem entregáveis definidos.</p>
+        )}
+      </section>
+
+      {/* Cláusula 2 */}
+      <section className="mb-6">
+        <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 2 — Das Exclusões do Escopo</h2>
+        {exclusions ? (
+          <div className="text-sm leading-relaxed"><ReactMarkdown>{exclusions}</ReactMarkdown></div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">Sem exclusões definidas.</p>
+        )}
+      </section>
+
+      {/* Cláusula 3 */}
+      <section className="mb-6">
+        <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 3 — Dos Prazos e Obrigações</h2>
+        <p className="text-sm leading-relaxed">
+          3.1. O início dos trabalhos está condicionado à assinatura deste instrumento, ao pagamento da entrada (se aplicável) e à entrega de todos os materiais e informações iniciais por parte do CONTRATANTE. Atrasos no fornecimento de feedback, senhas ou aprovações prolongam o prazo final de entrega na exata e mesma proporção dos dias de atraso.
+        </p>
+      </section>
+
+      {/* Cláusula 4 */}
+      <section className="mb-6">
+        <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 4 — Dos Limites de Revisão e Aprovações</h2>
+        {revisions ? (
+          <div className="text-sm leading-relaxed"><ReactMarkdown>{revisions}</ReactMarkdown></div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">Sem regras de revisão definidas.</p>
+        )}
+        <p className="text-sm leading-relaxed mt-3">
+          4.2. As solicitações de revisão devem ser formalizadas por escrito (e-mail ou plataforma oficial de gestão). Alterações que excedam os limites aqui estipulados serão consideradas novo escopo, sujeitas a novo orçamento e aprovação prévia.
+        </p>
+      </section>
+
+      {/* Cláusula 5 */}
+      <section className="mb-6">
+        <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 5 — Da Propriedade Intelectual e Portfólio</h2>
+        <p className="text-sm leading-relaxed">
+          5.1. A transferência dos direitos patrimoniais de autor e a entrega dos arquivos-fonte (abertos) estão condicionadas à quitação integral e efetiva de todos os valores previstos neste contrato. Até o pagamento final, a CONTRATADA retém todos os direitos legais sobre a obra.
+        </p>
+        <p className="text-sm leading-relaxed mt-3">
+          5.2. A CONTRATADA reserva-se o direito de exibir as peças criadas em seu portfólio, site e redes sociais para fins de divulgação profissional.
+        </p>
+      </section>
+
+      {/* Cláusula 6 */}
+      <section className="mb-6">
+        <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 6 — Do Investimento, Inadimplência e Rescisão</h2>
+        <p className="text-sm leading-relaxed">
+          6.1. O valor total acordado para a execução do escopo é de: <strong>{paymentValue != null ? formatBRL(paymentValue) : "a definir"}</strong>
+          {downPayment != null && <>, sendo o valor da entrada de <strong>{formatBRL(downPayment)}</strong> para o início do projeto</>}.
+          {deadline && <> O prazo estimado para conclusão é de: <strong>{deadline}</strong>.</>}
+          {paymentTerms && <> Condições de pagamento: <strong>{formatPaymentTermsLabel(paymentTerms)}</strong>.</>}
+        </p>
+        <p className="text-sm leading-relaxed mt-3">
+          6.2. O atraso no pagamento de qualquer parcela sujeitará o CONTRATANTE a uma multa moratória de 2% (dois por cento) sobre o valor devido, além de juros de 1% (um por cento) ao mês, e poderá acarretar a paralisação imediata dos serviços.
+        </p>
+        <p className="text-sm leading-relaxed mt-3">
+          6.3. Em caso de rescisão imotivada por parte do CONTRATANTE após o início dos trabalhos, os valores já pagos referentes às etapas concluídas não serão reembolsados, havendo ainda incidência de multa sobre o saldo devedor restante.
+        </p>
+      </section>
+
+      {/* Cláusula 7 */}
+      <section className="mb-6">
+        <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 7 — Do Foro</h2>
+        <p className="text-sm leading-relaxed">
+          7.1. Elege-se o foro da comarca da sede da CONTRATADA para dirimir quaisquer dúvidas oriundas deste contrato.
+        </p>
+      </section>
+
+      {/* Assinatura info */}
+      {signedByName && (
+        <>
+          <Separator className="my-6" />
+          <section className="mb-6 text-center">
+            <p className="text-sm text-emerald-700 font-semibold">✓ Assinado digitalmente</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              por {signedByName} ({signedByEmail})
+              {signedAt && <> em {new Date(signedAt).toLocaleString("pt-BR")}</>}
+            </p>
+          </section>
+        </>
+      )}
+    </article>
+  );
+}
