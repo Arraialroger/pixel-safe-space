@@ -196,7 +196,7 @@ export default function PropostaDetalhe() {
           <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
         </Button>
         <div className="flex gap-2 flex-wrap">
-          {isAccepted && (
+          {(isPending || isAccepted) && (
             <Button onClick={handleGenerateContract} disabled={generatingContract} className="gap-2">
               {generatingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
               Gerar Contrato

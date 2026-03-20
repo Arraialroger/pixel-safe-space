@@ -85,7 +85,7 @@ Investimento
 
 Diferenciais do Trabalho
 
-Próximos Passos`;
+Próximos Passos (Instrua o leitor a clicar no botão de WhatsApp abaixo da proposta para esclarecer dúvidas, negociar detalhes e escolher a opção ideal para seu negócio. NÃO peça para o cliente assinar ou aprovar a proposta nesta seção.)`;
 
     const userPrompt = `Gere uma proposta profissional com base nas seguintes informações:
 

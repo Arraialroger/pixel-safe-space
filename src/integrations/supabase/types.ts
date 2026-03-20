@@ -269,6 +269,7 @@ export type Database = {
           name: string
           owner_id: string
           stripe_token: string | null
+          whatsapp: string | null
         }
         Insert: {
           company_address?: string | null
@@ -279,6 +280,7 @@ export type Database = {
           name: string
           owner_id: string
           stripe_token?: string | null
+          whatsapp?: string | null
         }
         Update: {
           company_address?: string | null
@@ -289,6 +291,7 @@ export type Database = {
           name?: string
           owner_id?: string
           stripe_token?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -309,6 +312,7 @@ export type Database = {
           id: string
           logo_url: string
           name: string
+          whatsapp: string
         }[]
       }
       get_workspace_public: {

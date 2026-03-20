@@ -1,77 +1,36 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { formatDate } from "@/lib/proposal-utils";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-
-
-const acceptSchema = z.object({
-  name: z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres").max(100),
-  email: z.string().trim().email("E-mail inválido").max(255),
-});
-
-type AcceptForm = z.infer<typeof acceptSchema>;
 
 type PublicProposal = {
   id: string;
   title: string;
   status: string;
   ai_generated_scope: string | null;
-  accepted_by_name: string | null;
-  accepted_by_email: string | null;
-  accepted_at: string | null;
   client_name: string;
   workspace_name: string;
   workspace_logo: string | null;
+  workspace_whatsapp: string | null;
 };
 
 export default function PropostaPublica() {
   const { id } = useParams<{ id: string }>();
-  const { toast } = useToast();
   const [proposal, setProposal] = useState<PublicProposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const form = useForm<AcceptForm>({
-    resolver: zodResolver(acceptSchema),
-    defaultValues: { name: "", email: "" },
-  });
 
   useEffect(() => {
     if (!id) return;
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, title, status, ai_generated_scope, accepted_by_name, accepted_by_email, accepted_at, client_id, clients(name), workspace_id")
+        .select("id, title, status, ai_generated_scope, client_id, clients(name), workspace_id")
         .eq("id", id)
         .single();
 
@@ -83,14 +42,16 @@ export default function PropostaPublica() {
 
       const d = data as any;
 
-      // Use secure RPC to get workspace public info (name + logo, no tokens exposed)
       let wsName = "Estúdio";
       let logoUrl: string | null = null;
+      let whatsapp: string | null = null;
+
       if (d.workspace_id) {
-        const { data: wsData } = await supabase.rpc("get_workspace_public", { _workspace_id: d.workspace_id });
+        const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: d.workspace_id });
         if (wsData && wsData.length > 0) {
           wsName = wsData[0].name;
           logoUrl = wsData[0].logo_url ?? null;
+          whatsapp = wsData[0].whatsapp ?? null;
         }
       }
 
@@ -99,49 +60,14 @@ export default function PropostaPublica() {
         title: d.title,
         status: d.status,
         ai_generated_scope: d.ai_generated_scope,
-        accepted_by_name: d.accepted_by_name,
-        accepted_by_email: d.accepted_by_email,
-        accepted_at: d.accepted_at,
         client_name: d.clients?.name ?? "—",
         workspace_name: wsName,
         workspace_logo: logoUrl,
+        workspace_whatsapp: whatsapp,
       });
       setLoading(false);
     })();
   }, [id]);
-
-  const handleAccept = async (values: AcceptForm) => {
-    if (!id) return;
-    setSubmitting(true);
-
-    const { error } = await supabase.rpc("accept_proposal", {
-      _proposal_id: id,
-      _name: values.name,
-      _email: values.email,
-    });
-
-    setSubmitting(false);
-
-    if (error) {
-      toast({ title: "Erro ao aceitar proposta", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    setProposal((prev) =>
-      prev
-        ? {
-            ...prev,
-            status: "accepted",
-            accepted_by_name: values.name,
-            accepted_by_email: values.email,
-            accepted_at: new Date().toISOString(),
-          }
-        : prev
-    );
-    setDialogOpen(false);
-    toast({ title: "Proposta aceita com sucesso!" });
-  };
-
 
   if (loading) {
     return (
@@ -162,7 +88,12 @@ export default function PropostaPublica() {
     );
   }
 
-  const isAccepted = proposal.status === "accepted";
+  const whatsappMessage = encodeURIComponent(
+    `Olá! Acabei de ler a proposta "${proposal.title}" e gostaria de conversar para definirmos o melhor pacote.`
+  );
+  const whatsappUrl = proposal.workspace_whatsapp
+    ? `https://wa.me/${proposal.workspace_whatsapp}?text=${whatsappMessage}`
+    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -185,112 +116,45 @@ export default function PropostaPublica() {
 
       {/* Proposal content */}
       <main className="mx-auto max-w-3xl px-6 py-10 space-y-8">
-        {/* Title and badge */}
+        {/* Title */}
         <div className="space-y-2">
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="text-2xl font-bold text-foreground">{proposal.title}</h1>
-            {isAccepted && (
-              <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100 shrink-0">
-                Aceita
-              </Badge>
-            )}
-          </div>
+          <h1 className="text-2xl font-bold text-foreground">{proposal.title}</h1>
           <p className="text-muted-foreground">Preparada para {proposal.client_name}</p>
         </div>
 
         <Separator />
 
-
         {/* Scope */}
         {proposal.ai_generated_scope && (
           <>
-            <Separator />
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-foreground">Escopo do Projeto</h3>
               <div className="prose prose-sm max-w-none dark:prose-invert rounded-lg border border-border bg-card p-6">
                 <ReactMarkdown>{proposal.ai_generated_scope}</ReactMarkdown>
               </div>
             </div>
+            <Separator />
           </>
         )}
 
-        <Separator />
-
-        {/* Accept section */}
-        {isAccepted ? (
-          <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
-            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-            <p className="text-sm text-green-800">
-              Proposta aceita digitalmente por{" "}
-              <strong>{proposal.accepted_by_name}</strong> em{" "}
-              {formatDate(proposal.accepted_at)}.
+        {/* WhatsApp CTA */}
+        {whatsappUrl && (
+          <div className="flex flex-col items-center gap-3 pt-4 pb-8">
+            <p className="text-sm text-muted-foreground text-center max-w-md">
+              Gostou da proposta? Fale diretamente conosco para esclarecer dúvidas e escolher o melhor pacote.
             </p>
-          </div>
-        ) : (
-          <div className="flex justify-center pt-4">
-            <Button
-              size="lg"
-              className="px-12 text-base"
-              onClick={() => setDialogOpen(true)}
-            >
-              Aceitar Proposta
-            </Button>
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              <Button
+                size="lg"
+                className="px-10 text-base gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white"
+              >
+                <MessageCircle className="h-5 w-5" />
+                Falar com o Designer (WhatsApp)
+              </Button>
+            </a>
           </div>
         )}
       </main>
-
-      {/* Accept dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Aceitar Proposta</DialogTitle>
-            <DialogDescription>
-              Preencha seus dados para confirmar o aceite digital desta proposta.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleAccept)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome Completo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Seu nome completo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>E-mail</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="seu@email.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirmando...
-                    </>
-                  ) : (
-                    "Confirmar Aceite"
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

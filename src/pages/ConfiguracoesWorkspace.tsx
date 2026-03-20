@@ -188,6 +188,23 @@ export default function ConfiguracoesWorkspace() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="whatsapp"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WhatsApp de Contato</FormLabel>
+                    <FormControl>
+                      <Input placeholder="5511999999999" {...field} />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      DDI + DDD + número, sem espaços ou traços. Será exibido na proposta pública.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
