@@ -49,6 +49,8 @@ export default function ContratoDetalhe() {
   const [revisions, setRevisions] = useState("");
   const [paymentValue, setPaymentValue] = useState<string>("");
   const [paymentLink, setPaymentLink] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("");
 
   useEffect(() => {
     if (!workspaceId || !id) return;
