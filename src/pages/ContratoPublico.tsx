@@ -35,6 +35,7 @@ type ContractData = {
   content_exclusions: string | null;
   content_revisions: string | null;
   payment_value: number | null;
+  down_payment: number | null;
   payment_link: string | null;
   deadline: string | null;
   payment_terms: string | null;
