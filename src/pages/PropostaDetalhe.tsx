@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2, Eye, Pencil, FileCheck } from "lucide-react";
+import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2, Eye, Pencil, FileCheck, MessageCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
