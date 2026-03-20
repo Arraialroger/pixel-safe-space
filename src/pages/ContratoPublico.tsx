@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,6 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import ContratoDocumento from "@/components/contratos/ContratoDocumento";
 
 const signSchema = z.object({
   name: z.string().trim().min(3, "Nome deve ter pelo menos 3 caracteres").max(200),
@@ -70,6 +70,8 @@ export default function ContratoPublico() {
   const [contract, setContract] = useState<ContractData | null>(null);
   const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null);
   const [signing, setSigning] = useState(false);
+  const [generatingPayment, setGeneratingPayment] = useState(false);
+  const [dynamicPaymentUrl, setDynamicPaymentUrl] = useState<string | null>(null);
 
   const form = useForm<SignForm>({
     resolver: zodResolver(signSchema),
@@ -91,12 +93,12 @@ export default function ContratoPublico() {
       }
 
       const c = data as any;
-      setContract({
+      const contractData: ContractData = {
         ...c,
         client: c.clients ?? { name: "—", document: null, company: null, address: null },
-      });
+      };
+      setContract(contractData);
 
-      // Fetch workspace info
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", {
         _workspace_id: c.workspace_id,
       });
@@ -104,9 +106,38 @@ export default function ContratoPublico() {
         setWorkspace(wsData[0] as WorkspaceInfo);
       }
 
+      // If already signed, try to generate dynamic payment link
+      if (contractData.status === "signed") {
+        generatePaymentLink(contractData.id);
+      }
+
       setLoading(false);
     })();
   }, [id]);
+
+  const generatePaymentLink = async (contractId: string) => {
+    setGeneratingPayment(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/generate-payment`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contract_id: contractId }),
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.checkout_url) {
+          setDynamicPaymentUrl(data.checkout_url);
+        }
+      }
+    } catch {
+      // Fallback to manual link silently
+    }
+    setGeneratingPayment(false);
+  };
 
   const handleSign = async (values: SignForm) => {
     if (!id) return;
@@ -124,6 +155,7 @@ export default function ContratoPublico() {
       setContract((prev) =>
         prev ? { ...prev, status: "signed", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
       );
+      generatePaymentLink(id);
     }
   };
 
@@ -145,7 +177,7 @@ export default function ContratoPublico() {
     );
   }
 
-  const { client } = contract;
+  const paymentUrl = dynamicPaymentUrl || contract.payment_link;
 
   return (
     <div className="min-h-screen bg-white">
@@ -158,115 +190,24 @@ export default function ContratoPublico() {
           </div>
         )}
 
-        {/* Document */}
-        <article className="prose prose-sm prose-neutral max-w-none">
-          <h1 className="text-center text-xl font-bold tracking-wide uppercase mb-8">
-            Contrato de Prestação de Serviços
-          </h1>
-
-          {/* Qualificação das Partes */}
-          <section className="mb-6">
-            <h2 className="text-base font-bold uppercase tracking-wide mb-2">Qualificação das Partes</h2>
-            <p className="text-sm leading-relaxed">
-              <strong>CONTRATADA:</strong> {workspace?.name ?? "—"}
-              {workspace?.company_document && <>, Documento: {workspace.company_document}</>}
-              {workspace?.company_address && <>, Endereço: {workspace.company_address}</>}.
-            </p>
-            <p className="text-sm leading-relaxed">
-              <strong>CONTRATANTE:</strong> {client.name}
-              {client.company && <> ({client.company})</>}
-              {client.document && <>, Documento: {client.document}</>}
-              {client.address && <>, Endereço: {client.address}</>}.
-            </p>
-          </section>
-
-          <Separator className="my-6" />
-
-          {/* Cláusula 1 */}
-          <section className="mb-6">
-            <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 1 — Do Objeto e Escopo</h2>
-            {contract.content_deliverables ? (
-              <div className="text-sm leading-relaxed"><ReactMarkdown>{contract.content_deliverables}</ReactMarkdown></div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">Sem entregáveis definidos.</p>
-            )}
-          </section>
-
-          {/* Cláusula 2 */}
-          <section className="mb-6">
-            <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 2 — Das Exclusões do Escopo</h2>
-            {contract.content_exclusions ? (
-              <div className="text-sm leading-relaxed"><ReactMarkdown>{contract.content_exclusions}</ReactMarkdown></div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">Sem exclusões definidas.</p>
-            )}
-          </section>
-
-          {/* Cláusula 3 */}
-          <section className="mb-6">
-            <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 3 — Dos Prazos e Obrigações</h2>
-            <p className="text-sm leading-relaxed">
-              3.1. O início dos trabalhos está condicionado à assinatura deste instrumento, ao pagamento da entrada (se aplicável) e à entrega de todos os materiais e informações iniciais por parte do CONTRATANTE. Atrasos no fornecimento de feedback, senhas ou aprovações prolongam o prazo final de entrega na exata e mesma proporção dos dias de atraso.
-            </p>
-          </section>
-
-          {/* Cláusula 4 */}
-          <section className="mb-6">
-            <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 4 — Dos Limites de Revisão e Aprovações</h2>
-            {contract.content_revisions ? (
-              <div className="text-sm leading-relaxed"><ReactMarkdown>{contract.content_revisions}</ReactMarkdown></div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">Sem regras de revisão definidas.</p>
-            )}
-            <p className="text-sm leading-relaxed mt-3">
-              4.2. As solicitações de revisão devem ser formalizadas por escrito (e-mail ou plataforma oficial de gestão). Alterações que excedam os limites aqui estipulados serão consideradas novo escopo, sujeitas a novo orçamento e aprovação prévia.
-            </p>
-          </section>
-
-          {/* Cláusula 5 */}
-          <section className="mb-6">
-            <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 5 — Da Propriedade Intelectual e Portfólio</h2>
-            <p className="text-sm leading-relaxed">
-              5.1. A transferência dos direitos patrimoniais de autor e a entrega dos arquivos-fonte (abertos) estão condicionadas à quitação integral e efetiva de todos os valores previstos neste contrato. Até o pagamento final, a CONTRATADA retém todos os direitos legais sobre a obra.
-            </p>
-            <p className="text-sm leading-relaxed mt-3">
-              5.2. A CONTRATADA reserva-se o direito de exibir as peças criadas em seu portfólio, site e redes sociais para fins de divulgação profissional.
-            </p>
-          </section>
-
-          {/* Cláusula 6 */}
-          <section className="mb-6">
-            <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 6 — Do Investimento, Inadimplência e Rescisão</h2>
-            <p className="text-sm leading-relaxed">
-              6.1. O valor total acordado para a execução do escopo é de: <strong>{contract.payment_value != null ? formatBRL(contract.payment_value) : "a definir"}</strong>
-              {contract.down_payment != null && <>, sendo o valor da entrada de <strong>{formatBRL(contract.down_payment)}</strong> para o início do projeto</>}.
-              {contract.deadline && <> O prazo estimado para conclusão é de: <strong>{contract.deadline}</strong>.</>}
-              {contract.payment_terms && <> Condições de pagamento: <strong>{
-                contract.payment_terms === "50_50" ? "50% no início / 50% na entrega" :
-                contract.payment_terms === "100_upfront" ? "100% antecipado" :
-                "Personalizado"
-              }</strong>.</>}
-            </p>
-            <p className="text-sm leading-relaxed mt-3">
-              6.2. O atraso no pagamento de qualquer parcela sujeitará o CONTRATANTE a uma multa moratória de 2% (dois por cento) sobre o valor devido, além de juros de 1% (um por cento) ao mês, e poderá acarretar a paralisação imediata dos serviços.
-            </p>
-            <p className="text-sm leading-relaxed mt-3">
-              6.3. Em caso de rescisão imotivada por parte do CONTRATANTE após o início dos trabalhos, os valores já pagos referentes às etapas concluídas não serão reembolsados, havendo ainda incidência de multa sobre o saldo devedor restante.
-            </p>
-          </section>
-
-          {/* Cláusula 7 */}
-          <section className="mb-6">
-            <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 7 — Do Foro</h2>
-            <p className="text-sm leading-relaxed">
-              7.1. Elege-se o foro da comarca da sede da CONTRATADA para dirimir quaisquer dúvidas oriundas deste contrato.
-            </p>
-          </section>
-        </article>
+        <ContratoDocumento
+          workspace={workspace}
+          client={contract.client}
+          deliverables={contract.content_deliverables}
+          exclusions={contract.content_exclusions}
+          revisions={contract.content_revisions}
+          paymentValue={contract.payment_value}
+          downPayment={contract.down_payment}
+          deadline={contract.deadline}
+          paymentTerms={contract.payment_terms}
+          signedByName={contract.signed_by_name}
+          signedByEmail={contract.signed_by_email}
+          signedAt={contract.signed_at}
+        />
 
         <Separator className="my-8" />
 
-        {/* Signature / Payment Area */}
+        {/* Signature */}
         {contract.status === "pending_signature" && (
           <div className="border rounded-lg p-6 space-y-4">
             <h3 className="text-lg font-semibold">Assinatura Digital</h3>
@@ -275,48 +216,31 @@ export default function ContratoPublico() {
             </p>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSign)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome Completo</FormLabel>
-                      <FormControl><Input placeholder="Seu nome completo" {...field} /></FormControl>
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome Completo</FormLabel>
+                    <FormControl><Input placeholder="Seu nome completo" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>E-mail</FormLabel>
+                    <FormControl><Input type="email" placeholder="seu@email.com" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="accepted" render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox checked={field.value === true} onCheckedChange={(checked) => field.onChange(checked === true ? true : undefined)} />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm font-normal">Li, compreendi e aceito os termos do contrato</FormLabel>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>E-mail</FormLabel>
-                      <FormControl><Input type="email" placeholder="seu@email.com" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="accepted"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value === true}
-                          onCheckedChange={(checked) => field.onChange(checked === true ? true : undefined)}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm font-normal">
-                          Li, compreendi e aceito os termos do contrato
-                        </FormLabel>
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+                    </div>
+                  </FormItem>
+                )} />
                 <Button type="submit" disabled={signing} className="w-full gap-2">
                   {signing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   Assinar Digitalmente
@@ -332,14 +256,13 @@ export default function ContratoPublico() {
               <p className="text-emerald-700 font-semibold text-lg flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-5 w-5" /> Assinado digitalmente
               </p>
-              {contract.signed_by_name && (
-                <p className="text-sm text-emerald-600 mt-1">
-                  por {contract.signed_by_name} ({contract.signed_by_email})
-                </p>
-              )}
             </div>
-            {contract.payment_link && (
-              <a href={contract.payment_link} target="_blank" rel="noopener noreferrer" className="block">
+            {generatingPayment ? (
+              <Button size="lg" disabled className="w-full text-lg py-6 gap-3">
+                <Loader2 className="h-5 w-5 animate-spin" /> Gerando link de pagamento...
+              </Button>
+            ) : paymentUrl ? (
+              <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
                 <Button size="lg" className="w-full text-lg py-6 gap-3 animate-pulse">
                   <ExternalLink className="h-5 w-5" />
                   {contract.down_payment != null
@@ -347,7 +270,7 @@ export default function ContratoPublico() {
                     : "Pagar Entrada e Liberar Projeto"}
                 </Button>
               </a>
-            )}
+            ) : null}
           </div>
         )}
 
@@ -359,7 +282,6 @@ export default function ContratoPublico() {
           </div>
         )}
 
-        {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-12">
           Documento gerado digitalmente • {workspace?.name}
         </p>

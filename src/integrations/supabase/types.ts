@@ -67,6 +67,7 @@ export type Database = {
           created_at: string
           deadline: string | null
           down_payment: number | null
+          execution_status: string
           id: string
           payment_link: string | null
           payment_terms: string | null
@@ -86,6 +87,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           down_payment?: number | null
+          execution_status?: string
           id?: string
           payment_link?: string | null
           payment_terms?: string | null
@@ -105,6 +107,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           down_payment?: number | null
+          execution_status?: string
           id?: string
           payment_link?: string | null
           payment_terms?: string | null

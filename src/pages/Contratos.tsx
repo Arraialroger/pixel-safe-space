@@ -15,6 +15,7 @@ import { ptBR } from "date-fns/locale";
 type ContractWithClient = {
   id: string;
   status: string;
+  execution_status: string;
   payment_value: number | null;
   created_at: string;
   client_name: string;
@@ -25,6 +26,13 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
   pending_signature: { label: "Aguardando Assinatura", variant: "outline", className: "border-amber-500 text-amber-600" },
   signed: { label: "Assinado", variant: "default", className: "bg-emerald-600" },
   paid: { label: "Pago", variant: "default", className: "bg-primary" },
+};
+
+const execStatusConfig: Record<string, { label: string; className: string }> = {
+  not_started: { label: "Não Iniciado", className: "bg-muted text-muted-foreground" },
+  in_progress: { label: "Em Desenvolvimento", className: "bg-blue-100 text-blue-700 border-blue-200" },
+  delivered: { label: "Entregue", className: "bg-amber-100 text-amber-700 border-amber-200" },
+  completed: { label: "Concluído", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
 };
 
 function formatCurrency(value: number | null) {
@@ -43,7 +51,7 @@ export default function Contratos() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, payment_value, created_at, client_id, clients(name)")
+        .select("id, status, execution_status, payment_value, created_at, client_id, clients(name)")
         .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: false });
 
@@ -52,6 +60,7 @@ export default function Contratos() {
           (data as any[]).map((c) => ({
             id: c.id,
             status: c.status,
+            execution_status: c.execution_status ?? "not_started",
             payment_value: c.payment_value,
             created_at: c.created_at,
             client_name: c.clients?.name ?? "—",
@@ -99,7 +108,8 @@ export default function Contratos() {
             <TableHeader>
               <TableRow>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Comercial</TableHead>
+                <TableHead>Execução</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Data</TableHead>
               </TableRow>
@@ -107,13 +117,15 @@ export default function Contratos() {
             <TableBody>
               {contracts.map((c) => {
                 const sc = statusConfig[c.status] ?? statusConfig.draft;
+                const ec = execStatusConfig[c.execution_status] ?? execStatusConfig.not_started;
                 return (
                   <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/contratos/${c.id}`)}>
                     <TableCell className="font-medium">{c.client_name}</TableCell>
                     <TableCell>
-                      <Badge variant={sc.variant} className={sc.className}>
-                        {sc.label}
-                      </Badge>
+                      <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={ec.className}>{ec.label}</Badge>
                     </TableCell>
                     <TableCell>{formatCurrency(c.payment_value)}</TableCell>
                     <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
