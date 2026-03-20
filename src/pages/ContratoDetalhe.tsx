@@ -57,7 +57,7 @@ export default function ContratoDetalhe() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, clients(name)")
+        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, clients(name)")
         .eq("id", id)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
