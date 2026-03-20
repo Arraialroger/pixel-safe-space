@@ -16,6 +16,7 @@ const workspaceSchema = z.object({
   name: z.string().min(1, "Nome do estúdio é obrigatório").max(100),
   company_document: z.string().max(20).optional().or(z.literal("")),
   company_address: z.string().max(300).optional().or(z.literal("")),
+  whatsapp: z.string().max(20).optional().or(z.literal("")),
   mercado_pago_token: z.string().max(500).optional().or(z.literal("")),
   stripe_token: z.string().max(500).optional().or(z.literal("")),
 });
@@ -32,7 +33,7 @@ export default function ConfiguracoesWorkspace() {
 
   const form = useForm<WorkspaceFormValues>({
     resolver: zodResolver(workspaceSchema),
-    defaultValues: { name: "", company_document: "", company_address: "", mercado_pago_token: "", stripe_token: "" },
+    defaultValues: { name: "", company_document: "", company_address: "", whatsapp: "", mercado_pago_token: "", stripe_token: "" },
   });
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function ConfiguracoesWorkspace() {
       // Load workspace data
       const { data: ws } = await supabase
         .from("workspaces")
-        .select("name, company_document, company_address, mercado_pago_token, stripe_token")
+        .select("name, company_document, company_address, whatsapp, mercado_pago_token, stripe_token")
         .eq("id", workspaceId)
         .single();
 
@@ -67,6 +68,7 @@ export default function ConfiguracoesWorkspace() {
           name: ws.name ?? "",
           company_document: (ws as any).company_document ?? "",
           company_address: (ws as any).company_address ?? "",
+          whatsapp: (ws as any).whatsapp ?? "",
           mercado_pago_token: ws.mercado_pago_token ?? "",
           stripe_token: ws.stripe_token ?? "",
         });
@@ -87,6 +89,7 @@ export default function ConfiguracoesWorkspace() {
         name: values.name,
         company_document: values.company_document || null,
         company_address: values.company_address || null,
+        whatsapp: values.whatsapp || null,
         mercado_pago_token: values.mercado_pago_token || null,
         stripe_token: values.stripe_token || null,
       } as any)
@@ -185,6 +188,23 @@ export default function ConfiguracoesWorkspace() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="whatsapp"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WhatsApp de Contato</FormLabel>
+                    <FormControl>
+                      <Input placeholder="5511999999999" {...field} />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      DDI + DDD + número, sem espaços ou traços. Será exibido na proposta pública.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
