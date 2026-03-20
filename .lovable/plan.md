@@ -1,67 +1,70 @@
 
 
-# Plano: Refatoracao MVP — Proposta Persuasiva + Contrato como Fonte Juridica
+# Plano: WhatsApp CTA + Remover Aprovacao + Liberar "Gerar Contrato"
 
-## Analise Estrategica
-
-Concordo 100% com o diagnostico. A duplicidade entre "valor global" na proposta e "pacotes" no briefing da IA confunde o cliente final. A Visao MVP e o caminho correto: a proposta encanta, o contrato blinda.
-
-**Visao Ideal vs MVP:** A Visao Ideal (tabela de pacotes, selecao pelo cliente, geracao automatica de contrato por pacote) e um incremento de ~2 semanas de engenharia (nova tabela `proposal_packages`, reescrita da Edge Function para gerar JSON estruturado, UI de selecao publica, logica de vinculacao). Para a V1.0, e overengineering. O MVP resolve o problema real sem tocar na Edge Function.
-
-## Mudancas
-
-### 1. PropostaNova.tsx — Remover campos financeiros
-
-- Remover `price`, `deadline`, `payment_terms` do schema Zod e `defaultValues`
-- Remover o bloco de "Dados Basicos" que contem esses 3 campos (manter apenas `client_id` e `title`)
-- Remover `paymentOptions` array
-- Remover imports de `Select`, `SelectContent`, `SelectItem`, `SelectTrigger`, `SelectValue`
-- No `onSubmit`, remover `price`, `deadline`, `payment_terms` do INSERT
-
-### 2. PropostaDetalhe.tsx — Limpar exibicao financeira
-
-- Remover a grid de Valor/Prazo/Pagamento (linhas 248-260)
-- Remover referencias a `price`, `deadline`, `payment_terms` do tipo `ProposalDetail`
-- Remover imports de `paymentLabels`, `formatCurrency`
-
-### 3. PropostaPublica.tsx — Remover cards financeiros
-
-- Remover a grid de 3 cards (Valor/Prazo/Pagamento) (linhas 210-231)
-- Remover `price`, `deadline`, `payment_terms` do tipo `PublicProposal`
-- Remover imports de `paymentLabels`, `formatCurrency`
-
-### 4. ContratoDetalhe.tsx — Adicionar campo de prazo
-
-- Adicionar campo `deadline` (Input text, ex: "15 dias uteis") ao formulario do contrato
-- Adicionar campo `payment_terms` (Select com as 3 opcoes) ao formulario
-- Estes campos serao salvos no contrato (requer migration)
-
-### 5. ContratoPublico.tsx — Atualizar clausula 6
-
-- Renderizar `deadline` e `payment_terms` na clausula de investimento
-
-### 6. Migration SQL
+## 1. Migration SQL — Coluna `whatsapp` em `workspaces`
 
 ```sql
-ALTER TABLE public.contracts
-  ADD COLUMN deadline text,
-  ADD COLUMN payment_terms text;
+ALTER TABLE public.workspaces ADD COLUMN whatsapp text;
 ```
 
-### 7. Edge Function — SEM ALTERACAO
+## 2. ConfiguracoesWorkspace.tsx — Campo WhatsApp
 
-A Edge Function continua recebendo `pricing_tiers` e `deadline` como texto livre do briefing. O campo `deadline` do briefing alimenta a IA para gerar o texto persuasivo. O campo `deadline` do contrato e o prazo juridico real (preenchido depois pelo designer).
+- Adicionar `whatsapp` ao schema Zod (string, max 20, opcional)
+- Adicionar ao `defaultValues`, ao `form.reset()` no load, e ao `onSubmit` update
+- Novo campo no card "Dados do Estudio" com label "WhatsApp de Contato" e placeholder "5511999999999"
 
-**Nota:** As colunas `price`, `deadline`, `payment_terms` na tabela `proposals` ficam no banco sem uso ativo (nullable, sem dados novos). Nao precisa de migration destrutiva — simplesmente param de ser populadas.
+## 3. PropostaPublica.tsx — Substituir aprovacao por WhatsApp CTA
 
-## Arquivos Modificados
+**Remover:**
+- Import de `useForm`, `zodResolver`, `z`, `Dialog`, `Form`, etc.
+- Estado `dialogOpen`, `submitting`, schema `acceptSchema`, funcao `handleAccept`
+- Bloco de dialog de aceite e botao "Aceitar Proposta"
+
+**Adicionar:**
+- Fetch do `whatsapp` do workspace via RPC `get_workspace_public` (precisa atualizar a RPC para incluir `whatsapp`, ou usar `get_workspace_contract_info` que ja expoe dados extras)
+- Botao verde WhatsApp: link para `https://wa.me/{whatsapp}?text={mensagem_codificada}`
+- Mensagem: `Olá! Acabei de ler a proposta "${title}" e gostaria de conversar para definirmos o melhor pacote.`
+- Se sem WhatsApp: ocultar botao ou mostrar fallback
+
+**RPC update:** Atualizar `get_workspace_contract_info` para incluir `whatsapp`, ou criar nova RPC. Mais simples: usar `get_workspace_contract_info` que ja e SECURITY DEFINER e adicionar `w.whatsapp` ao SELECT.
+
+## 4. PropostaDetalhe.tsx — "Gerar Contrato" visivel em `pending`
+
+Mudar a condicao do botao de `isAccepted` para `isPending || isAccepted`:
+```tsx
+{(isPending || isAccepted) && (
+  <Button onClick={handleGenerateContract} ...>Gerar Contrato</Button>
+)}
+```
+
+## 5. Edge Function — Atualizar "Proximos Passos"
+
+No `systemPrompt`, substituir a ultima linha `Próximos Passos` por:
+
+```
+Próximos Passos (Instrua o leitor a clicar no botão de WhatsApp abaixo da proposta para esclarecer dúvidas, negociar detalhes e escolher a opção ideal. NÃO peça para o cliente assinar ou aprovar a proposta nesta seção.)
+```
+
+## 6. Migration para atualizar RPC
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_workspace_contract_info(_workspace_id uuid)
+  RETURNS TABLE(id uuid, name text, logo_url text, company_document text, company_address text, whatsapp text)
+  ...
+  SELECT w.id, w.name, p.logo_url, w.company_document, w.company_address, w.whatsapp
+  FROM public.workspaces w
+  LEFT JOIN public.profiles p ON p.id = w.owner_id
+  WHERE w.id = _workspace_id;
+```
+
+## Arquivos
 
 | Arquivo | Acao |
 |---------|------|
-| Migration SQL | `deadline` + `payment_terms` em `contracts` |
-| `src/pages/PropostaNova.tsx` | Remover campos financeiros do formulario |
-| `src/pages/PropostaDetalhe.tsx` | Remover grid de valor/prazo/pagamento |
-| `src/pages/PropostaPublica.tsx` | Remover cards financeiros |
-| `src/pages/ContratoDetalhe.tsx` | Adicionar deadline + payment_terms |
-| `src/pages/ContratoPublico.tsx` | Renderizar novos campos na clausula 6 |
+| Migration SQL | `whatsapp` em workspaces + atualizar RPC |
+| `src/pages/ConfiguracoesWorkspace.tsx` | Campo WhatsApp |
+| `src/pages/PropostaPublica.tsx` | Remover aprovacao, adicionar CTA WhatsApp |
+| `src/pages/PropostaDetalhe.tsx` | Botao "Gerar Contrato" em pending |
+| `supabase/functions/generate-proposal/index.ts` | Atualizar instrucao "Proximos Passos" |
 
