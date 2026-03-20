@@ -35,6 +35,7 @@ type ContractData = {
   content_exclusions: string | null;
   content_revisions: string | null;
   payment_value: number | null;
+  down_payment: number | null;
   payment_link: string | null;
   deadline: string | null;
   payment_terms: string | null;
@@ -80,7 +81,7 @@ export default function ContratoPublico() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, clients(name, document, company, address)")
+        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, down_payment, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, clients(name, document, company, address)")
         .eq("id", id)
         .maybeSingle();
 
@@ -237,7 +238,8 @@ export default function ContratoPublico() {
           <section className="mb-6">
             <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 6 — Do Investimento, Inadimplência e Rescisão</h2>
             <p className="text-sm leading-relaxed">
-              6.1. O valor total acordado para a execução do escopo é de: <strong>{contract.payment_value != null ? formatBRL(contract.payment_value) : "a definir"}</strong>.
+              6.1. O valor total acordado para a execução do escopo é de: <strong>{contract.payment_value != null ? formatBRL(contract.payment_value) : "a definir"}</strong>
+              {contract.down_payment != null && <>, sendo o valor da entrada de <strong>{formatBRL(contract.down_payment)}</strong> para o início do projeto</>}.
               {contract.deadline && <> O prazo estimado para conclusão é de: <strong>{contract.deadline}</strong>.</>}
               {contract.payment_terms && <> Condições de pagamento: <strong>{
                 contract.payment_terms === "50_50" ? "50% no início / 50% na entrega" :
@@ -340,7 +342,9 @@ export default function ContratoPublico() {
               <a href={contract.payment_link} target="_blank" rel="noopener noreferrer" className="block">
                 <Button size="lg" className="w-full text-lg py-6 gap-3 animate-pulse">
                   <ExternalLink className="h-5 w-5" />
-                  Pagar Entrada e Liberar Projeto
+                  {contract.down_payment != null
+                    ? `Pagar Entrada de ${formatBRL(contract.down_payment)} e Liberar Projeto`
+                    : "Pagar Entrada e Liberar Projeto"}
                 </Button>
               </a>
             )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2, Eye, Pencil, FileCheck } from "lucide-react";
+import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2, Eye, Pencil, FileCheck, MessageCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -20,6 +20,7 @@ type ProposalDetail = {
   workspace_id: string | null;
   client_id: string;
   client_name: string;
+  client_phone: string | null;
   client_company: string | null;
   client_document: string | null;
   client_address: string | null;
@@ -73,7 +74,7 @@ export default function PropostaDetalhe() {
     (async () => {
       const { data: d, error } = await supabase
         .from("proposals")
-        .select("id, title, status, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_by_email, accepted_at, summary, clients(name, company, document, address)")
+        .select("id, title, status, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_by_email, accepted_at, summary, clients(name, company, document, address, phone)")
         .eq("id", id)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
@@ -93,6 +94,7 @@ export default function PropostaDetalhe() {
         workspace_id: d.workspace_id,
         client_id: d.client_id,
         client_name: client?.name ?? "—",
+        client_phone: client?.phone ?? null,
         client_company: client?.company ?? null,
         client_document: client?.document ?? null,
         client_address: client?.address ?? null,
@@ -296,13 +298,28 @@ export default function PropostaDetalhe() {
                   <p className="text-xs text-green-700">O link público está ativo e pronto para envio.</p>
                 </div>
               )}
-              <p className="text-sm text-muted-foreground">Envie este link para o cliente visualizar a proposta.</p>
-              <div className="flex gap-2">
-                <Input value={publicLink} readOnly className="text-xs" />
-                <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link" disabled={isDraft}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
+              {(() => {
+                const cleanPhone = proposal.client_phone?.replace(/\D/g, "") ?? "";
+                const whatsappMsg = encodeURIComponent(`Olá! Segue o link da proposta para você analisar: ${publicLink}`);
+                const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
+                return (
+                  <>
+                    {whatsappUrl && !isDraft && (
+                      <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                        <Button className="w-full gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white">
+                          <MessageCircle className="h-4 w-4" /> Enviar via WhatsApp
+                        </Button>
+                      </a>
+                    )}
+                    <div className="flex gap-2">
+                      <Input value={publicLink} readOnly className="text-xs" />
+                      <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link" disabled={isDraft}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>

@@ -8,18 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { statusConfig, formatCurrency } from "@/lib/proposal-utils";
+import { statusConfig } from "@/lib/proposal-utils";
 
 type ProposalWithClient = {
   id: string;
   title: string;
-  price: number | null;
-  deadline: string | null;
   status: string;
   created_at: string;
   client_name: string;
 };
-
 
 export default function Propostas() {
   const { workspaceId } = useWorkspace();
@@ -32,7 +29,7 @@ export default function Propostas() {
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, title, price, deadline, status, created_at, client_id, clients(name)")
+        .select("id, title, status, created_at, client_id, clients(name)")
         .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: false });
 
@@ -41,8 +38,6 @@ export default function Propostas() {
           (data as any[]).map((p) => ({
             id: p.id,
             title: p.title,
-            price: p.price,
-            deadline: p.deadline,
             status: p.status,
             created_at: p.created_at,
             client_name: p.clients?.name ?? "—",
@@ -52,7 +47,6 @@ export default function Propostas() {
       setLoading(false);
     })();
   }, [workspaceId]);
-
 
   if (loading) {
     return (
@@ -87,8 +81,6 @@ export default function Propostas() {
               <TableRow>
                 <TableHead>Título</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Prazo</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
@@ -100,8 +92,6 @@ export default function Propostas() {
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.title}</TableCell>
                     <TableCell>{p.client_name}</TableCell>
-                    <TableCell>{formatCurrency(p.price)}</TableCell>
-                    <TableCell>{p.deadline ?? "—"}</TableCell>
                     <TableCell>
                       <Badge variant={sc.variant} className={sc.className}>
                         {sc.label}
