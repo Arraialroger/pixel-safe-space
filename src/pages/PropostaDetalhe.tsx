@@ -15,10 +15,7 @@ import { statusConfig, formatDate } from "@/lib/proposal-utils";
 type ProposalDetail = {
   id: string;
   title: string;
-  price: number | null;
-  deadline: string | null;
   status: string;
-  payment_terms: string | null;
   ai_generated_scope: string | null;
   workspace_id: string | null;
   client_id: string;
