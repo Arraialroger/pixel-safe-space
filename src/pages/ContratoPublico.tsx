@@ -280,6 +280,10 @@ export default function ContratoPublico() {
                     : "Pagar Entrada e Liberar Projeto"}
                 </Button>
               </a>
+            ) : paymentError ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                <p className="text-amber-700 text-sm">{paymentError}</p>
+              </div>
             ) : null}
           </div>
         )}
