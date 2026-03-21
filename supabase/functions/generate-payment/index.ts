@@ -61,6 +61,10 @@ Deno.serve(async (req) => {
 
     const clientName = (contract as any).clients?.name ?? "Cliente";
 
+    // Build back URLs from origin header or fallback
+    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/+$/, "") || "https://pixel-safe-space.lovable.app";
+    const contractUrl = `${origin}/c/${contract_id}`;
+
     // Create Mercado Pago preference
     const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
@@ -79,6 +83,11 @@ Deno.serve(async (req) => {
         ],
         payer: { name: clientName },
         external_reference: contract_id,
+        back_urls: {
+          success: contractUrl,
+          pending: contractUrl,
+          failure: contractUrl,
+        },
         auto_return: "approved",
       }),
     });

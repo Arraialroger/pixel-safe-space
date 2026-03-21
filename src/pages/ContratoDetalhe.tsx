@@ -284,8 +284,8 @@ export default function ContratoDetalhe() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="payment_link">Link de Pagamento da Entrada</Label>
-                  <Input id="payment_link" type="url" value={paymentLink} onChange={(e) => setPaymentLink(e.target.value)} placeholder="https://..." disabled={!isDraft} />
+                  <Label htmlFor="payment_link">Link manual de pagamento (opcional / fallback)</Label>
+                  <Input id="payment_link" type="url" value={paymentLink} onChange={(e) => setPaymentLink(e.target.value)} placeholder="https://... (gerado automaticamente via Mercado Pago)" disabled={!isDraft} />
                 </div>
               </div>
 
