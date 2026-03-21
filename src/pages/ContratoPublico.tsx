@@ -136,7 +136,7 @@ export default function ContratoPublico() {
         } else if (data.error === "no_token") {
           setPaymentError("O estúdio ainda não configurou a integração de pagamento. Entre em contato diretamente.");
         } else if (data.error === "mp_api_error") {
-          setPaymentError("Erro ao gerar o link de pagamento. Entre em contato com o estúdio.");
+          setPaymentError(`Erro ao gerar o link de pagamento${data.details ? ` (${data.details})` : ""}. Entre em contato com o estúdio.`);
         } else if (data.error) {
           setPaymentError(data.error);
         }

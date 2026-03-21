@@ -85,8 +85,8 @@ Deno.serve(async (req) => {
 
     if (!mpResponse.ok) {
       const errorText = await mpResponse.text();
-      console.error("Mercado Pago API error:", errorText);
-      return new Response(JSON.stringify({ error: "mp_api_error" }), {
+      console.error("Mercado Pago API error:", mpResponse.status, errorText);
+      return new Response(JSON.stringify({ error: "mp_api_error", details: `Status ${mpResponse.status}` }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
