@@ -118,6 +118,7 @@ export default function ContratoPublico() {
 
   const generatePaymentLink = async (contractId: string) => {
     setGeneratingPayment(true);
+    setPaymentError(null);
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
@@ -132,10 +133,18 @@ export default function ContratoPublico() {
         const data = await res.json();
         if (data.checkout_url) {
           setDynamicPaymentUrl(data.checkout_url);
+        } else if (data.error === "no_token") {
+          setPaymentError("O estúdio ainda não configurou a integração de pagamento. Entre em contato diretamente.");
+        } else if (data.error === "mp_api_error") {
+          setPaymentError("Erro ao gerar o link de pagamento. Entre em contato com o estúdio.");
+        } else if (data.error) {
+          setPaymentError(data.error);
         }
+      } else {
+        setPaymentError("Não foi possível gerar o link de pagamento. Tente novamente mais tarde.");
       }
     } catch {
-      // Fallback to manual link silently
+      setPaymentError("Erro de conexão ao gerar pagamento. Tente novamente mais tarde.");
     }
     setGeneratingPayment(false);
   };
