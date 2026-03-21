@@ -72,6 +72,7 @@ export default function ContratoPublico() {
   const [signing, setSigning] = useState(false);
   const [generatingPayment, setGeneratingPayment] = useState(false);
   const [dynamicPaymentUrl, setDynamicPaymentUrl] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const form = useForm<SignForm>({
     resolver: zodResolver(signSchema),
@@ -117,6 +118,7 @@ export default function ContratoPublico() {
 
   const generatePaymentLink = async (contractId: string) => {
     setGeneratingPayment(true);
+    setPaymentError(null);
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
@@ -131,10 +133,18 @@ export default function ContratoPublico() {
         const data = await res.json();
         if (data.checkout_url) {
           setDynamicPaymentUrl(data.checkout_url);
+        } else if (data.error === "no_token") {
+          setPaymentError("O estúdio ainda não configurou a integração de pagamento. Entre em contato diretamente.");
+        } else if (data.error === "mp_api_error") {
+          setPaymentError("Erro ao gerar o link de pagamento. Entre em contato com o estúdio.");
+        } else if (data.error) {
+          setPaymentError(data.error);
         }
+      } else {
+        setPaymentError("Não foi possível gerar o link de pagamento. Tente novamente mais tarde.");
       }
     } catch {
-      // Fallback to manual link silently
+      setPaymentError("Erro de conexão ao gerar pagamento. Tente novamente mais tarde.");
     }
     setGeneratingPayment(false);
   };
@@ -270,6 +280,10 @@ export default function ContratoPublico() {
                     : "Pagar Entrada e Liberar Projeto"}
                 </Button>
               </a>
+            ) : paymentError ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                <p className="text-amber-700 text-sm">{paymentError}</p>
+              </div>
             ) : null}
           </div>
         )}
