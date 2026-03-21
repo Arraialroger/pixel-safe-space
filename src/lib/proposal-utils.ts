@@ -22,6 +22,21 @@ export const statusConfig: Record<
     variant: "default",
     className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-100",
   },
+  in_progress: {
+    label: "Em Desenvolvimento",
+    variant: "default",
+    className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100",
+  },
+  delivered: {
+    label: "Entregue",
+    variant: "default",
+    className: "bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100",
+  },
+  completed: {
+    label: "Concluído",
+    variant: "default",
+    className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-100",
+  },
 };
 
 export const paymentLabels: Record<string, string> = {

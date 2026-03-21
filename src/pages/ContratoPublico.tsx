@@ -72,6 +72,7 @@ export default function ContratoPublico() {
   const [signing, setSigning] = useState(false);
   const [generatingPayment, setGeneratingPayment] = useState(false);
   const [dynamicPaymentUrl, setDynamicPaymentUrl] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const form = useForm<SignForm>({
     resolver: zodResolver(signSchema),
