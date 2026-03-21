@@ -1,120 +1,98 @@
 
 
-# Plano: Evolucao Enterprise — Status de Execucao, Trava do Contrato e Mercado Pago BYOK
+# Plano: Sincronizacao de Status Proposta↔Contrato + Pagamento Automatico
 
-## Analise Tecnica dos 3 Pontos
+## Ponto 1: Sincronizacao de Status
 
-### Ponto 1: Coluna separada `execution_status` — RECOMENDADO
+**Diagnostico:** A proposta e o contrato sao entidades independentes. Quando o contrato muda de status, nada atualiza a proposta. Precisamos propagar mudancas relevantes.
 
-Misturar status comercial e operacional no mesmo campo e um anti-pattern. Um contrato pode estar `paid` (financeiro OK) e simultaneamente `in_progress` (execucao em andamento). Coluna separada com enum proprio:
+**Solucao: Trigger no banco de dados.** Um trigger `AFTER UPDATE` na tabela `contracts` que, quando `execution_status` ou `status` mudam, atualiza o `status` da proposta vinculada (`proposal_id`).
 
-- `not_started` (default) — Projeto ainda nao iniciou
-- `in_progress` — Em desenvolvimento
-- `delivered` — Entregue ao cliente
-- `completed` — Concluido e aprovado
+Mapeamento:
+- Contrato `status` → `signed` ou `paid` → Proposta `status` → `accepted`
+- Contrato `execution_status` → `in_progress` → Proposta `status` → `in_progress`
+- Contrato `execution_status` → `delivered` → Proposta `status` → `delivered`
+- Contrato `execution_status` → `completed` → Proposta `status` → `completed`
 
-**UI na listagem:** Duas badges por linha — uma para status comercial (cor financeira) e outra para execucao (cor operacional). O designer atualiza o `execution_status` via select na tela `ContratoDetalhe.tsx`.
+**Precisamos adicionar os novos status na proposta.** Hoje proposals so tem `draft`, `pending`, `accepted`. Vamos adicionar `in_progress`, `delivered`, `completed` ao `statusConfig` em `proposal-utils.ts` e na UI de listagem.
 
-**Complexidade:** Baixa. Uma migration, um select na UI, uma badge na listagem.
+### Migration SQL
 
-### Ponto 2: Trava do Contrato + Visualizacao — ABAS
+```sql
+-- Trigger function: sync proposal status from contract
+CREATE OR REPLACE FUNCTION public.sync_proposal_status()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  -- Only sync if contract has a linked proposal
+  IF NEW.proposal_id IS NULL THEN
+    RETURN NEW;
+  END IF;
 
-Melhor UX: usar `Tabs` (ja existe o componente) na tela `ContratoDetalhe.tsx`:
+  -- Map execution_status changes
+  IF NEW.execution_status IS DISTINCT FROM OLD.execution_status THEN
+    IF NEW.execution_status IN ('in_progress', 'delivered', 'completed') THEN
+      UPDATE public.proposals SET status = NEW.execution_status WHERE id = NEW.proposal_id;
+    END IF;
+  END IF;
 
-- **Aba "Editar"**: O formulario atual. Inputs desabilitados (`disabled`) quando `status !== 'draft'`.
-- **Aba "Documento Final"**: Renderiza o contrato identico ao `ContratoPublico.tsx` (componente extraido e reutilizado), incluindo dados de assinatura e timestamps.
+  -- Map commercial status changes
+  IF NEW.status IS DISTINCT FROM OLD.status THEN
+    IF NEW.status IN ('signed', 'paid') THEN
+      UPDATE public.proposals SET status = 'accepted' WHERE id = NEW.proposal_id;
+    END IF;
+  END IF;
 
-O designer ve exatamente o que o cliente ve, sem sair do painel.
+  RETURN NEW;
+END;
+$$;
 
-**Complexidade:** Media-baixa. Extrair o corpo do contrato para um componente compartilhado e usar Tabs.
+CREATE TRIGGER trg_sync_proposal_status
+  AFTER UPDATE ON public.contracts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_proposal_status();
+```
 
-### Ponto 3: Mercado Pago — Edge Function com BYOK
+### Frontend — Novos status na proposta
 
-**Seguranca:** O `mercado_pago_token` ja esta armazenado na tabela `workspaces`, protegido por RLS (apenas owner pode UPDATE, apenas members podem SELECT). A Edge Function le o token via service_role, nunca expondo ao frontend publico.
+**`src/lib/proposal-utils.ts`:** Adicionar ao `statusConfig`:
+- `in_progress`: badge azul "Em Desenvolvimento"
+- `delivered`: badge amber "Entregue"
+- `completed`: badge verde "Concluido"
 
-**Fluxo:**
-1. Cliente assina o contrato (RPC `sign_contract`)
-2. Frontend publico chama Edge Function `generate-payment` com `contract_id`
-3. Edge Function: le contrato + workspace (via service_role), usa o token do MP para criar uma `preference` na API do Mercado Pago, retorna o `init_point` (URL de checkout)
-4. Frontend exibe o botao com o link gerado dinamicamente
-
-**Para o MVP:** Geracao do link apenas. Sem webhook de confirmacao (designer marca `paid` manualmente). Webhook e V2.
-
-**Complexidade:** Media. Uma Edge Function, uma chamada de API externa, validacao de seguranca.
+**`src/pages/Propostas.tsx`** e **`src/pages/PropostaDetalhe.tsx`:** Nenhuma mudanca estrutural — ja usam `statusConfig[status]` com fallback, entao os novos status serao exibidos automaticamente.
 
 ---
 
-## Implementacao Proposta
+## Ponto 2: Pagamento Automatico via Mercado Pago
 
-### 1. Migration SQL
+**Diagnostico:** O `ContratoPublico.tsx` ja chama `generatePaymentLink()` apos a assinatura (linha 110-112 e 158). A Edge Function `generate-payment` ja esta correta. O problema e que o botao de pagamento so aparece se `paymentUrl` tem valor (linha 264), e o fallback e `contract.payment_link`.
 
-```sql
--- Execution status para contratos
-ALTER TABLE public.contracts
-  ADD COLUMN execution_status text NOT NULL DEFAULT 'not_started';
-```
+Se a Edge Function retorna `{ error: "no_token" }` (workspace sem token MP) ou `{ error: "mp_api_error" }`, o `dynamicPaymentUrl` fica `null` e sem `payment_link` manual, nada aparece.
 
-### 2. ContratoDetalhe.tsx — Tabs + Trava + Execution Status
+**Solucao:** O fluxo ja esta correto no codigo. O problema do usuario e provavelmente:
+1. O `mercado_pago_token` no workspace esta vazio ou incorreto
+2. Ou a Edge Function nao esta deployada
 
-- Importar `Tabs, TabsList, TabsTrigger, TabsContent`
-- **Aba "Editar":** Formulario atual com todos os inputs `disabled={!isDraft}`
-  - Adicionar `Select` para `execution_status` (sempre editavel, independente do status comercial)
-  - Botoes "Salvar" e "Preparar Assinatura" so aparecem em `draft`
-- **Aba "Documento Final":** Renderizar componente `ContratoDocumento` (extraido) com dados do contrato, workspace e cliente
-- Adicionar botao "Confirmar Pagamento" visivel quando `status === 'signed'` (muda para `paid`)
+**Ajustes necessarios:**
+- Na `ContratoPublico.tsx`, quando a Edge Function falha, mostrar uma mensagem de erro ao inves de silenciar (para o designer diagnosticar)
+- Adicionar log/toast quando `no_token` ou `mp_api_error` ocorrer
+- Garantir que o botao "Pagar" aparece com estado de erro se a geracao falhar, orientando o cliente a contatar o designer
 
-### 3. Componente Compartilhado `ContratoDocumento.tsx`
-
-Extrair o corpo do contrato (clausulas 1-7 + qualificacao) de `ContratoPublico.tsx` para um componente reutilizavel. Usado em:
-- `ContratoPublico.tsx` (pagina publica)
-- `ContratoDetalhe.tsx` aba "Documento Final" (painel interno)
-
-### 4. Contratos.tsx — Duas Badges
-
-Adicionar `execution_status` ao fetch e exibir segunda badge na tabela:
-- `not_started`: cinza "Nao Iniciado"
-- `in_progress`: azul "Em Desenvolvimento"
-- `delivered`: amber "Entregue"
-- `completed`: verde "Concluido"
-
-### 5. Edge Function `generate-payment`
-
-```typescript
-// POST { contract_id }
-// 1. Valida contract_id, le contrato + workspace (service_role)
-// 2. Extrai mercado_pago_token do workspace
-// 3. Chama API MP: POST /checkout/preferences
-// 4. Retorna { checkout_url: preference.init_point }
-```
-
-### 6. ContratoPublico.tsx — Integracao com Edge Function
-
-Apos assinatura (`signed`), ao inves de usar `payment_link` estatico:
-- Se workspace tem `mercado_pago_token`: chamar Edge Function para gerar link dinamico
-- Se nao tem token: fallback para `payment_link` manual (comportamento atual)
-- Botao exibe "Gerando link de pagamento..." enquanto carrega
-
-### 7. Types update
-
-`execution_status` adicionado automaticamente ao regenerar types.
-
-## Arquivos
+### Arquivos Modificados
 
 | Arquivo | Acao |
 |---------|------|
-| Migration SQL | `execution_status` em contracts |
-| `src/components/contratos/ContratoDocumento.tsx` | Criar (componente compartilhado) |
-| `src/pages/ContratoDetalhe.tsx` | Tabs + trava + execution_status + confirmar pagamento |
-| `src/pages/ContratoPublico.tsx` | Usar componente extraido + integracao MP |
-| `src/pages/Contratos.tsx` | Badge de execution_status |
-| `supabase/functions/generate-payment/index.ts` | Criar Edge Function MP |
-| `supabase/config.toml` | Registrar nova function |
+| Migration SQL | Trigger `sync_proposal_status` |
+| `src/lib/proposal-utils.ts` | Adicionar status `in_progress`, `delivered`, `completed` |
+| `src/pages/ContratoPublico.tsx` | Melhorar feedback de erro na geracao de pagamento |
 
-## Ordem de Execucao
+### Ordem
 
-1. Migration + componente extraido (base)
-2. ContratoDetalhe com Tabs + trava + execution_status
-3. Contratos.tsx com badges duplas
-4. Edge Function generate-payment
-5. ContratoPublico.tsx integracao dinamica
+1. Migration (trigger de sincronizacao)
+2. Novos status em `proposal-utils.ts`
+3. Feedback de erro em `ContratoPublico.tsx`
 
