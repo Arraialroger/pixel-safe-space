@@ -219,8 +219,8 @@ export default function PropostaDetalhe() {
       </div>
 
       {isAccepted && (
-        <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
-          <span className="text-sm text-green-800">
+        <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+          <span className="text-sm text-emerald-400">
             ✅ Proposta aceita digitalmente por <strong>{proposal.accepted_by_name}</strong> em {formatDate(proposal.accepted_at)}. O escopo não pode mais ser editado.
           </span>
         </div>
@@ -238,7 +238,6 @@ export default function PropostaDetalhe() {
                 <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
               </div>
             </CardHeader>
-            
           </Card>
 
           <Card>
@@ -254,7 +253,7 @@ export default function PropostaDetalhe() {
             </CardHeader>
             <CardContent className="space-y-4">
               {isAccepted || previewMode ? (
-                <div className="prose prose-sm max-w-none dark:prose-invert rounded-lg border border-border bg-card p-6">
+                <div className="prose prose-sm max-w-none prose-invert rounded-lg border border-white/10 bg-card p-6">
                   <ReactMarkdown>{scope || "*Nenhum escopo definido ainda...*"}</ReactMarkdown>
                 </div>
               ) : (
@@ -286,15 +285,15 @@ export default function PropostaDetalhe() {
             </CardHeader>
             <CardContent className="space-y-3">
               {isDraft && (
-                <div className="flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
-                  <p className="text-xs text-yellow-700">O link está desativado pois a proposta é um rascunho. Libere-a para ativar o acesso público.</p>
+                <div className="flex items-start gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-400">O link está desativado pois a proposta é um rascunho. Libere-a para ativar o acesso público.</p>
                 </div>
               )}
               {(isPending || isAccepted) && (
-                <div className="flex items-start gap-2 rounded-md border border-green-200 bg-green-50 p-3">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
-                  <p className="text-xs text-green-700">O link público está ativo e pronto para envio.</p>
+                <div className="flex items-start gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-emerald-400">O link público está ativo e pronto para envio.</p>
                 </div>
               )}
               {(() => {
@@ -305,7 +304,7 @@ export default function PropostaDetalhe() {
                   <>
                     {whatsappUrl && !isDraft && (
                       <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                        <Button className="w-full gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white">
+                        <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-500 text-white">
                           <MessageCircle className="h-4 w-4" /> Enviar via WhatsApp
                         </Button>
                       </a>

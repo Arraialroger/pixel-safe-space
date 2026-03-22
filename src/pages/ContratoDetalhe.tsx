@@ -89,7 +89,6 @@ export default function ContratoDetalhe() {
       setSignedByEmail(data.signed_by_email);
       setSignedAt(data.signed_at);
 
-      // Fetch workspace doc info
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: workspaceId });
       if (wsData && wsData.length > 0) {
         const w = wsData[0];
@@ -173,7 +172,6 @@ export default function ContratoDetalhe() {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <Button variant="ghost" size="sm" onClick={() => navigate("/contratos")} className="gap-1 text-muted-foreground">
           <ArrowLeft className="h-4 w-4" /> Voltar
@@ -181,7 +179,7 @@ export default function ContratoDetalhe() {
         <div className="flex items-center gap-2">
           {whatsappUrl && (
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="gap-1 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white">
+              <Button size="sm" className="gap-1 bg-emerald-600 hover:bg-emerald-500 text-white">
                 <MessageCircle className="h-4 w-4" /> WhatsApp
               </Button>
             </a>
@@ -196,7 +194,6 @@ export default function ContratoDetalhe() {
 
       <h1 className="text-2xl font-semibold tracking-tight">Contrato — {clientName}</h1>
 
-      {/* Execution Status */}
       <div className="flex items-center gap-3">
         <Label className="text-sm whitespace-nowrap">Execução:</Label>
         <Select value={executionStatus} onValueChange={handleExecutionStatusChange}>
@@ -216,7 +213,6 @@ export default function ContratoDetalhe() {
         )}
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="edit">
         <TabsList>
           <TabsTrigger value="edit">Editar</TabsTrigger>

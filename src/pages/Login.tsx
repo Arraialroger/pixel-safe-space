@@ -27,8 +27,8 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden lg:flex lg:w-1/2 items-center justify-center bg-primary/5">
+    <div className="flex min-h-screen bg-background">
+      <div className="hidden lg:flex lg:w-1/2 items-center justify-center bg-card/30 border-r border-white/5">
         <div className="max-w-md space-y-4 p-8">
           <div className="flex items-center gap-3">
             <Shield className="h-10 w-10 text-primary" />
@@ -61,7 +61,6 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required />
-              
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -72,7 +71,6 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required />
-              
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Entrando..." : "Entrar"}
@@ -87,6 +85,6 @@ export default function Login() {
           </p>
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }

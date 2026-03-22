@@ -116,7 +116,6 @@ export default function ContratoPublico() {
         setWorkspace(wsData[0] as WorkspaceInfo);
       }
 
-      // If already signed, try to generate dynamic payment link
       if (contractData.status === "signed") {
         generatePaymentLink(contractData.id);
       }
@@ -180,7 +179,7 @@ export default function ContratoPublico() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         <Toaster />
       </div>
@@ -189,7 +188,7 @@ export default function ContratoPublico() {
 
   if (!contract) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-muted-foreground text-lg">Contrato não encontrado.</p>
         <Toaster />
       </div>
@@ -199,7 +198,7 @@ export default function ContratoPublico() {
   const paymentUrl = dynamicPaymentUrl || contract.payment_link;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Toaster />
       <div className="max-w-3xl mx-auto px-6 py-12">
         {/* Logo */}
@@ -209,26 +208,28 @@ export default function ContratoPublico() {
           </div>
         )}
 
-        <ContratoDocumento
-          workspace={workspace}
-          client={contract.client}
-          deliverables={contract.content_deliverables}
-          exclusions={contract.content_exclusions}
-          revisions={contract.content_revisions}
-          paymentValue={contract.payment_value}
-          downPayment={contract.down_payment}
-          deadline={contract.deadline}
-          paymentTerms={contract.payment_terms}
-          signedByName={contract.signed_by_name}
-          signedByEmail={contract.signed_by_email}
-          signedAt={contract.signed_at}
-        />
+        <div className="rounded-2xl border border-white/10 bg-card shadow-2xl shadow-black/50 p-8">
+          <ContratoDocumento
+            workspace={workspace}
+            client={contract.client}
+            deliverables={contract.content_deliverables}
+            exclusions={contract.content_exclusions}
+            revisions={contract.content_revisions}
+            paymentValue={contract.payment_value}
+            downPayment={contract.down_payment}
+            deadline={contract.deadline}
+            paymentTerms={contract.payment_terms}
+            signedByName={contract.signed_by_name}
+            signedByEmail={contract.signed_by_email}
+            signedAt={contract.signed_at}
+          />
+        </div>
 
-        <Separator className="my-8" />
+        <Separator className="my-8 bg-white/10" />
 
         {/* Signature */}
         {contract.status === "pending_signature" && (
-          <div className="border rounded-lg p-6 space-y-4">
+          <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 space-y-4">
             <h3 className="text-lg font-semibold">Assinatura Digital</h3>
             <p className="text-sm text-muted-foreground">
               Preencha seus dados abaixo para assinar este contrato digitalmente.
@@ -271,8 +272,8 @@ export default function ContratoPublico() {
 
         {contract.status === "signed" && (
           <div className="space-y-4">
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-5 text-center">
-              <p className="text-emerald-700 font-semibold text-lg flex items-center justify-center gap-2">
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
+              <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-5 w-5" /> Assinado digitalmente
               </p>
             </div>
@@ -282,7 +283,7 @@ export default function ContratoPublico() {
               </Button>
             ) : paymentUrl ? (
               <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
-                <Button size="lg" className="w-full text-lg py-6 gap-3 animate-pulse">
+                <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
                   <ExternalLink className="h-5 w-5" />
                   {contract.down_payment != null
                     ? `Pagar Entrada de ${formatCurrency(contract.down_payment)} e Liberar Projeto`
@@ -290,17 +291,17 @@ export default function ContratoPublico() {
                 </Button>
               </a>
             ) : paymentError ? (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
-                <p className="text-amber-700 text-sm">{paymentError}</p>
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-center">
+                <p className="text-amber-400 text-sm">{paymentError}</p>
               </div>
             ) : null}
           </div>
         )}
 
         {contract.status === "paid" && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-5 text-center">
-            <p className="text-emerald-700 font-semibold text-lg flex items-center justify-center gap-2">
-              <CheckCircle2 className="h-5 w-5" /> Contrato Assinado e Pago. Projeto Liberado para Início!
+          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
+            <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+              <CheckCircle2 className="h-5 w-5" /> ✅ Pagamento Confirmado. Projeto Liberado!
             </p>
           </div>
         )}
