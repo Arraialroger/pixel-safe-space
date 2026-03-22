@@ -1,61 +1,60 @@
 
-Plano: Correção do pagamento automático Mercado Pago
 
-Diagnóstico
-- O erro não está relacionado ao campo manual “link de pagamento”.
-- A causa real já aparece nos logs da Edge Function:
-  `auto_return invalid. back_url.success must be defined`
-- Ou seja: a função `generate-payment` está chamando a API do Mercado Pago com `auto_return: "approved"`, mas sem `back_urls.success`. O Mercado Pago rejeita a preferência com erro 400.
-- Por isso o botão não aparece: hoje a página pública só mostra o botão se existir uma URL válida em `dynamicPaymentUrl` ou em `payment_link`. Como a geração dinâmica falha e o campo manual está vazio, sobra apenas a mensagem de erro.
+# Plano: Webhook Mercado Pago — Baixa Automatica de Pagamentos
 
-O que isso significa
-- O campo `payment_link` atual é apenas fallback manual.
-- Ele não bloqueia nem interfere na geração automática.
-- O fluxo automático falha antes, dentro da Edge Function.
+## Arquitetura
 
-Implementação recomendada
-1. Corrigir a Edge Function `generate-payment`
-- Manter o fluxo automático via Mercado Pago.
-- Ajustar o payload enviado para a API:
-  - adicionar `back_urls` com `success`, `pending` e `failure`
-  - manter `auto_return: "approved"` somente com essas URLs definidas
-- Melhor abordagem:
-  - usar `req.headers.get("origin")` para descobrir a URL base do app atual
-  - montar algo como:
-    - `success: {origin}/c/{contract_id}`
-    - `pending: {origin}/c/{contract_id}`
-    - `failure: {origin}/c/{contract_id}`
-- Assim funciona tanto em preview quanto em produção.
+Sua sugestao esta correta e bem estruturada. Concordo com todos os pontos. Apenas um ajuste: o `notification_url` do Mercado Pago nao precisa do `contract_id` como query param porque o `external_reference` (que ja enviamos como `contract_id`) volta no payload do webhook e tambem na consulta GET ao pagamento. Isso simplifica e e mais seguro.
 
-2. Manter o fallback manual, mas deixar isso explícito
-- Em `ContratoDetalhe.tsx`, o campo `payment_link` deve continuar existindo apenas como contingência.
-- Ajustar o label para algo como:
-  - “Link manual de pagamento (opcional / fallback)”
-- Isso evita confusão de produto e deixa claro que o padrão é geração automática.
+## Implementacao
 
-3. Refinar a UX do contrato público
-- Em `ContratoPublico.tsx`, manter a prioridade atual:
-  - 1º link dinâmico do Mercado Pago
-  - 2º `payment_link` manual, se existir
-- Se a geração falhar, continuar mostrando mensagem amigável.
-- Opcionalmente, melhorar a mensagem para orientar o estúdio a revisar a integração.
+### 1. Atualizar `generate-payment/index.ts`
 
-Arquivos envolvidos
-- `supabase/functions/generate-payment/index.ts`
-  - corrigir payload do Mercado Pago com `back_urls`
-- `src/pages/ContratoDetalhe.tsx`
-  - renomear o campo manual para deixar claro que é fallback
-- `src/pages/ContratoPublico.tsx`
-  - manter a lógica atual e, se desejado, refinar o texto de erro
+Adicionar `notification_url` ao payload da preference:
+```
+notification_url: `https://ocfjtvrjkhwyxhphovsf.supabase.co/functions/v1/mp-webhook`
+```
+O `external_reference` ja esta sendo enviado como `contract_id` (linha 85).
 
-Resultado esperado após o ajuste
-- Cliente assina o contrato
-- A Edge Function cria a preferência corretamente no Mercado Pago
-- O frontend recebe `checkout_url`
-- O botão verde “Pagar Entrada de R$ X e Liberar Projeto” aparece automaticamente
-- O campo manual só será usado se o estúdio quiser um plano B
+### 2. Criar Edge Function `mp-webhook/index.ts`
 
-Resumo executivo
-- Não é o campo manual que está causando o problema.
-- O erro está 100% na configuração do payload enviado ao Mercado Pago.
-- A correção ideal é pequena, direta e sem mudança de banco: adicionar `back_urls` na Edge Function e deixar o campo manual apenas como fallback explícito.
+Fluxo:
+1. Recebe POST do Mercado Pago com `{ type, data: { id } }`
+2. Se `type !== "payment"`, retorna 200 (ignora)
+3. Extrai `payment_id` = `data.id`
+4. Precisa descobrir qual workspace/token usar. Estrategia:
+   - Consulta a API do MP e preciso do token... mas ainda nao sei qual workspace
+   - Solucao: usar `notification_url` com `contract_id` como query param (como voce sugeriu) OU buscar pelo `external_reference` no banco
+   - **Melhor abordagem**: usar query param `contract_id` como voce sugeriu, pois evita ambiguidade
+5. Com `contract_id`, busca contrato + workspace (JOIN) via service_role → obtem `mercado_pago_token`
+6. GET `https://api.mercadopago.com/v1/payments/{payment_id}` com o token do workspace
+7. Valida: `payment.status === "approved"` AND `payment.external_reference === contract_id`
+8. Se valido: UPDATE contracts SET status = 'paid' WHERE id = contract_id AND status = 'signed'
+9. Retorna 200 sempre (MP reenvia se receber erro)
+
+### 3. Registrar em `supabase/config.toml`
+
+```toml
+[functions.mp-webhook]
+verify_jwt = false
+```
+
+### 4. Atualizar `ContratoPublico.tsx`
+
+O status `paid` ja tem tratamento (linhas 291-297). O texto atual e "Contrato Assinado e Pago. Projeto Liberado para Inicio!" — ja esta adequado. Nenhuma mudanca necessaria aqui, o banner ja aparece e o botao de pagamento ja fica oculto.
+
+## Arquivos
+
+| Arquivo | Acao |
+|---------|------|
+| `supabase/functions/generate-payment/index.ts` | Adicionar `notification_url` ao payload |
+| `supabase/functions/mp-webhook/index.ts` | Criar — recebe webhook, valida pagamento, atualiza contrato |
+| `supabase/config.toml` | Registrar `mp-webhook` com `verify_jwt = false` |
+
+## Seguranca
+
+- Webhook publico (sem JWT) — necessario pois MP envia POST diretamente
+- Validacao cruzada: nunca confia no payload, sempre consulta API do MP com token do workspace
+- Usa service_role apenas no backend
+- UPDATE condicional (`status = 'signed'`) previne reprocessamento
+
