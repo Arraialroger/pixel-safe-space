@@ -35,7 +35,7 @@ export default function Propostas() {
 
       if (!error && data) {
         setProposals(
-          (data as any[]).map((p) => ({
+          data.map((p) => ({
             id: p.id,
             title: p.title,
             status: p.status,

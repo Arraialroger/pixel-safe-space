@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
+import { formatCurrency } from "@/lib/contract-utils";
 
 const signSchema = z.object({
   name: z.string().trim().min(3, "Nome deve ter pelo menos 3 caracteres").max(200),
@@ -59,10 +60,6 @@ type WorkspaceInfo = {
   company_address: string | null;
 };
 
-function formatBRL(value: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-}
-
 export default function ContratoPublico() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
@@ -76,7 +73,7 @@ export default function ContratoPublico() {
 
   const form = useForm<SignForm>({
     resolver: zodResolver(signSchema),
-    defaultValues: { name: "", email: "", accepted: undefined as any },
+    defaultValues: { name: "", email: "", accepted: undefined as unknown as true },
   });
 
   useEffect(() => {
@@ -93,15 +90,27 @@ export default function ContratoPublico() {
         return;
       }
 
-      const c = data as any;
       const contractData: ContractData = {
-        ...c,
-        client: c.clients ?? { name: "—", document: null, company: null, address: null },
+        id: data.id,
+        status: data.status,
+        content_deliverables: data.content_deliverables,
+        content_exclusions: data.content_exclusions,
+        content_revisions: data.content_revisions,
+        payment_value: data.payment_value,
+        down_payment: data.down_payment,
+        payment_link: data.payment_link,
+        deadline: data.deadline,
+        payment_terms: data.payment_terms,
+        workspace_id: data.workspace_id,
+        signed_by_name: data.signed_by_name,
+        signed_by_email: data.signed_by_email,
+        signed_at: data.signed_at,
+        client: data.clients ?? { name: "—", document: null, company: null, address: null },
       };
       setContract(contractData);
 
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", {
-        _workspace_id: c.workspace_id,
+        _workspace_id: data.workspace_id,
       });
       if (wsData && wsData.length > 0) {
         setWorkspace(wsData[0] as WorkspaceInfo);
@@ -276,7 +285,7 @@ export default function ContratoPublico() {
                 <Button size="lg" className="w-full text-lg py-6 gap-3 animate-pulse">
                   <ExternalLink className="h-5 w-5" />
                   {contract.down_payment != null
-                    ? `Pagar Entrada de ${formatBRL(contract.down_payment)} e Liberar Projeto`
+                    ? `Pagar Entrada de ${formatCurrency(contract.down_payment)} e Liberar Projeto`
                     : "Pagar Entrada e Liberar Projeto"}
                 </Button>
               </a>

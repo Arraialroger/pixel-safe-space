@@ -66,9 +66,9 @@ export default function ConfiguracoesWorkspace() {
       if (ws) {
         form.reset({
           name: ws.name ?? "",
-          company_document: (ws as any).company_document ?? "",
-          company_address: (ws as any).company_address ?? "",
-          whatsapp: (ws as any).whatsapp ?? "",
+          company_document: ws.company_document ?? "",
+          company_address: ws.company_address ?? "",
+          whatsapp: ws.whatsapp ?? "",
           mercado_pago_token: ws.mercado_pago_token ?? "",
           stripe_token: ws.stripe_token ?? "",
         });
@@ -92,7 +92,7 @@ export default function ConfiguracoesWorkspace() {
         whatsapp: values.whatsapp || null,
         mercado_pago_token: values.mercado_pago_token || null,
         stripe_token: values.stripe_token || null,
-      } as any)
+      })
       .eq("id", workspaceId);
 
     if (error) {
@@ -145,66 +145,41 @@ export default function ConfiguracoesWorkspace() {
               <CardDescription>Informações básicas do seu workspace.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome do Workspace</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Minha Agência Digital" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome do Workspace</FormLabel>
+                  <FormControl><Input placeholder="Ex: Minha Agência Digital" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="company_document"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CNPJ / CPF da Agência</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: 12.345.678/0001-90" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="company_address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Endereço Completo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Rua das Flores, 123 - São Paulo/SP" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="whatsapp"
-                render={({ field }) => (
+                <FormField control={form.control} name="company_document" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>WhatsApp de Contato</FormLabel>
-                    <FormControl>
-                      <Input placeholder="5511999999999" {...field} />
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground">
-                      DDI + DDD + número, sem espaços ou traços. Será exibido na proposta pública.
-                    </p>
+                    <FormLabel>CNPJ / CPF da Agência</FormLabel>
+                    <FormControl><Input placeholder="Ex: 12.345.678/0001-90" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
+                )} />
+                <FormField control={form.control} name="company_address" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Endereço Completo</FormLabel>
+                    <FormControl><Input placeholder="Ex: Rua das Flores, 123 - São Paulo/SP" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              <FormField control={form.control} name="whatsapp" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>WhatsApp de Contato</FormLabel>
+                  <FormControl><Input placeholder="5511999999999" {...field} /></FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    DDI + DDD + número, sem espaços ou traços. Será exibido na proposta pública.
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )} />
             </CardContent>
           </Card>
 
@@ -219,49 +194,31 @@ export default function ConfiguracoesWorkspace() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="mercado_pago_token"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mercado Pago Access Token</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="APP_USR-..."
-                        autoComplete="off"
-                        {...field}
-                      />
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground">
-                      Encontre em: Mercado Pago → Seu negócio → Configurações → Credenciais de produção.
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormField control={form.control} name="mercado_pago_token" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mercado Pago Access Token</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="APP_USR-..." autoComplete="off" {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Encontre em: Mercado Pago → Seu negócio → Configurações → Credenciais de produção.
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
-              <FormField
-                control={form.control}
-                name="stripe_token"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Stripe Secret Key</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="sk_live_..."
-                        autoComplete="off"
-                        {...field}
-                      />
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground">
-                      Encontre em: Stripe Dashboard → Developers → API Keys → Secret key.
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormField control={form.control} name="stripe_token" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Stripe Secret Key</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="sk_live_..." autoComplete="off" {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Encontre em: Stripe Dashboard → Developers → API Keys → Secret key.
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )} />
             </CardContent>
           </Card>
 

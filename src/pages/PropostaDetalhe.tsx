@@ -85,7 +85,6 @@ export default function PropostaDetalhe() {
         return;
       }
 
-      const client = (d as any).clients;
       setProposal({
         id: d.id,
         title: d.title,
@@ -93,11 +92,11 @@ export default function PropostaDetalhe() {
         ai_generated_scope: d.ai_generated_scope,
         workspace_id: d.workspace_id,
         client_id: d.client_id,
-        client_name: client?.name ?? "—",
-        client_phone: client?.phone ?? null,
-        client_company: client?.company ?? null,
-        client_document: client?.document ?? null,
-        client_address: client?.address ?? null,
+        client_name: d.clients?.name ?? "—",
+        client_phone: d.clients?.phone ?? null,
+        client_company: d.clients?.company ?? null,
+        client_document: d.clients?.document ?? null,
+        client_address: d.clients?.address ?? null,
         accepted_by_name: d.accepted_by_name,
         accepted_by_email: d.accepted_by_email,
         accepted_at: d.accepted_at,
@@ -113,7 +112,7 @@ export default function PropostaDetalhe() {
     setSaving(true);
     const { error } = await supabase
       .from("proposals")
-      .update({ ai_generated_scope: scope } as any)
+      .update({ ai_generated_scope: scope })
       .eq("id", id);
     setSaving(false);
     if (error) {
@@ -133,7 +132,7 @@ export default function PropostaDetalhe() {
     setChangingStatus(true);
     const { error } = await supabase
       .from("proposals")
-      .update({ status: newStatus } as any)
+      .update({ status: newStatus })
       .eq("id", id);
     setChangingStatus(false);
     if (error) {
@@ -160,7 +159,7 @@ export default function PropostaDetalhe() {
         content_exclusions: exclusions || null,
         content_revisions: revisions || null,
         status: "draft",
-      } as any)
+      })
       .select("id")
       .single();
 

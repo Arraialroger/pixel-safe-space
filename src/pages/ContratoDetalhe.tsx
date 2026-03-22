@@ -15,20 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
-
-const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; className?: string }> = {
-  draft: { label: "Rascunho", variant: "secondary" },
-  pending_signature: { label: "Aguardando Assinatura", variant: "outline", className: "border-amber-500 text-amber-600" },
-  signed: { label: "Assinado", variant: "default", className: "bg-emerald-600" },
-  paid: { label: "Pago", variant: "default", className: "bg-primary" },
-};
-
-const execStatusConfig: Record<string, { label: string; className: string }> = {
-  not_started: { label: "Não Iniciado", className: "bg-muted text-muted-foreground" },
-  in_progress: { label: "Em Desenvolvimento", className: "bg-blue-100 text-blue-700 border-blue-200" },
-  delivered: { label: "Entregue", className: "bg-amber-100 text-amber-700 border-amber-200" },
-  completed: { label: "Concluído", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-};
+import { contractStatusConfig, execStatusConfig } from "@/lib/contract-utils";
 
 type WorkspaceDoc = {
   name: string;
@@ -85,28 +72,27 @@ export default function ContratoDetalhe() {
         return;
       }
 
-      const c = data as any;
-      setStatus(c.status);
-      setExecutionStatus(c.execution_status ?? "not_started");
-      setClientName(c.clients?.name ?? "—");
-      setClientPhone(c.clients?.phone ?? "");
-      setClientData(c.clients ?? { name: "—", document: null, company: null, address: null });
-      setDeliverables(c.content_deliverables ?? "");
-      setExclusions(c.content_exclusions ?? "");
-      setRevisions(c.content_revisions ?? "");
-      setPaymentValue(c.payment_value != null ? String(c.payment_value) : "");
-      setDownPayment(c.down_payment != null ? String(c.down_payment) : "");
-      setPaymentLink(c.payment_link ?? "");
-      setDeadline(c.deadline ?? "");
-      setPaymentTerms(c.payment_terms ?? "");
-      setSignedByName(c.signed_by_name);
-      setSignedByEmail(c.signed_by_email);
-      setSignedAt(c.signed_at);
+      setStatus(data.status);
+      setExecutionStatus(data.execution_status ?? "not_started");
+      setClientName(data.clients?.name ?? "—");
+      setClientPhone(data.clients?.phone ?? "");
+      setClientData(data.clients ?? { name: "—", document: null, company: null, address: null });
+      setDeliverables(data.content_deliverables ?? "");
+      setExclusions(data.content_exclusions ?? "");
+      setRevisions(data.content_revisions ?? "");
+      setPaymentValue(data.payment_value != null ? String(data.payment_value) : "");
+      setDownPayment(data.down_payment != null ? String(data.down_payment) : "");
+      setPaymentLink(data.payment_link ?? "");
+      setDeadline(data.deadline ?? "");
+      setPaymentTerms(data.payment_terms ?? "");
+      setSignedByName(data.signed_by_name);
+      setSignedByEmail(data.signed_by_email);
+      setSignedAt(data.signed_at);
 
       // Fetch workspace doc info
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: workspaceId });
       if (wsData && wsData.length > 0) {
-        const w = wsData[0] as any;
+        const w = wsData[0];
         setWsDoc({ name: w.name, logo_url: w.logo_url, company_document: w.company_document, company_address: w.company_address });
       }
 
@@ -128,7 +114,7 @@ export default function ContratoDetalhe() {
         payment_link: paymentLink || null,
         deadline: deadline || null,
         payment_terms: paymentTerms || null,
-      } as any)
+      })
       .eq("id", id);
     setSaving(false);
     toast(error ? { title: "Erro ao salvar", description: error.message, variant: "destructive" } : { title: "Rascunho salvo!" });
@@ -137,7 +123,7 @@ export default function ContratoDetalhe() {
   const handlePrepareSignature = async () => {
     if (!id) return;
     setChangingStatus(true);
-    const { error } = await supabase.from("contracts").update({ status: "pending_signature" } as any).eq("id", id);
+    const { error } = await supabase.from("contracts").update({ status: "pending_signature" }).eq("id", id);
     setChangingStatus(false);
     if (!error) {
       setStatus("pending_signature");
@@ -148,7 +134,7 @@ export default function ContratoDetalhe() {
   const handleConfirmPayment = async () => {
     if (!id) return;
     setConfirmingPayment(true);
-    const { error } = await supabase.from("contracts").update({ status: "paid" } as any).eq("id", id);
+    const { error } = await supabase.from("contracts").update({ status: "paid" }).eq("id", id);
     setConfirmingPayment(false);
     if (!error) {
       setStatus("paid");
@@ -158,7 +144,7 @@ export default function ContratoDetalhe() {
 
   const handleExecutionStatusChange = async (val: string) => {
     if (!id) return;
-    const { error } = await supabase.from("contracts").update({ execution_status: val } as any).eq("id", id);
+    const { error } = await supabase.from("contracts").update({ execution_status: val }).eq("id", id);
     if (!error) {
       setExecutionStatus(val);
       toast({ title: "Status de execução atualizado!" });
@@ -179,7 +165,7 @@ export default function ContratoDetalhe() {
     );
   }
 
-  const sc = statusConfig[status] ?? statusConfig.draft;
+  const sc = contractStatusConfig[status] ?? contractStatusConfig.draft;
   const ec = execStatusConfig[executionStatus] ?? execStatusConfig.not_started;
   const cleanPhone = clientPhone.replace(/\D/g, "");
   const whatsappMsg = encodeURIComponent(`Olá! O contrato do nosso projeto está pronto para assinatura digital. Segue o link: ${contractLink}`);

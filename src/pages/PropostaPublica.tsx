@@ -5,7 +5,6 @@ import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 type PublicProposal = {
@@ -40,14 +39,12 @@ export default function PropostaPublica() {
         return;
       }
 
-      const d = data as any;
-
       let wsName = "Estúdio";
       let logoUrl: string | null = null;
       let whatsapp: string | null = null;
 
-      if (d.workspace_id) {
-        const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: d.workspace_id });
+      if (data.workspace_id) {
+        const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: data.workspace_id });
         if (wsData && wsData.length > 0) {
           wsName = wsData[0].name;
           logoUrl = wsData[0].logo_url ?? null;
@@ -56,11 +53,11 @@ export default function PropostaPublica() {
       }
 
       setProposal({
-        id: d.id,
-        title: d.title,
-        status: d.status,
-        ai_generated_scope: d.ai_generated_scope,
-        client_name: d.clients?.name ?? "—",
+        id: data.id,
+        title: data.title,
+        status: data.status,
+        ai_generated_scope: data.ai_generated_scope,
+        client_name: data.clients?.name ?? "—",
         workspace_name: wsName,
         workspace_logo: logoUrl,
         workspace_whatsapp: whatsapp,
@@ -99,24 +96,17 @@ export default function PropostaPublica() {
     <div className="min-h-screen bg-background">
       <Toaster />
 
-      {/* Header with logo/name */}
       <header className="border-b border-border bg-card">
         <div className="mx-auto max-w-3xl px-6 py-6 flex justify-center">
           {proposal.workspace_logo ? (
-            <img
-              src={proposal.workspace_logo}
-              alt={proposal.workspace_name}
-              className="h-10 object-contain"
-            />
+            <img src={proposal.workspace_logo} alt={proposal.workspace_name} className="h-10 object-contain" />
           ) : (
             <h2 className="text-lg font-semibold text-foreground">{proposal.workspace_name}</h2>
           )}
         </div>
       </header>
 
-      {/* Proposal content */}
       <main className="mx-auto max-w-3xl px-6 py-10 space-y-8">
-        {/* Title */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">{proposal.title}</h1>
           <p className="text-muted-foreground">Preparada para {proposal.client_name}</p>
@@ -124,7 +114,6 @@ export default function PropostaPublica() {
 
         <Separator />
 
-        {/* Scope */}
         {proposal.ai_generated_scope && (
           <>
             <div className="space-y-3">
@@ -137,17 +126,13 @@ export default function PropostaPublica() {
           </>
         )}
 
-        {/* WhatsApp CTA */}
         {whatsappUrl && (
           <div className="flex flex-col items-center gap-3 pt-4 pb-8">
             <p className="text-sm text-muted-foreground text-center max-w-md">
               Gostou da proposta? Fale diretamente conosco para esclarecer dúvidas e escolher o melhor pacote.
             </p>
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-              <Button
-                size="lg"
-                className="px-10 text-base gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white"
-              >
+              <Button size="lg" className="px-10 text-base gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white">
                 <MessageCircle className="h-5 w-5" />
                 Falar com o Designer (WhatsApp)
               </Button>
