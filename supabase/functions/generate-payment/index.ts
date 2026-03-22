@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${workspace.mercado_pago_token}`,
       },
+      signal: AbortSignal.timeout(15000),
       body: JSON.stringify({
         items: [
           {
