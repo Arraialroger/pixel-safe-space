@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
         ],
         payer: { name: clientName },
         external_reference: contract_id,
+        notification_url: `${supabaseUrl}/functions/v1/mp-webhook?contract_id=${contract_id}`,
         back_urls: {
           success: contractUrl,
           pending: contractUrl,
