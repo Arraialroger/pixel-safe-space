@@ -121,9 +121,10 @@ export default function PropostaNova() {
       } else {
         throw new Error("A IA não retornou conteúdo. Tente novamente.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Não foi possível gerar o escopo.";
       console.error("AI generation error:", err);
-      toast({ title: "Erro ao gerar escopo", description: err.message || "Não foi possível gerar o escopo.", variant: "destructive" });
+      toast({ title: "Erro ao gerar escopo", description: message, variant: "destructive" });
     } finally {
       setGeneratingAI(false);
     }
@@ -149,7 +150,7 @@ export default function PropostaNova() {
       summary,
       ai_generated_scope: values.scope || null,
       status: "draft",
-    } as any);
+    });
 
     setSaving(false);
     if (error) {
