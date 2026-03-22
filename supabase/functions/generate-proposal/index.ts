@@ -105,6 +105,7 @@ Transforme isso num documento de escopo completo, detalhado e persuasivo.`;
         Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(45000),
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
