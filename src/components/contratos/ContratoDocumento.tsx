@@ -52,7 +52,7 @@ export default function ContratoDocumento({
   signedAt,
 }: ContractDocProps) {
   return (
-    <article className="prose prose-sm prose-neutral max-w-none">
+    <article className="prose prose-sm prose-invert max-w-none">
       <h1 className="text-center text-xl font-bold tracking-wide uppercase mb-8">
         Contrato de Prestação de Serviços
       </h1>
@@ -73,9 +73,8 @@ export default function ContratoDocumento({
         </p>
       </section>
 
-      <Separator className="my-6" />
+      <Separator className="my-6 bg-white/10" />
 
-      {/* Cláusula 1 */}
       <section className="mb-6">
         <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 1 — Do Objeto e Escopo</h2>
         {deliverables ? (
@@ -85,7 +84,6 @@ export default function ContratoDocumento({
         )}
       </section>
 
-      {/* Cláusula 2 */}
       <section className="mb-6">
         <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 2 — Das Exclusões do Escopo</h2>
         {exclusions ? (
@@ -95,7 +93,6 @@ export default function ContratoDocumento({
         )}
       </section>
 
-      {/* Cláusula 3 */}
       <section className="mb-6">
         <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 3 — Dos Prazos e Obrigações</h2>
         <p className="text-sm leading-relaxed">
@@ -103,7 +100,6 @@ export default function ContratoDocumento({
         </p>
       </section>
 
-      {/* Cláusula 4 */}
       <section className="mb-6">
         <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 4 — Dos Limites de Revisão e Aprovações</h2>
         {revisions ? (
@@ -116,7 +112,6 @@ export default function ContratoDocumento({
         </p>
       </section>
 
-      {/* Cláusula 5 */}
       <section className="mb-6">
         <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 5 — Da Propriedade Intelectual e Portfólio</h2>
         <p className="text-sm leading-relaxed">
@@ -127,7 +122,6 @@ export default function ContratoDocumento({
         </p>
       </section>
 
-      {/* Cláusula 6 */}
       <section className="mb-6">
         <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 6 — Do Investimento, Inadimplência e Rescisão</h2>
         <p className="text-sm leading-relaxed">
@@ -144,7 +138,6 @@ export default function ContratoDocumento({
         </p>
       </section>
 
-      {/* Cláusula 7 */}
       <section className="mb-6">
         <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula 7 — Do Foro</h2>
         <p className="text-sm leading-relaxed">
@@ -152,12 +145,11 @@ export default function ContratoDocumento({
         </p>
       </section>
 
-      {/* Assinatura info */}
       {signedByName && (
         <>
-          <Separator className="my-6" />
+          <Separator className="my-6 bg-white/10" />
           <section className="mb-6 text-center">
-            <p className="text-sm text-emerald-700 font-semibold">✓ Assinado digitalmente</p>
+            <p className="text-sm text-emerald-400 font-semibold">✓ Assinado digitalmente</p>
             <p className="text-sm text-muted-foreground mt-1">
               por {signedByName} ({signedByEmail})
               {signedAt && <> em {new Date(signedAt).toLocaleString("pt-BR")}</>}

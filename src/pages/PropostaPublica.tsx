@@ -96,7 +96,7 @@ export default function PropostaPublica() {
     <div className="min-h-screen bg-background">
       <Toaster />
 
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-white/5 bg-card/80 backdrop-blur-sm">
         <div className="mx-auto max-w-3xl px-6 py-6 flex justify-center">
           {proposal.workspace_logo ? (
             <img src={proposal.workspace_logo} alt={proposal.workspace_name} className="h-10 object-contain" />
@@ -112,17 +112,17 @@ export default function PropostaPublica() {
           <p className="text-muted-foreground">Preparada para {proposal.client_name}</p>
         </div>
 
-        <Separator />
+        <Separator className="bg-white/10" />
 
         {proposal.ai_generated_scope && (
           <>
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-foreground">Escopo do Projeto</h3>
-              <div className="prose prose-sm max-w-none dark:prose-invert rounded-lg border border-border bg-card p-6">
+              <div className="prose prose-sm max-w-none prose-invert rounded-xl border border-white/10 bg-card p-6">
                 <ReactMarkdown>{proposal.ai_generated_scope}</ReactMarkdown>
               </div>
             </div>
-            <Separator />
+            <Separator className="bg-white/10" />
           </>
         )}
 
@@ -132,7 +132,7 @@ export default function PropostaPublica() {
               Gostou da proposta? Fale diretamente conosco para esclarecer dúvidas e escolher o melhor pacote.
             </p>
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-              <Button size="lg" className="px-10 text-base gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white">
+              <Button size="lg" className="px-10 text-base gap-2 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
                 <MessageCircle className="h-5 w-5" />
                 Falar com o Designer (WhatsApp)
               </Button>
