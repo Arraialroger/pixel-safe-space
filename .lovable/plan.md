@@ -1,60 +1,101 @@
 
 
-# Plano: Webhook Mercado Pago — Baixa Automatica de Pagamentos
+# Plano: Estabilizacao V1.0 — Seguranca, Limpeza e Resiliencia
 
-## Arquitetura
+## Fase 1: Blindagem de Banco de Dados (Migration)
 
-Sua sugestao esta correta e bem estruturada. Concordo com todos os pontos. Apenas um ajuste: o `notification_url` do Mercado Pago nao precisa do `contract_id` como query param porque o `external_reference` (que ja enviamos como `contract_id`) volta no payload do webhook e tambem na consulta GET ao pagamento. Isso simplifica e e mais seguro.
+Uma unica migration SQL com 3 acoes:
 
-## Implementacao
+1. **DROP POLICY** `Anon can view profiles` na tabela `profiles` — expoe PII de todos os designers
+2. **DROP POLICY** `Anon can view clients via contract` na tabela `clients` — dados de clientes (CPF, endereco) expostos publicamente; o JOIN do select de contracts ja traz o que e necessario
+3. **CREATE TRIGGER** `trg_sync_proposal_status` — a funcao `sync_proposal_status()` existe mas o trigger nao esta atrelado (confirmado: `db-triggers` mostra "no triggers")
 
-### 1. Atualizar `generate-payment/index.ts`
+```sql
+DROP POLICY IF EXISTS "Anon can view profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Anon can view clients via contract" ON public.clients;
 
-Adicionar `notification_url` ao payload da preference:
-```
-notification_url: `https://ocfjtvrjkhwyxhphovsf.supabase.co/functions/v1/mp-webhook`
-```
-O `external_reference` ja esta sendo enviado como `contract_id` (linha 85).
-
-### 2. Criar Edge Function `mp-webhook/index.ts`
-
-Fluxo:
-1. Recebe POST do Mercado Pago com `{ type, data: { id } }`
-2. Se `type !== "payment"`, retorna 200 (ignora)
-3. Extrai `payment_id` = `data.id`
-4. Precisa descobrir qual workspace/token usar. Estrategia:
-   - Consulta a API do MP e preciso do token... mas ainda nao sei qual workspace
-   - Solucao: usar `notification_url` com `contract_id` como query param (como voce sugeriu) OU buscar pelo `external_reference` no banco
-   - **Melhor abordagem**: usar query param `contract_id` como voce sugeriu, pois evita ambiguidade
-5. Com `contract_id`, busca contrato + workspace (JOIN) via service_role → obtem `mercado_pago_token`
-6. GET `https://api.mercadopago.com/v1/payments/{payment_id}` com o token do workspace
-7. Valida: `payment.status === "approved"` AND `payment.external_reference === contract_id`
-8. Se valido: UPDATE contracts SET status = 'paid' WHERE id = contract_id AND status = 'signed'
-9. Retorna 200 sempre (MP reenvia se receber erro)
-
-### 3. Registrar em `supabase/config.toml`
-
-```toml
-[functions.mp-webhook]
-verify_jwt = false
+CREATE TRIGGER trg_sync_proposal_status
+  AFTER UPDATE ON public.contracts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_proposal_status();
 ```
 
-### 4. Atualizar `ContratoPublico.tsx`
+## Fase 2: Limpeza de Codigo e Tipagem
 
-O status `paid` ja tem tratamento (linhas 291-297). O texto atual e "Contrato Assinado e Pago. Projeto Liberado para Inicio!" — ja esta adequado. Nenhuma mudanca necessaria aqui, o banner ja aparece e o botao de pagamento ja fica oculto.
+### 2.1 Remover `as any` (tipos ja estao atualizados)
 
-## Arquivos
+O `types.ts` ja mapeia todas as colunas corretamente (`down_payment`, `execution_status`, `company_document`, `company_address`, `whatsapp`). Os `as any` sao desnecessarios.
+
+**Arquivos afetados e mudancas:**
+
+| Arquivo | `as any` a remover |
+|---------|-------------------|
+| `ContratoDetalhe.tsx` | 6 ocorrencias: cast no data, cast no wsData, 4 updates |
+| `ContratoPublico.tsx` | 1 ocorrencia: cast no data (+ 1 no form que e valido e permanece) |
+| `PropostaDetalhe.tsx` | 4 ocorrencias: cast no clients, 3 updates |
+| `PropostaNova.tsx` | 1 ocorrencia: insert |
+| `Propostas.tsx` | 1 ocorrencia: map cast |
+| `Contratos.tsx` | 1 ocorrencia: map cast |
+| `ConfiguracoesWorkspace.tsx` | 4 ocorrencias: 3 acessos a campos + 1 update |
+| `PropostaPublica.tsx` | 1 ocorrencia: cast no data |
+
+Para os SELECTs com JOINs (ex: `clients(name)`), o Supabase retorna o tipo correto quando os Relationships estao definidos no types.ts (e estao). Basta remover o `as any` e deixar o TypeScript inferir.
+
+Para os UPDATEs, os campos ja existem nos tipos `Update` de cada tabela, entao o cast e desnecessario.
+
+### 2.2 Centralizar constantes duplicadas
+
+Criar `src/lib/contract-utils.ts` com:
+- `contractStatusConfig` (status comercial do contrato)
+- `execStatusConfig` (status de execucao)
+- `formatCurrency` (ja existe em `proposal-utils.ts`, mas duplicada em `Contratos.tsx` e `ContratoPublico.tsx`)
+
+Remover duplicatas de:
+- `ContratoDetalhe.tsx` (linhas 19-31)
+- `Contratos.tsx` (linhas 24-44 + funcao formatCurrency)
+- `ContratoPublico.tsx` (funcao formatBRL)
+
+Importar de `contract-utils.ts` em todos os arquivos que usam.
+
+`proposal-utils.ts` mantem apenas configs de proposta (ja tem `statusConfig` com os novos status).
+
+## Fase 3: Resiliencia de APIs (Timeouts)
+
+### `generate-proposal/index.ts`
+- Adicionar `signal: AbortSignal.timeout(45000)` no fetch da OpenAI (linha ~100)
+- Tratar `AbortError` no catch para retornar mensagem amigavel
+
+### `generate-payment/index.ts`
+- Adicionar `signal: AbortSignal.timeout(15000)` no fetch do Mercado Pago (linha ~69)
+- Tratar `AbortError` no catch
+
+### `mp-webhook/index.ts`
+- Adicionar `signal: AbortSignal.timeout(15000)` no fetch de verificacao do pagamento
+- Tratar `AbortError` no catch
+
+## Arquivos Modificados
 
 | Arquivo | Acao |
 |---------|------|
-| `supabase/functions/generate-payment/index.ts` | Adicionar `notification_url` ao payload |
-| `supabase/functions/mp-webhook/index.ts` | Criar — recebe webhook, valida pagamento, atualiza contrato |
-| `supabase/config.toml` | Registrar `mp-webhook` com `verify_jwt = false` |
+| Migration SQL | Drop 2 policies + criar trigger |
+| `src/lib/contract-utils.ts` | **Criar** — centralizar configs de contrato |
+| `src/lib/proposal-utils.ts` | Remover `formatCurrency` duplicada (ja existe la) |
+| `src/pages/ContratoDetalhe.tsx` | Remover `as any`, importar de `contract-utils` |
+| `src/pages/ContratoPublico.tsx` | Remover `as any`, importar `formatCurrency` |
+| `src/pages/Contratos.tsx` | Remover `as any`, importar de `contract-utils` |
+| `src/pages/PropostaDetalhe.tsx` | Remover `as any` |
+| `src/pages/PropostaNova.tsx` | Remover `as any` |
+| `src/pages/Propostas.tsx` | Remover `as any` |
+| `src/pages/PropostaPublica.tsx` | Remover `as any` |
+| `src/pages/ConfiguracoesWorkspace.tsx` | Remover `as any` |
+| `supabase/functions/generate-proposal/index.ts` | Timeout 45s |
+| `supabase/functions/generate-payment/index.ts` | Timeout 15s |
+| `supabase/functions/mp-webhook/index.ts` | Timeout 15s |
 
-## Seguranca
+## Ordem de Execucao
 
-- Webhook publico (sem JWT) — necessario pois MP envia POST diretamente
-- Validacao cruzada: nunca confia no payload, sempre consulta API do MP com token do workspace
-- Usa service_role apenas no backend
-- UPDATE condicional (`status = 'signed'`) previne reprocessamento
+1. Migration (blindagem critica)
+2. Criar `contract-utils.ts` (base para imports)
+3. Limpar `as any` + centralizar imports em todos os arquivos de pagina
+4. Adicionar timeouts nas 3 Edge Functions
 
