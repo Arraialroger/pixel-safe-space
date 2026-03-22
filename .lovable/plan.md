@@ -1,101 +1,161 @@
 
 
-# Plano: Estabilizacao V1.0 — Seguranca, Limpeza e Resiliencia
+# Plano: Design System Premium — Dark Mode Nativo
 
-## Fase 1: Blindagem de Banco de Dados (Migration)
+## Visao Geral
 
-Uma unica migration SQL com 3 acoes:
+Transformar o PixelSafe de uma interface light/generica para um SaaS dark premium (nivel Linear/Vercel). A mudanca e 100% visual — nenhuma logica de negocio sera alterada.
 
-1. **DROP POLICY** `Anon can view profiles` na tabela `profiles` — expoe PII de todos os designers
-2. **DROP POLICY** `Anon can view clients via contract` na tabela `clients` — dados de clientes (CPF, endereco) expostos publicamente; o JOIN do select de contracts ja traz o que e necessario
-3. **CREATE TRIGGER** `trg_sync_proposal_status` — a funcao `sync_proposal_status()` existe mas o trigger nao esta atrelado (confirmado: `db-triggers` mostra "no triggers")
+## Estrategia de Implementacao
 
-```sql
-DROP POLICY IF EXISTS "Anon can view profiles" ON public.profiles;
-DROP POLICY IF EXISTS "Anon can view clients via contract" ON public.clients;
+A abordagem central e **atualizar as variaveis CSS no `index.css`** para que o dark mode se torne o padrao absoluto. Como toda a UI ja usa variaveis semanticas (`bg-background`, `bg-card`, `text-foreground`, `border-border`), a maioria dos componentes se adapta automaticamente. As paginas que usam cores hardcoded (ex: `bg-white`, `bg-emerald-50`) precisam de ajustes manuais.
 
-CREATE TRIGGER trg_sync_proposal_status
-  AFTER UPDATE ON public.contracts
-  FOR EACH ROW
-  EXECUTE FUNCTION public.sync_proposal_status();
+---
+
+## Fase 1: Fundacao — CSS Variables + Tailwind Config
+
+### `src/index.css`
+- Remover o bloco `:root` (light mode) — transformar `.dark` no `:root` padrao
+- Nova paleta dark premium:
+  - `--background`: zinc-950 (#09090B)
+  - `--foreground`: zinc-50 (#FAFAFA)
+  - `--card`: zinc-900/50 com transparencia (via classe, nao variavel — CSS vars nao suportam rgba direto, usaremos `228 12% 10%` e adicionaremos transparencia via classes)
+  - `--card-foreground`: zinc-100
+  - `--primary`: Azul eletrico vibrante (217 91% 60%) — mais luminoso que o atual para destacar no fundo escuro
+  - `--muted-foreground`: zinc-400
+  - `--border`: white/10 (228 12% 14% — ultra sutil)
+  - `--input`: zinc-950 (fundo dos inputs = fundo da pagina)
+  - `--sidebar-background`: zinc-950 (sidebar se funde com o fundo)
+  - `--sidebar-border`: white/5
+
+### `tailwind.config.ts`
+- Remover `darkMode: ["class"]` — nao sera mais necessario toggle
+- Adicionar keyframe `glow-pulse` para botoes CTA
+
+### `src/App.css`
+- Limpar estilos obsoletos (logo spin, card padding — nao sao usados)
+
+---
+
+## Fase 2: Componentes Base (Shadcn Overrides)
+
+### `src/components/ui/card.tsx`
+- Trocar classes de `rounded-lg border bg-card` para `rounded-xl border border-white/10 bg-card/50 backdrop-blur-md shadow-lg shadow-black/10`
+- Glassmorphism nativo em todos os cards
+
+### `src/components/ui/input.tsx`
+- Fundo escuro: `bg-zinc-950 border-zinc-800 focus-visible:ring-primary`
+
+### `src/components/ui/table.tsx`
+- Remover bordas duras: `divide-y divide-white/5`
+- Hover de linha: `hover:bg-white/5`
+- Header: `bg-zinc-900/50`
+
+### `src/components/ui/dialog.tsx`
+- Content: `bg-zinc-900 border-white/10 backdrop-blur-xl rounded-2xl`
+
+### `src/components/ui/badge.tsx`
+- Ajustar variantes para funcionar no fundo escuro
+
+---
+
+## Fase 3: Layout (Sidebar + Header)
+
+### `src/components/AppLayout.tsx`
+- Header: `border-b border-white/5 bg-zinc-950/80 backdrop-blur-sm`
+- Main: `bg-background` (ja herda)
+
+### `src/components/AppSidebar.tsx`
+- Sidebar ja usa variaveis semanticas (`sidebar-background`, etc.), entao as mudancas no CSS ja cobrem
+- Ajustar o branding area: texto `text-zinc-50`, border direita `border-white/5`
+
+---
+
+## Fase 4: Paginas Internas (Hardcoded Colors)
+
+### `src/pages/Login.tsx` e `src/pages/Register.tsx`
+- Painel esquerdo: `bg-primary/5` → `bg-zinc-900/50 border-r border-white/5`
+- Painel direito: fundo `bg-zinc-950`
+
+### `src/pages/PropostaDetalhe.tsx`
+- Alertas: `bg-green-50 border-green-200` → `bg-emerald-500/10 border-emerald-500/20 text-emerald-400`
+- Warning: `bg-yellow-50` → `bg-amber-500/10 border-amber-500/20 text-amber-400`
+
+### `src/pages/ContratoDetalhe.tsx`
+- Mesmos ajustes de alertas
+
+### `src/pages/Contratos.tsx`, `src/pages/Propostas.tsx`, `src/pages/Clientes.tsx`
+- Empty states: icones em `text-zinc-600` ao inves de `text-muted-foreground/40`
+- Hover de table row: `hover:bg-white/5` (ja coberto pelo componente base)
+
+### `src/pages/Configuracoes.tsx` e `src/pages/ConfiguracoesWorkspace.tsx`
+- Cards ja usam componente base — glassmorphism automatico
+
+---
+
+## Fase 5: Paginas Publicas (A Vitrine de Vendas)
+
+### `src/pages/ContratoPublico.tsx`
+- `bg-white` → `bg-zinc-950`
+- Card do documento: `bg-zinc-900 rounded-2xl shadow-2xl shadow-black/50 border border-white/10 p-8`
+- Loading: `bg-zinc-950`
+- Banners de sucesso: `bg-emerald-500/10 border-emerald-500/20 text-emerald-400`
+- Botao de pagamento: Verde vibrante `bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25` com animacao `animate-glow-pulse` (brilho sutil, nao pulse agressivo)
+- Formulario de assinatura: `bg-zinc-900/50 border-white/10 backdrop-blur-md rounded-xl`
+
+### `src/pages/PropostaPublica.tsx`
+- Header: `bg-zinc-900/80 border-white/5 backdrop-blur-sm`
+- Documento/scope card: `bg-zinc-900 border-white/10 rounded-xl`
+- Botao WhatsApp: `bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/25` com glow hover
+- Fundo: `bg-zinc-950`
+
+### `src/components/contratos/ContratoDocumento.tsx`
+- `prose-neutral` → `prose-invert` para texto claro
+- Separators: `bg-white/10`
+- Assinatura digital: `text-emerald-400` ao inves de `text-emerald-700`
+
+---
+
+## Fase 6: Animacoes Premium
+
+### `tailwind.config.ts` — novo keyframe
 ```
+glow-pulse: {
+  '0%, 100%': { boxShadow: '0 0 15px 0 rgba(16,185,129,0.3)' },
+  '50%': { boxShadow: '0 0 25px 5px rgba(16,185,129,0.15)' },
+}
+```
+- Aplicado nos botoes CTA das paginas publicas
 
-## Fase 2: Limpeza de Codigo e Tipagem
+---
 
-### 2.1 Remover `as any` (tipos ja estao atualizados)
+## Arquivos Modificados (16 arquivos)
 
-O `types.ts` ja mapeia todas as colunas corretamente (`down_payment`, `execution_status`, `company_document`, `company_address`, `whatsapp`). Os `as any` sao desnecessarios.
-
-**Arquivos afetados e mudancas:**
-
-| Arquivo | `as any` a remover |
-|---------|-------------------|
-| `ContratoDetalhe.tsx` | 6 ocorrencias: cast no data, cast no wsData, 4 updates |
-| `ContratoPublico.tsx` | 1 ocorrencia: cast no data (+ 1 no form que e valido e permanece) |
-| `PropostaDetalhe.tsx` | 4 ocorrencias: cast no clients, 3 updates |
-| `PropostaNova.tsx` | 1 ocorrencia: insert |
-| `Propostas.tsx` | 1 ocorrencia: map cast |
-| `Contratos.tsx` | 1 ocorrencia: map cast |
-| `ConfiguracoesWorkspace.tsx` | 4 ocorrencias: 3 acessos a campos + 1 update |
-| `PropostaPublica.tsx` | 1 ocorrencia: cast no data |
-
-Para os SELECTs com JOINs (ex: `clients(name)`), o Supabase retorna o tipo correto quando os Relationships estao definidos no types.ts (e estao). Basta remover o `as any` e deixar o TypeScript inferir.
-
-Para os UPDATEs, os campos ja existem nos tipos `Update` de cada tabela, entao o cast e desnecessario.
-
-### 2.2 Centralizar constantes duplicadas
-
-Criar `src/lib/contract-utils.ts` com:
-- `contractStatusConfig` (status comercial do contrato)
-- `execStatusConfig` (status de execucao)
-- `formatCurrency` (ja existe em `proposal-utils.ts`, mas duplicada em `Contratos.tsx` e `ContratoPublico.tsx`)
-
-Remover duplicatas de:
-- `ContratoDetalhe.tsx` (linhas 19-31)
-- `Contratos.tsx` (linhas 24-44 + funcao formatCurrency)
-- `ContratoPublico.tsx` (funcao formatBRL)
-
-Importar de `contract-utils.ts` em todos os arquivos que usam.
-
-`proposal-utils.ts` mantem apenas configs de proposta (ja tem `statusConfig` com os novos status).
-
-## Fase 3: Resiliencia de APIs (Timeouts)
-
-### `generate-proposal/index.ts`
-- Adicionar `signal: AbortSignal.timeout(45000)` no fetch da OpenAI (linha ~100)
-- Tratar `AbortError` no catch para retornar mensagem amigavel
-
-### `generate-payment/index.ts`
-- Adicionar `signal: AbortSignal.timeout(15000)` no fetch do Mercado Pago (linha ~69)
-- Tratar `AbortError` no catch
-
-### `mp-webhook/index.ts`
-- Adicionar `signal: AbortSignal.timeout(15000)` no fetch de verificacao do pagamento
-- Tratar `AbortError` no catch
-
-## Arquivos Modificados
-
-| Arquivo | Acao |
-|---------|------|
-| Migration SQL | Drop 2 policies + criar trigger |
-| `src/lib/contract-utils.ts` | **Criar** — centralizar configs de contrato |
-| `src/lib/proposal-utils.ts` | Remover `formatCurrency` duplicada (ja existe la) |
-| `src/pages/ContratoDetalhe.tsx` | Remover `as any`, importar de `contract-utils` |
-| `src/pages/ContratoPublico.tsx` | Remover `as any`, importar `formatCurrency` |
-| `src/pages/Contratos.tsx` | Remover `as any`, importar de `contract-utils` |
-| `src/pages/PropostaDetalhe.tsx` | Remover `as any` |
-| `src/pages/PropostaNova.tsx` | Remover `as any` |
-| `src/pages/Propostas.tsx` | Remover `as any` |
-| `src/pages/PropostaPublica.tsx` | Remover `as any` |
-| `src/pages/ConfiguracoesWorkspace.tsx` | Remover `as any` |
-| `supabase/functions/generate-proposal/index.ts` | Timeout 45s |
-| `supabase/functions/generate-payment/index.ts` | Timeout 15s |
-| `supabase/functions/mp-webhook/index.ts` | Timeout 15s |
+| Arquivo | Tipo de Mudanca |
+|---------|----------------|
+| `src/index.css` | Paleta dark como `:root` padrao |
+| `tailwind.config.ts` | Keyframe glow-pulse, remover darkMode class |
+| `src/App.css` | Limpar estilos obsoletos |
+| `src/components/ui/card.tsx` | Glassmorphism |
+| `src/components/ui/input.tsx` | Fundo escuro + foco primary |
+| `src/components/ui/table.tsx` | Bordas sutis + hover |
+| `src/components/ui/dialog.tsx` | Dark glass content |
+| `src/components/AppLayout.tsx` | Header dark + blur |
+| `src/components/AppSidebar.tsx` | Ajustes visuais menores |
+| `src/pages/Login.tsx` | Dark branding panel |
+| `src/pages/Register.tsx` | Dark branding panel |
+| `src/pages/PropostaDetalhe.tsx` | Alertas dark |
+| `src/pages/ContratoDetalhe.tsx` | Alertas dark |
+| `src/pages/ContratoPublico.tsx` | Vitrine premium dark |
+| `src/pages/PropostaPublica.tsx` | Vitrine premium dark |
+| `src/components/contratos/ContratoDocumento.tsx` | Prose invert + cores |
 
 ## Ordem de Execucao
 
-1. Migration (blindagem critica)
-2. Criar `contract-utils.ts` (base para imports)
-3. Limpar `as any` + centralizar imports em todos os arquivos de pagina
-4. Adicionar timeouts nas 3 Edge Functions
+1. `index.css` + `tailwind.config.ts` + `App.css` (fundacao)
+2. Componentes base (card, input, table, dialog)
+3. Layout (sidebar, header)
+4. Paginas internas (login, register, listagens, detalhe)
+5. Paginas publicas (contrato, proposta — vitrine)
+6. ContratoDocumento (prose ajustado)
 
