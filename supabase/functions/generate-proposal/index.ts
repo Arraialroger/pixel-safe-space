@@ -148,8 +148,11 @@ Transforme isso num documento de escopo completo, detalhado e persuasivo.`;
     );
   } catch (error) {
     console.error("generate-proposal error:", error);
+    const message = error instanceof DOMException && error.name === "TimeoutError"
+      ? "A IA demorou demais para responder. Tente novamente."
+      : error instanceof Error ? error.message : "Erro interno ao gerar escopo.";
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Erro interno ao gerar escopo." }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

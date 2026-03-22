@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
     // Verify payment with Mercado Pago API
     const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${payment_id}`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!mpRes.ok) {

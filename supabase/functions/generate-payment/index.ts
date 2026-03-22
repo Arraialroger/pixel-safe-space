@@ -110,7 +110,10 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("generate-payment error:", err);
-    return new Response(JSON.stringify({ error: "Internal error" }), {
+    const message = err instanceof DOMException && err.name === "TimeoutError"
+      ? "O Mercado Pago demorou demais para responder. Tente novamente."
+      : "Internal error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
