@@ -85,7 +85,9 @@ export default function Propostas() {
               <TableRow>
                 <TableHead>Título</TableHead>
                 <TableHead>Cliente</TableHead>
+                <TableHead>WhatsApp</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Criado em</TableHead>
                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
             </TableHeader>
