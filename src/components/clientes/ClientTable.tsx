@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, MessageCircle } from "lucide-react";
 import type { Client } from "@/pages/Clientes";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -36,7 +36,19 @@ export default function ClientTable({ clients, onEdit, onDelete }: Props) {
               <TableCell className="font-medium">{c.name}</TableCell>
               <TableCell>{c.document ?? "—"}</TableCell>
               <TableCell>{c.email ?? "—"}</TableCell>
-              <TableCell>{c.phone ?? "—"}</TableCell>
+              <TableCell>
+                {c.phone ? (
+                  <a
+                    href={`https://wa.me/${c.phone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    {c.phone}
+                  </a>
+                ) : "—"}
+              </TableCell>
               <TableCell>
                 {format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}
               </TableCell>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2, Eye, Pencil, FileCheck, MessageCircle } from "lucide-react";
+import { ArrowLeft, Copy, Loader2, ExternalLink, Send, Undo2, AlertTriangle, CheckCircle2, Eye, Pencil, FileCheck, MessageCircle, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -11,6 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { statusConfig, formatDate } from "@/lib/proposal-utils";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type ProposalDetail = {
   id: string;
@@ -66,6 +71,7 @@ export default function PropostaDetalhe() {
   const [changingStatus, setChangingStatus] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [generatingContract, setGeneratingContract] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const publicLink = `${window.location.origin}/p/${id}`;
 
@@ -174,6 +180,19 @@ export default function PropostaDetalhe() {
     navigate(`/contratos/${data.id}`);
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleting(true);
+    const { error } = await supabase.from("proposals").delete().eq("id", id);
+    setDeleting(false);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Proposta excluída com sucesso." });
+      navigate("/propostas");
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -197,6 +216,30 @@ export default function PropostaDetalhe() {
           <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
         </Button>
         <div className="flex gap-2 flex-wrap">
+          {isDraft && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4" /> Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Proposta?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Essa ação é irreversível. A proposta "{proposal.title}" será removida permanentemente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
+                    {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           {(isPending || isAccepted) && (
             <Button onClick={handleGenerateContract} disabled={generatingContract} className="gap-2">
               {generatingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
