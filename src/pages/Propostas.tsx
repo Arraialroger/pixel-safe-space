@@ -18,6 +18,7 @@ type ProposalWithClient = {
   status: string;
   created_at: string;
   client_name: string;
+  client_phone: string | null;
 };
 
 export default function Propostas() {
