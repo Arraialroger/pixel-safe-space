@@ -44,6 +44,7 @@ export default function Propostas() {
             status: p.status,
             created_at: p.created_at,
             client_name: p.clients?.name ?? "—",
+            client_phone: p.clients?.phone ?? null,
           }))
         );
       }
