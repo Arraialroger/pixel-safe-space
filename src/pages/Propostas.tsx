@@ -99,6 +99,19 @@ export default function Propostas() {
                     <TableCell className="font-medium">{p.title}</TableCell>
                     <TableCell>{p.client_name}</TableCell>
                     <TableCell>
+                      {p.client_phone ? (
+                        <a
+                          href={`https://wa.me/${p.client_phone.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors text-sm"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                          {p.client_phone}
+                        </a>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell>
                       <Badge variant={sc.variant} className={sc.className}>
                         {sc.label}
                       </Badge>
