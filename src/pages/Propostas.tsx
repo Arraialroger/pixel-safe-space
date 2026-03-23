@@ -116,6 +116,9 @@ export default function Propostas() {
                         {sc.label}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {format(new Date(p.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                    </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => navigate(`/propostas/${p.id}`)} title="Ver / Editar">
                         <Eye className="h-4 w-4" />

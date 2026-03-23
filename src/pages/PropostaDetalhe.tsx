@@ -216,6 +216,30 @@ export default function PropostaDetalhe() {
           <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
         </Button>
         <div className="flex gap-2 flex-wrap">
+          {isDraft && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4" /> Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Proposta?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Essa ação é irreversível. A proposta "{proposal.title}" será removida permanentemente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
+                    {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           {(isPending || isAccepted) && (
             <Button onClick={handleGenerateContract} disabled={generatingContract} className="gap-2">
               {generatingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
