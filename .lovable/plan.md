@@ -1,26 +1,85 @@
 
 
-# Plano: Gerar Documento de Arquitetura Tech Spec V1.0
+# Plano: Smart Handoff Vault (O Cofre)
 
-## Objetivo
+## Visao Geral
 
-Criar um arquivo Markdown completo (`PixelSafe_TechSpec_V1.0.md`) em `/mnt/documents/` com a documentacao oficial da arquitetura do sistema.
+Upload do arquivo final pelo designer → cliente so baixa apos pagar saldo devedor via Mercado Pago. Fluxo completo entrance/balance com liberacao automatica.
 
-## Conteudo do Documento
+## 1. Migration SQL
 
-O documento sera gerado diretamente via script, sem alteracoes no codebase. Contera:
+### Storage bucket
+```sql
+INSERT INTO storage.buckets (id, name, public) VALUES ('vault', 'vault', true);
+-- RLS: apenas membros do workspace podem fazer upload
+CREATE POLICY "Workspace members can upload vault files"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'vault');
+-- Leitura publica (protegido por UUID path impossivel de adivinhar)
+CREATE POLICY "Anyone can read vault files"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'vault');
+```
 
-1. **Visao Geral do Produto e Tech Stack** — React/Vite/TypeScript/Supabase/Tailwind
-2. **Arquitetura de Banco de Dados** — 6 tabelas, relacionamentos, RLS multi-tenant, RPCs SECURITY DEFINER, trigger `sync_proposal_status`
-3. **Fluxo Core de Negocio** — Ciclo de vida comercial (draft→paid) e execucao (not_started→completed), transicao proposta→contrato
-4. **Integracoes e Edge Functions** — OpenAI (generate-proposal), Mercado Pago BYOK (generate-payment + mp-webhook)
-5. **Design System** — Dark Mode nativo, paleta zinc-950, glassmorphism, CTA pulsantes
+### Novas colunas em contracts
+```sql
+ALTER TABLE public.contracts
+  ADD COLUMN final_deliverable_url text,
+  ADD COLUMN is_fully_paid boolean NOT NULL DEFAULT false;
+```
 
-## Metodo
+## 2. ContratoDetalhe.tsx — Aba "Cofre / Handoff"
 
-Executar script para gerar o arquivo `.md` em `/mnt/documents/`. Nenhum arquivo do projeto sera modificado.
+Nova aba nas Tabs existentes (alem de "Editar" e "Documento Final"):
 
-## Entregavel
+- Visivel apenas quando `status` esta em `paid` (entrada paga)
+- Componente de upload de `.zip` para o bucket `vault` no path `contracts/{contract_id}/{uuid}.zip`
+- Ao completar upload: salva `final_deliverable_url` e atualiza `execution_status = 'delivered'`
+- Se ja tem arquivo: mostra nome/link e opcao de substituir
+- Selects de contracts precisam incluir `final_deliverable_url, is_fully_paid`
 
-`/mnt/documents/PixelSafe_TechSpec_V1.0.md` — download disponivel imediatamente.
+## 3. Edge Functions — payment_type entrance/balance
+
+### generate-payment/index.ts
+- Aceitar `{ contract_id, payment_type: 'entrance' | 'balance' }` (default `entrance` para retrocompatibilidade)
+- Se `entrance`: cobra `down_payment ?? payment_value`
+- Se `balance`: cobra `payment_value - (down_payment ?? 0)`
+- Titulo do item muda: "Entrada — ..." vs "Saldo Final — ..."
+- `notification_url` inclui `&type={payment_type}`
+
+### mp-webhook/index.ts
+- Extrair `type` dos query params (default `entrance`)
+- Se `type === 'entrance'`: UPDATE `status = 'paid'` WHERE `status = 'signed'`
+- Se `type === 'balance'`: UPDATE `is_fully_paid = true, execution_status = 'completed'` WHERE `status = 'paid'`
+
+## 4. ContratoPublico.tsx — Portal do Cliente
+
+Adicionar `final_deliverable_url` e `is_fully_paid` ao SELECT e ao tipo `ContractData`.
+
+Novos cenarios apos o bloco `paid` existente:
+
+| Cenario | Condicao | UI |
+|---------|----------|---|
+| A — Aguardando entrega | `paid` + sem `final_deliverable_url` | Banner: "Entrada Paga. Designer trabalhando..." |
+| B — Aguardando saldo | `final_deliverable_url` + `!is_fully_paid` | Card com botao CTA pulsante "Pagar Saldo de R$ X para Liberar Arquivos" (chama generate-payment com `balance`) |
+| C — Liberado | `is_fully_paid === true` | Botao verde "Baixar Arquivos Finais" (download do Storage) |
+
+O botao de saldo chama `generatePaymentLink` com `payment_type: 'balance'`.
+
+## Arquivos Modificados
+
+| Arquivo | Acao |
+|---------|------|
+| Migration SQL | Bucket vault + 2 colunas |
+| `supabase/functions/generate-payment/index.ts` | Suporte entrance/balance |
+| `supabase/functions/mp-webhook/index.ts` | Logica balance → is_fully_paid |
+| `src/pages/ContratoDetalhe.tsx` | Aba Cofre + upload + fetch novas colunas |
+| `src/pages/ContratoPublico.tsx` | 3 cenarios + botao download/saldo |
+
+## Ordem de Execucao
+
+1. Migration (bucket + colunas)
+2. Edge Functions (generate-payment + mp-webhook)
+3. ContratoDetalhe (aba Cofre)
+4. ContratoPublico (cenarios A/B/C)
 
