@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, ExternalLink, Loader2, Package } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -44,6 +44,8 @@ type ContractData = {
   signed_by_name: string | null;
   signed_by_email: string | null;
   signed_at: string | null;
+  final_deliverable_url: string | null;
+  is_fully_paid: boolean;
   client: {
     name: string;
     document: string | null;
@@ -81,7 +83,7 @@ export default function ContratoPublico() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, down_payment, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, clients(name, document, company, address)")
+        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, down_payment, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, final_deliverable_url, is_fully_paid, clients(name, document, company, address)")
         .eq("id", id)
         .maybeSingle();
 
@@ -105,6 +107,8 @@ export default function ContratoPublico() {
         signed_by_name: data.signed_by_name,
         signed_by_email: data.signed_by_email,
         signed_at: data.signed_at,
+        final_deliverable_url: data.final_deliverable_url,
+        is_fully_paid: data.is_fully_paid ?? false,
         client: data.clients ?? { name: "—", document: null, company: null, address: null },
       };
       setContract(contractData);
@@ -116,15 +120,20 @@ export default function ContratoPublico() {
         setWorkspace(wsData[0] as WorkspaceInfo);
       }
 
+      // Auto-generate entrance payment link for signed contracts
       if (contractData.status === "signed") {
-        generatePaymentLink(contractData.id);
+        generatePaymentLink(contractData.id, "entrance");
+      }
+      // Auto-generate balance payment link for paid contracts with deliverable awaiting payment
+      if (contractData.status === "paid" && contractData.final_deliverable_url && !contractData.is_fully_paid) {
+        generatePaymentLink(contractData.id, "balance");
       }
 
       setLoading(false);
     })();
   }, [id]);
 
-  const generatePaymentLink = async (contractId: string) => {
+  const generatePaymentLink = async (contractId: string, paymentType: "entrance" | "balance") => {
     setGeneratingPayment(true);
     setPaymentError(null);
     try {
@@ -134,7 +143,7 @@ export default function ContratoPublico() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contract_id: contractId }),
+          body: JSON.stringify({ contract_id: contractId, payment_type: paymentType }),
         }
       );
       if (res.ok) {
@@ -173,8 +182,13 @@ export default function ContratoPublico() {
       setContract((prev) =>
         prev ? { ...prev, status: "signed", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
       );
-      generatePaymentLink(id);
+      generatePaymentLink(id, "entrance");
     }
+  };
+
+  const getPublicUrl = (path: string) => {
+    const { data } = supabase.storage.from("vault").getPublicUrl(path);
+    return data.publicUrl;
   };
 
   if (loading) {
@@ -196,6 +210,7 @@ export default function ContratoPublico() {
   }
 
   const paymentUrl = dynamicPaymentUrl || contract.payment_link;
+  const balanceAmount = (contract.payment_value ?? 0) - (contract.down_payment ?? 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -270,6 +285,7 @@ export default function ContratoPublico() {
           </div>
         )}
 
+        {/* Signed — Entrance payment */}
         {contract.status === "signed" && (
           <div className="space-y-4">
             <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
@@ -298,11 +314,66 @@ export default function ContratoPublico() {
           </div>
         )}
 
+        {/* Paid scenarios */}
         {contract.status === "paid" && (
-          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
-            <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
-              <CheckCircle2 className="h-5 w-5" /> ✅ Pagamento Confirmado. Projeto Liberado!
-            </p>
+          <div className="space-y-4">
+            {/* Scenario C: Fully paid — download available */}
+            {contract.is_fully_paid && contract.final_deliverable_url ? (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
+                  <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+                    <CheckCircle2 className="h-5 w-5" /> ✅ Pagamento Total Confirmado. Projeto Liberado!
+                  </p>
+                </div>
+                <a href={getPublicUrl(contract.final_deliverable_url)} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                    <Download className="h-5 w-5" /> Baixar Arquivos Finais
+                  </Button>
+                </a>
+              </div>
+            ) : contract.final_deliverable_url && !contract.is_fully_paid ? (
+              /* Scenario B: Deliverable uploaded, awaiting balance */
+              <div className="space-y-4">
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
+                  <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+                    <CheckCircle2 className="h-5 w-5" /> Entrada Paga
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 text-center space-y-4">
+                  <Package className="h-12 w-12 mx-auto text-primary" />
+                  <h3 className="text-lg font-semibold">Seus arquivos estão prontos!</h3>
+                  <p className="text-sm text-muted-foreground">
+                    O designer finalizou seu projeto. Quite o saldo restante para liberar o download dos arquivos finais.
+                  </p>
+                  {generatingPayment ? (
+                    <Button size="lg" disabled className="w-full text-lg py-6 gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin" /> Gerando link de pagamento...
+                    </Button>
+                  ) : paymentUrl ? (
+                    <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
+                      <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                        <ExternalLink className="h-5 w-5" />
+                        Pagar Saldo de {formatCurrency(balanceAmount)} para Liberar Arquivos
+                      </Button>
+                    </a>
+                  ) : paymentError ? (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-center">
+                      <p className="text-amber-400 text-sm">{paymentError}</p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              /* Scenario A: Paid but no deliverable yet */
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">
+                <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+                  <CheckCircle2 className="h-5 w-5" /> ✅ Entrada Paga
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  O designer está trabalhando no seu projeto. Você será notificado quando os arquivos estiverem prontos.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

@@ -68,7 +68,9 @@ export type Database = {
           deadline: string | null
           down_payment: number | null
           execution_status: string
+          final_deliverable_url: string | null
           id: string
+          is_fully_paid: boolean
           payment_link: string | null
           payment_terms: string | null
           payment_value: number | null
@@ -88,7 +90,9 @@ export type Database = {
           deadline?: string | null
           down_payment?: number | null
           execution_status?: string
+          final_deliverable_url?: string | null
           id?: string
+          is_fully_paid?: boolean
           payment_link?: string | null
           payment_terms?: string | null
           payment_value?: number | null
@@ -108,7 +112,9 @@ export type Database = {
           deadline?: string | null
           down_payment?: number | null
           execution_status?: string
+          final_deliverable_url?: string | null
           id?: string
+          is_fully_paid?: boolean
           payment_link?: string | null
           payment_terms?: string | null
           payment_value?: number | null

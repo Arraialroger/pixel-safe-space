@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { contract_id } = await req.json();
+    const { contract_id, payment_type = "entrance" } = await req.json();
     if (!contract_id) {
       return new Response(JSON.stringify({ error: "contract_id is required" }), {
         status: 400,
@@ -51,7 +51,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const amount = contract.down_payment ?? contract.payment_value;
+    // Calculate amount based on payment_type
+    let amount: number;
+    let itemTitle: string;
+
+    if (payment_type === "balance") {
+      const total = contract.payment_value ?? 0;
+      const entrance = contract.down_payment ?? 0;
+      amount = total - entrance;
+      itemTitle = `Saldo Final — Contrato ${workspace.name}`;
+    } else {
+      amount = contract.down_payment ?? contract.payment_value ?? 0;
+      itemTitle = `Entrada — Contrato ${workspace.name}`;
+    }
+
     if (!amount || amount <= 0) {
       return new Response(JSON.stringify({ error: "No valid amount" }), {
         status: 400,
@@ -76,7 +89,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         items: [
           {
-            title: `Entrada — Contrato ${workspace.name}`,
+            title: itemTitle,
             quantity: 1,
             unit_price: Number(amount),
             currency_id: "BRL",
@@ -84,7 +97,7 @@ Deno.serve(async (req) => {
         ],
         payer: { name: clientName },
         external_reference: contract_id,
-        notification_url: `${supabaseUrl}/functions/v1/mp-webhook?contract_id=${contract_id}`,
+        notification_url: `${supabaseUrl}/functions/v1/mp-webhook?contract_id=${contract_id}&type=${payment_type}`,
         back_urls: {
           success: contractUrl,
           pending: contractUrl,

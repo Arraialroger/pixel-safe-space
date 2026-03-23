@@ -11,14 +11,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Extract contract_id from query params
     const url = new URL(req.url);
     const contract_id = url.searchParams.get("contract_id");
+    const payment_type = url.searchParams.get("type") || "entrance";
 
     const body = await req.json();
     console.log("mp-webhook received:", JSON.stringify(body));
 
-    // Only process payment notifications
     const type = body.type || body.topic;
     if (type !== "payment") {
       console.log("Ignoring non-payment notification:", type);
@@ -49,7 +48,6 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Fetch contract + workspace token
     const { data: contract, error: contractError } = await supabase
       .from("contracts")
       .select("id, status, workspace_id, workspaces(mercado_pago_token)")
@@ -88,20 +86,35 @@ Deno.serve(async (req) => {
     }
 
     const payment = await mpRes.json();
-    console.log("MP payment status:", payment.status, "external_reference:", payment.external_reference);
+    console.log("MP payment status:", payment.status, "external_reference:", payment.external_reference, "payment_type:", payment_type);
 
-    // Validate: approved + external_reference matches
     if (payment.status === "approved" && payment.external_reference === contract_id) {
-      const { error: updateError } = await supabase
-        .from("contracts")
-        .update({ status: "paid" })
-        .eq("id", contract_id)
-        .eq("status", "signed");
+      if (payment_type === "balance") {
+        // Balance payment: mark fully paid and completed
+        const { error: updateError } = await supabase
+          .from("contracts")
+          .update({ is_fully_paid: true, execution_status: "completed" })
+          .eq("id", contract_id)
+          .eq("status", "paid");
 
-      if (updateError) {
-        console.error("Error updating contract to paid:", updateError);
+        if (updateError) {
+          console.error("Error updating contract to fully paid:", updateError);
+        } else {
+          console.log("Contract marked as fully paid:", contract_id);
+        }
       } else {
-        console.log("Contract updated to paid:", contract_id);
+        // Entrance payment: mark as paid
+        const { error: updateError } = await supabase
+          .from("contracts")
+          .update({ status: "paid" })
+          .eq("id", contract_id)
+          .eq("status", "signed");
+
+        if (updateError) {
+          console.error("Error updating contract to paid:", updateError);
+        } else {
+          console.log("Contract updated to paid:", contract_id);
+        }
       }
     } else {
       console.log("Payment not approved or reference mismatch. Skipping update.");
@@ -113,7 +126,6 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("mp-webhook error:", err);
-    // Always return 200 to prevent MP from retrying indefinitely
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
