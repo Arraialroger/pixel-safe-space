@@ -180,6 +180,19 @@ export default function PropostaDetalhe() {
     navigate(`/contratos/${data.id}`);
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleting(true);
+    const { error } = await supabase.from("proposals").delete().eq("id", id);
+    setDeleting(false);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Proposta excluída com sucesso." });
+      navigate("/propostas");
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
