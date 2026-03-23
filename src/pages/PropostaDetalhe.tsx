@@ -71,6 +71,7 @@ export default function PropostaDetalhe() {
   const [changingStatus, setChangingStatus] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [generatingContract, setGeneratingContract] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const publicLink = `${window.location.origin}/p/${id}`;
 
