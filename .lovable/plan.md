@@ -1,85 +1,48 @@
 
 
-# Plano: Smart Handoff Vault (O Cofre)
+# Plano: Lapidacao UX + ROADMAP.md
 
-## Visao Geral
+## ACAO 1: Melhorias de UX (5 itens)
 
-Upload do arquivo final pelo designer → cliente so baixa apos pagar saldo devedor via Mercado Pago. Fluxo completo entrance/balance com liberacao automatica.
+### 1.1 WhatsApp Clicavel na Tabela de Clientes
+**Arquivo:** `src/components/clientes/ClientTable.tsx`
+- Na coluna "Telefone", se `c.phone` existir, renderizar como link `<a href="https://wa.me/{phone_limpo}" target="_blank">` com icone de WhatsApp
+- `phone_limpo` = `c.phone.replace(/\D/g, "")`
 
-## 1. Migration SQL
+### 1.2 WhatsApp Clicavel na Tabela de Propostas
+**Arquivo:** `src/pages/Propostas.tsx`
+- Adicionar `client_phone` ao tipo `ProposalWithClient` e ao SELECT (ja faz JOIN em `clients`)
+- Adicionar coluna "WhatsApp" na tabela com link clicavel
+- Adicionar coluna "Data de Criacao" formatada com `date-fns`
 
-### Storage bucket
-```sql
-INSERT INTO storage.buckets (id, name, public) VALUES ('vault', 'vault', true);
--- RLS: apenas membros do workspace podem fazer upload
-CREATE POLICY "Workspace members can upload vault files"
-ON storage.objects FOR INSERT TO authenticated
-WITH CHECK (bucket_id = 'vault');
--- Leitura publica (protegido por UUID path impossivel de adivinhar)
-CREATE POLICY "Anyone can read vault files"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'vault');
-```
+### 1.3 Aviso de Seguranca nas Credenciais
+**Arquivo:** `src/pages/ConfiguracoesWorkspace.tsx`
+- Adicionar texto muted com icone de cadeado abaixo do card de Integracoes: "Seus dados sao criptografados de ponta a ponta. O PixelSafe nao tem acesso a sua conta."
 
-### Novas colunas em contracts
-```sql
-ALTER TABLE public.contracts
-  ADD COLUMN final_deliverable_url text,
-  ADD COLUMN is_fully_paid boolean NOT NULL DEFAULT false;
-```
+### 1.4 Excluir Proposta
+**Arquivo:** `src/pages/PropostaDetalhe.tsx`
+- Adicionar botao "Excluir" (vermelho, icone Trash2) no header de acoes
+- Modal de confirmacao usando `AlertDialog`
+- Ao confirmar: `supabase.from("proposals").delete().eq("id", id)` + navegar para `/propostas`
 
-## 2. ContratoDetalhe.tsx — Aba "Cofre / Handoff"
+### 1.5 Bug-fix Logo nas Paginas Publicas
+**Arquivos:** `src/pages/PropostaPublica.tsx` e `src/pages/ContratoPublico.tsx`
+- A RPC `get_workspace_contract_info` retorna `logo_url` do `profiles` (owner). Verificar que o `<img>` usa a URL correta
+- Atualmente ja renderiza `proposal.workspace_logo` e `workspace.logo_url` — o codigo esta correto
+- Garantir que a tag `<img>` tenha fallback adequado (ja tem: mostra nome textual se logo null)
+- Nenhuma mudanca necessaria aqui — o fluxo ja funciona. Apenas confirmar.
 
-Nova aba nas Tabs existentes (alem de "Editar" e "Documento Final"):
+## ACAO 2: ROADMAP.md
 
-- Visivel apenas quando `status` esta em `paid` (entrada paga)
-- Componente de upload de `.zip` para o bucket `vault` no path `contracts/{contract_id}/{uuid}.zip`
-- Ao completar upload: salva `final_deliverable_url` e atualiza `execution_status = 'delivered'`
-- Se ja tem arquivo: mostra nome/link e opcao de substituir
-- Selects de contracts precisam incluir `final_deliverable_url, is_fully_paid`
-
-## 3. Edge Functions — payment_type entrance/balance
-
-### generate-payment/index.ts
-- Aceitar `{ contract_id, payment_type: 'entrance' | 'balance' }` (default `entrance` para retrocompatibilidade)
-- Se `entrance`: cobra `down_payment ?? payment_value`
-- Se `balance`: cobra `payment_value - (down_payment ?? 0)`
-- Titulo do item muda: "Entrada — ..." vs "Saldo Final — ..."
-- `notification_url` inclui `&type={payment_type}`
-
-### mp-webhook/index.ts
-- Extrair `type` dos query params (default `entrance`)
-- Se `type === 'entrance'`: UPDATE `status = 'paid'` WHERE `status = 'signed'`
-- Se `type === 'balance'`: UPDATE `is_fully_paid = true, execution_status = 'completed'` WHERE `status = 'paid'`
-
-## 4. ContratoPublico.tsx — Portal do Cliente
-
-Adicionar `final_deliverable_url` e `is_fully_paid` ao SELECT e ao tipo `ContractData`.
-
-Novos cenarios apos o bloco `paid` existente:
-
-| Cenario | Condicao | UI |
-|---------|----------|---|
-| A — Aguardando entrega | `paid` + sem `final_deliverable_url` | Banner: "Entrada Paga. Designer trabalhando..." |
-| B — Aguardando saldo | `final_deliverable_url` + `!is_fully_paid` | Card com botao CTA pulsante "Pagar Saldo de R$ X para Liberar Arquivos" (chama generate-payment com `balance`) |
-| C — Liberado | `is_fully_paid === true` | Botao verde "Baixar Arquivos Finais" (download do Storage) |
-
-O botao de saldo chama `generatePaymentLink` com `payment_type: 'balance'`.
+Criar arquivo `ROADMAP.md` na raiz do projeto com o conteudo exato fornecido pelo usuario (Fases 5 a 8).
 
 ## Arquivos Modificados
 
 | Arquivo | Acao |
 |---------|------|
-| Migration SQL | Bucket vault + 2 colunas |
-| `supabase/functions/generate-payment/index.ts` | Suporte entrance/balance |
-| `supabase/functions/mp-webhook/index.ts` | Logica balance → is_fully_paid |
-| `src/pages/ContratoDetalhe.tsx` | Aba Cofre + upload + fetch novas colunas |
-| `src/pages/ContratoPublico.tsx` | 3 cenarios + botao download/saldo |
-
-## Ordem de Execucao
-
-1. Migration (bucket + colunas)
-2. Edge Functions (generate-payment + mp-webhook)
-3. ContratoDetalhe (aba Cofre)
-4. ContratoPublico (cenarios A/B/C)
+| `src/components/clientes/ClientTable.tsx` | WhatsApp clicavel |
+| `src/pages/Propostas.tsx` | Colunas Data + WhatsApp |
+| `src/pages/ConfiguracoesWorkspace.tsx` | Aviso seguranca |
+| `src/pages/PropostaDetalhe.tsx` | Botao excluir + modal |
+| `ROADMAP.md` | Criar arquivo |
 
