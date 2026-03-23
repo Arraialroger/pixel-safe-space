@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Copy, Loader2, MessageCircle, Save, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, Download, Loader2, MessageCircle, Save, Send, Upload } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -52,6 +52,9 @@ export default function ContratoDetalhe() {
   const [signedByEmail, setSignedByEmail] = useState<string | null>(null);
   const [signedAt, setSignedAt] = useState<string | null>(null);
   const [wsDoc, setWsDoc] = useState<WorkspaceDoc | null>(null);
+  const [finalDeliverableUrl, setFinalDeliverableUrl] = useState<string | null>(null);
+  const [isFullyPaid, setIsFullyPaid] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const contractLink = `${window.location.origin}/c/${id}`;
   const isDraft = status === "draft";
@@ -61,7 +64,7 @@ export default function ContratoDetalhe() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, execution_status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, down_payment, signed_by_name, signed_by_email, signed_at, clients(name, phone, document, company, address)")
+        .select("id, status, execution_status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, down_payment, signed_by_name, signed_by_email, signed_at, final_deliverable_url, is_fully_paid, clients(name, phone, document, company, address)")
         .eq("id", id)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
@@ -88,6 +91,8 @@ export default function ContratoDetalhe() {
       setSignedByName(data.signed_by_name);
       setSignedByEmail(data.signed_by_email);
       setSignedAt(data.signed_at);
+      setFinalDeliverableUrl(data.final_deliverable_url);
+      setIsFullyPaid(data.is_fully_paid ?? false);
 
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: workspaceId });
       if (wsData && wsData.length > 0) {
@@ -155,6 +160,44 @@ export default function ContratoDetalhe() {
     toast({ title: "Link copiado!", description: contractLink });
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const filePath = `contracts/${id}/${crypto.randomUUID()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("vault")
+      .upload(filePath, file, { upsert: false });
+
+    if (uploadError) {
+      toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
+      setUploading(false);
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from("contracts")
+      .update({ final_deliverable_url: filePath, execution_status: "delivered" })
+      .eq("id", id);
+
+    if (updateError) {
+      toast({ title: "Erro ao salvar referência", description: updateError.message, variant: "destructive" });
+    } else {
+      setFinalDeliverableUrl(filePath);
+      setExecutionStatus("delivered");
+      toast({ title: "Arquivo enviado com sucesso!", description: "O status de execução foi atualizado para 'Entregue'." });
+    }
+    setUploading(false);
+  };
+
+  const getPublicUrl = (path: string) => {
+    const { data } = supabase.storage.from("vault").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -169,6 +212,7 @@ export default function ContratoDetalhe() {
   const cleanPhone = clientPhone.replace(/\D/g, "");
   const whatsappMsg = encodeURIComponent(`Olá! O contrato do nosso projeto está pronto para assinatura digital. Segue o link: ${contractLink}`);
   const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
+  const showVaultTab = status === "paid";
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -217,6 +261,7 @@ export default function ContratoDetalhe() {
         <TabsList>
           <TabsTrigger value="edit">Editar</TabsTrigger>
           <TabsTrigger value="preview">Documento Final</TabsTrigger>
+          {showVaultTab && <TabsTrigger value="vault">Cofre / Handoff</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="edit">
@@ -307,6 +352,76 @@ export default function ContratoDetalhe() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {showVaultTab && (
+          <TabsContent value="vault">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Upload className="h-5 w-5" /> Cofre / Handoff
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <p className="text-sm text-muted-foreground">
+                  Faça o upload do arquivo final do projeto. O cliente só poderá baixá-lo após quitar o saldo devedor.
+                </p>
+
+                {finalDeliverableUrl ? (
+                  <div className="space-y-4">
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 flex items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-emerald-400 flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" /> Arquivo entregue
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate max-w-md">{finalDeliverableUrl.split("/").pop()}</p>
+                      </div>
+                      <a href={getPublicUrl(finalDeliverableUrl)} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" variant="outline" className="gap-1">
+                          <Download className="h-4 w-4" /> Baixar
+                        </Button>
+                      </a>
+                    </div>
+
+                    <div className="rounded-lg border border-white/10 bg-card/50 p-4 text-center space-y-2">
+                      <p className="text-sm text-muted-foreground">Deseja substituir o arquivo?</p>
+                      <label className="cursor-pointer">
+                        <Button variant="outline" size="sm" className="gap-2" asChild>
+                          <span>
+                            <Upload className="h-4 w-4" />
+                            {uploading ? "Enviando..." : "Enviar novo arquivo"}
+                          </span>
+                        </Button>
+                        <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                      </label>
+                    </div>
+
+                    {isFullyPaid && (
+                      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-center">
+                        <p className="text-emerald-400 font-semibold flex items-center justify-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" /> Saldo quitado — Cliente tem acesso ao download
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-white/20 bg-card/30 p-8 text-center space-y-4">
+                    <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
+                    <p className="text-muted-foreground">Nenhum arquivo enviado ainda.</p>
+                    <label className="cursor-pointer inline-block">
+                      <Button className="gap-2" disabled={uploading} asChild>
+                        <span>
+                          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {uploading ? "Enviando..." : "Enviar Arquivo Final"}
+                        </span>
+                      </Button>
+                      <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                    </label>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
