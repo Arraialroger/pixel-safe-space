@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Building2, CreditCard, ShieldAlert } from "lucide-react";
+import { Loader2, Building2, CreditCard, ShieldAlert, Lock } from "lucide-react";
 
 const workspaceSchema = z.object({
   name: z.string().min(1, "Nome do estúdio é obrigatório").max(100),
