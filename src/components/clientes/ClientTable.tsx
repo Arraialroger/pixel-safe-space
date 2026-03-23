@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, MessageCircle } from "lucide-react";
 import type { Client } from "@/pages/Clientes";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
