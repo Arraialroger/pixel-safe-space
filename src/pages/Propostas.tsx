@@ -32,7 +32,7 @@ export default function Propostas() {
     (async () => {
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, title, status, created_at, client_id, clients(name)")
+        .select("id, title, status, created_at, client_id, clients(name, phone)")
         .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: false });
 
