@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const ASAAS_BASE = "https://www.asaas.com/api/v3";
+const ASAAS_BASE = "https://sandbox.asaas.com/api/v3";
 
 const PLAN_PRICES: Record<string, number> = {
   freelancer: 49,
@@ -47,15 +47,15 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+    if (userError || !userData?.user) {
+      console.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
+    const userId = userData.user.id;
 
     const { workspace_id, plan_tier } = await req.json();
 
@@ -137,13 +137,25 @@ Deno.serve(async (req) => {
         signal: AbortSignal.timeout(15000),
       });
 
-      const customerData = await customerRes.json();
+      const customerText = await customerRes.text();
+      console.log("Asaas customer response:", customerRes.status, customerText);
 
       if (!customerRes.ok) {
-        console.error("Asaas customer creation failed:", customerData);
+        console.error("Asaas customer creation failed:", customerRes.status, customerText);
         return new Response(
-          JSON.stringify({ error: "asaas_customer_error", details: customerData }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "asaas_customer_error", details: customerText }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      let customerData;
+      try {
+        customerData = JSON.parse(customerText);
+      } catch {
+        console.error("Failed to parse Asaas customer response:", customerText);
+        return new Response(
+          JSON.stringify({ error: "asaas_parse_error", details: customerText }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -172,13 +184,25 @@ Deno.serve(async (req) => {
       signal: AbortSignal.timeout(15000),
     });
 
-    const subData = await subRes.json();
+    const subText = await subRes.text();
+    console.log("Asaas subscription response:", subRes.status, subText);
 
     if (!subRes.ok) {
-      console.error("Asaas subscription creation failed:", subData);
+      console.error("Asaas subscription creation failed:", subRes.status, subText);
       return new Response(
-        JSON.stringify({ error: "asaas_subscription_error", details: subData }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "asaas_subscription_error", details: subText }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let subData;
+    try {
+      subData = JSON.parse(subText);
+    } catch {
+      console.error("Failed to parse Asaas subscription response:", subText);
+      return new Response(
+        JSON.stringify({ error: "asaas_parse_error", details: subText }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
