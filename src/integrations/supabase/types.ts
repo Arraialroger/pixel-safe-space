@@ -330,6 +330,7 @@ export type Database = {
           id: string
           logo_url: string
           name: string
+          subscription_plan: string
           whatsapp: string
         }[]
       }
@@ -339,7 +340,12 @@ export type Database = {
           id: string
           logo_url: string
           name: string
+          subscription_plan: string
         }[]
+      }
+      invite_workspace_member: {
+        Args: { _email: string; _workspace_id: string }
+        Returns: string
       }
       is_workspace_admin: {
         Args: { _user_id: string; _workspace_id: string }

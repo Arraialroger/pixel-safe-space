@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2, MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle, Shield } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/toaster";
@@ -16,6 +16,7 @@ type PublicProposal = {
   workspace_name: string;
   workspace_logo: string | null;
   workspace_whatsapp: string | null;
+  workspace_plan: string | null;
 };
 
 export default function PropostaPublica() {
@@ -42,6 +43,7 @@ export default function PropostaPublica() {
       let wsName = "Estúdio";
       let logoUrl: string | null = null;
       let whatsapp: string | null = null;
+      let plan: string | null = null;
 
       if (data.workspace_id) {
         const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: data.workspace_id });
@@ -49,6 +51,7 @@ export default function PropostaPublica() {
           wsName = wsData[0].name;
           logoUrl = wsData[0].logo_url ?? null;
           whatsapp = wsData[0].whatsapp ?? null;
+          plan = wsData[0].subscription_plan ?? null;
         }
       }
 
@@ -61,6 +64,7 @@ export default function PropostaPublica() {
         workspace_name: wsName,
         workspace_logo: logoUrl,
         workspace_whatsapp: whatsapp,
+        workspace_plan: plan,
       });
       setLoading(false);
     })();
@@ -91,6 +95,8 @@ export default function PropostaPublica() {
   const whatsappUrl = proposal.workspace_whatsapp
     ? `https://wa.me/${proposal.workspace_whatsapp}?text=${whatsappMessage}`
     : null;
+
+  const showWatermark = proposal.workspace_plan !== "studio";
 
   return (
     <div className="min-h-screen bg-background">
@@ -140,6 +146,15 @@ export default function PropostaPublica() {
           </div>
         )}
       </main>
+
+      {showWatermark && (
+        <footer className="border-t border-white/5 py-4">
+          <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+            <Shield className="h-3 w-3" />
+            Gerado digitalmente e protegido por PixelSafe
+          </p>
+        </footer>
+      )}
     </div>
   );
 }
