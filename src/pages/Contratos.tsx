@@ -12,6 +12,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
+import { usePaywall } from "@/hooks/use-paywall";
 
 type ContractWithClient = {
   id: string;
@@ -24,6 +25,7 @@ type ContractWithClient = {
 
 export default function Contratos() {
   const { workspaceId } = useWorkspace();
+  const { guard } = usePaywall();
   const navigate = useNavigate();
   const [contracts, setContracts] = useState<ContractWithClient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export default function Contratos() {
             Gerencie os contratos de prestação de serviço do seu estúdio.
           </p>
         </div>
-        <Button onClick={() => toast.info("Em breve! O formulário de novo contrato está sendo construído.")}>
+        <Button onClick={() => guard(() => toast.info("Em breve! O formulário de novo contrato está sendo construído."))}>
           <Plus className="mr-2 h-4 w-4" /> Novo Contrato
         </Button>
       </div>
