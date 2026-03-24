@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CheckCircle2, Download, ExternalLink, Loader2, Package } from "lucide-react";
+import { CheckCircle2, Download, ExternalLink, Loader2, Package, Shield } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -60,6 +60,7 @@ type WorkspaceInfo = {
   logo_url: string | null;
   company_document: string | null;
   company_address: string | null;
+  subscription_plan: string | null;
 };
 
 export default function ContratoPublico() {
@@ -377,9 +378,16 @@ export default function ContratoPublico() {
           </div>
         )}
 
-        <p className="text-center text-xs text-muted-foreground mt-12">
-          Documento gerado digitalmente • {workspace?.name}
-        </p>
+        {workspace?.subscription_plan === "studio" ? (
+          <p className="text-center text-xs text-muted-foreground mt-12">
+            Documento gerado digitalmente • {workspace.name}
+          </p>
+        ) : (
+          <p className="text-center text-xs text-muted-foreground mt-12 flex items-center justify-center gap-1.5">
+            <Shield className="h-3 w-3" />
+            Gerado digitalmente e protegido por PixelSafe
+          </p>
+        )}
       </div>
     </div>
   );
