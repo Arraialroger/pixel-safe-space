@@ -216,8 +216,26 @@ Deno.serve(async (req) => {
       })
       .eq("id", workspace_id);
 
-    // Find the invoice URL from the first payment
-    const checkout_url = subData.invoiceUrl ?? subData.bankSlipUrl ?? null;
+    // Step 3: Fetch the first payment to get invoiceUrl
+    const paymentsRes = await fetch(
+      `${ASAAS_BASE}/payments?subscription=${subData.id}`,
+      { headers: asaasHeaders, signal: AbortSignal.timeout(15000) }
+    );
+    const paymentsText = await paymentsRes.text();
+    console.log("Asaas payments response:", paymentsRes.status, paymentsText);
+
+    let checkout_url = null;
+    if (paymentsRes.ok) {
+      try {
+        const paymentsData = JSON.parse(paymentsText);
+        if (paymentsData.data?.length > 0) {
+          checkout_url = paymentsData.data[0].invoiceUrl;
+          console.log("Found invoiceUrl:", checkout_url);
+        }
+      } catch {
+        console.error("Failed to parse payments response:", paymentsText);
+      }
+    }
 
     return new Response(
       JSON.stringify({ checkout_url, subscription_id: subData.id }),
