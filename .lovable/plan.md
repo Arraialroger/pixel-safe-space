@@ -1,37 +1,54 @@
 
 
-# Plano: Fix create-asaas-checkout
+# Plano: Fix checkout_url — Buscar invoiceUrl da cobrança
 
-## Problemas Identificados
+## Problema
 
-1. **URL de producao**: `ASAAS_BASE` aponta para `https://www.asaas.com/api/v3` (producao) mas as chaves sao de sandbox
-2. **`getClaims` inexistente**: O metodo `supabaseAuth.auth.getClaims(token)` nao existe no supabase-js@2 — isso causa erro imediato. Deve usar `supabaseAuth.auth.getUser()` que valida o JWT e retorna o user
-3. **Erro silencioso no catch**: O `customerRes.json()` pode falhar se a resposta nao for JSON valido. Usar `response.text()` primeiro e tentar parsear
+O endpoint `POST /v3/subscriptions` do Asaas retorna o objeto da assinatura, que nao contem `invoiceUrl`. A `invoiceUrl` pertence ao payment (cobranca) gerado automaticamente pela assinatura.
 
-## Correcoes no arquivo `supabase/functions/create-asaas-checkout/index.ts`
+## Correcao
 
-| Linha | De | Para |
-|-------|-----|------|
-| 9 | `https://www.asaas.com/api/v3` | `https://sandbox.asaas.com/api/v3` |
-| 50-58 | `getClaims(token)` + `claimsData.claims.sub` | `getUser()` + `userData.user.id` |
-| 140 | `customerRes.json()` direto | `customerRes.text()` + `JSON.parse` com fallback |
-| 175 | `subRes.json()` direto | `subRes.text()` + `JSON.parse` com fallback |
+No `supabase/functions/create-asaas-checkout/index.ts`, apos criar a assinatura (linha 207), adicionar um Step 3:
 
-## Detalhes da auth fix
+1. Fazer `GET /v3/payments?subscription={subData.id}` com as mesmas headers e timeout
+2. Parsear a resposta e pegar `paymentsData.data[0].invoiceUrl`
+3. Logar o invoiceUrl encontrado
+4. Retornar esse valor como `checkout_url`
+
+### Codigo (linhas 209-224 substituidas)
 
 ```typescript
-const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
-if (userError || !userData?.user) {
-  return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-}
-const userId = userData.user.id;
-```
+// Save subscription info
+await supabase.from("workspaces").update({...}).eq("id", workspace_id);
 
-Remover as linhas do `token` e `getClaims` (50-58).
+// Step 3: Fetch the first payment to get invoiceUrl
+const paymentsRes = await fetch(
+  `${ASAAS_BASE}/payments?subscription=${subData.id}`,
+  { headers: asaasHeaders, signal: AbortSignal.timeout(15000) }
+);
+const paymentsText = await paymentsRes.text();
+console.log("Asaas payments response:", paymentsRes.status, paymentsText);
+
+let checkout_url = null;
+if (paymentsRes.ok) {
+  try {
+    const paymentsData = JSON.parse(paymentsText);
+    if (paymentsData.data?.length > 0) {
+      checkout_url = paymentsData.data[0].invoiceUrl;
+      console.log("Found invoiceUrl:", checkout_url);
+    }
+  } catch { console.error("Failed to parse payments:", paymentsText); }
+}
+
+return new Response(
+  JSON.stringify({ checkout_url, subscription_id: subData.id }),
+  { status: 200, headers: {...corsHeaders, "Content-Type": "application/json"} }
+);
+```
 
 ## Arquivo modificado
 
 | Arquivo | Acao |
 |---------|------|
-| `supabase/functions/create-asaas-checkout/index.ts` | Fix URL sandbox + auth + error handling |
+| `supabase/functions/create-asaas-checkout/index.ts` | Adicionar Step 3 (GET payments) |
 
