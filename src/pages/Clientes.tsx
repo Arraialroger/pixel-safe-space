@@ -3,6 +3,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Plus, Loader2 } from "lucide-react";
+import { usePaywall } from "@/hooks/use-paywall";
 import { Button } from "@/components/ui/button";
 import ClientTable from "@/components/clientes/ClientTable";
 import ClientFormDialog from "@/components/clientes/ClientFormDialog";

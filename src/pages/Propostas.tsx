@@ -11,6 +11,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { statusConfig } from "@/lib/proposal-utils";
+import { usePaywall } from "@/hooks/use-paywall";
 
 type ProposalWithClient = {
   id: string;

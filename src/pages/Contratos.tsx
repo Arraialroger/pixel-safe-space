@@ -12,6 +12,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
+import { usePaywall } from "@/hooks/use-paywall";
 
 type ContractWithClient = {
   id: string;
