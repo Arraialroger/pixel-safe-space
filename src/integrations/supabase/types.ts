@@ -264,6 +264,8 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
           company_address: string | null
           company_document: string | null
           created_at: string
@@ -272,9 +274,14 @@ export type Database = {
           name: string
           owner_id: string
           stripe_token: string | null
+          subscription_plan: string | null
+          subscription_status: string
+          trial_ends_at: string | null
           whatsapp: string | null
         }
         Insert: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           company_address?: string | null
           company_document?: string | null
           created_at?: string
@@ -283,9 +290,14 @@ export type Database = {
           name: string
           owner_id: string
           stripe_token?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string
+          trial_ends_at?: string | null
           whatsapp?: string | null
         }
         Update: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           company_address?: string | null
           company_document?: string | null
           created_at?: string
@@ -294,6 +306,9 @@ export type Database = {
           name?: string
           owner_id?: string
           stripe_token?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string
+          trial_ends_at?: string | null
           whatsapp?: string | null
         }
         Relationships: []
