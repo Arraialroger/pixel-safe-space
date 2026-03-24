@@ -1,8 +1,12 @@
 # Roadmap Oficial — PixelSafe
 
-## FASE 5: Monetização B2B (Integração Stripe)
+## FASE 5: Monetização B2B — SaaS Billing Engine ✅ (CONCLUÍDO)
 
-**Objetivo:** Cobrar assinaturas dos estúdios. Integração Stripe BYOK para gerenciar Planos (Starter/Estúdio), Trial de 7 dias, bloqueio de inadimplentes. Inclusão de Gestão de Equipe (convites) e controle de Marca d'água (White-label).
+**Implementado:** Integração Asaas (checkout, webhooks, billing automático),
+Paywall com soft-block, White-label (marca d'água condicional),
+Gestão de Equipe (convites, limite de assentos por plano),
+Realtime sync para desbloqueio instantâneo pós-pagamento.
+Trial de 7 dias com bloqueio automático ao expirar.
 
 ## FASE 6: Recepção e Onboarding
 
