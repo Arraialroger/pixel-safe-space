@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Building2, CreditCard, ShieldAlert, Lock } from "lucide-react";
+// stripe_token field removed — Asaas is the billing provider now
 
 const workspaceSchema = z.object({
   name: z.string().min(1, "Nome do estúdio é obrigatório").max(100),
@@ -18,7 +19,6 @@ const workspaceSchema = z.object({
   company_address: z.string().max(300).optional().or(z.literal("")),
   whatsapp: z.string().max(20).optional().or(z.literal("")),
   mercado_pago_token: z.string().max(500).optional().or(z.literal("")),
-  stripe_token: z.string().max(500).optional().or(z.literal("")),
 });
 
 type WorkspaceFormValues = z.infer<typeof workspaceSchema>;
@@ -33,7 +33,7 @@ export default function ConfiguracoesWorkspace() {
 
   const form = useForm<WorkspaceFormValues>({
     resolver: zodResolver(workspaceSchema),
-    defaultValues: { name: "", company_document: "", company_address: "", whatsapp: "", mercado_pago_token: "", stripe_token: "" },
+    defaultValues: { name: "", company_document: "", company_address: "", whatsapp: "", mercado_pago_token: "" },
   });
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function ConfiguracoesWorkspace() {
       // Load workspace data
       const { data: ws } = await supabase
         .from("workspaces")
-        .select("name, company_document, company_address, whatsapp, mercado_pago_token, stripe_token")
+        .select("name, company_document, company_address, whatsapp, mercado_pago_token")
         .eq("id", workspaceId)
         .single();
 
@@ -70,7 +70,6 @@ export default function ConfiguracoesWorkspace() {
           company_address: ws.company_address ?? "",
           whatsapp: ws.whatsapp ?? "",
           mercado_pago_token: ws.mercado_pago_token ?? "",
-          stripe_token: ws.stripe_token ?? "",
         });
       }
       setLoading(false);
@@ -91,7 +90,6 @@ export default function ConfiguracoesWorkspace() {
         company_address: values.company_address || null,
         whatsapp: values.whatsapp || null,
         mercado_pago_token: values.mercado_pago_token || null,
-        stripe_token: values.stripe_token || null,
       })
       .eq("id", workspaceId);
 
@@ -207,18 +205,6 @@ export default function ConfiguracoesWorkspace() {
                 </FormItem>
               )} />
 
-              <FormField control={form.control} name="stripe_token" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Stripe Secret Key</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="sk_live_..." autoComplete="off" {...field} />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">
-                    Encontre em: Stripe Dashboard → Developers → API Keys → Secret key.
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )} />
             </CardContent>
           </Card>
 

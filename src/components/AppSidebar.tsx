@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, FileCheck, Users, Settings, LogOut, Shield, Building2 } from "lucide-react";
+import { LayoutDashboard, FileText, FileCheck, Users, Settings, LogOut, Shield, Building2, CreditCard } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
@@ -22,6 +22,7 @@ const navItems = [
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Estúdio/Agência", url: "/configuracoes-workspace", icon: Building2 },
+  { title: "Minha Assinatura", url: "/assinatura", icon: CreditCard },
 ];
 
 export function AppSidebar() {
