@@ -24,6 +24,7 @@ type ProposalWithClient = {
 
 export default function Propostas() {
   const { workspaceId } = useWorkspace();
+  const { guard } = usePaywall();
   const navigate = useNavigate();
   const [proposals, setProposals] = useState<ProposalWithClient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +67,7 @@ export default function Propostas() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Propostas</h1>
-        <Button onClick={() => navigate("/propostas/nova")}>
+        <Button onClick={() => guard(() => navigate("/propostas/nova"))}>
           <Plus className="mr-2 h-4 w-4" /> Nova Proposta
         </Button>
       </div>

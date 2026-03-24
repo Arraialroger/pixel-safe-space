@@ -22,6 +22,7 @@ export interface Client {
 
 export default function Clientes() {
   const { workspaceId } = useWorkspace();
+  const { guard } = usePaywall();
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +82,7 @@ export default function Clientes() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
-        <Button onClick={() => setFormOpen(true)}>
+        <Button onClick={() => guard(() => setFormOpen(true))}>
           <Plus className="mr-2 h-4 w-4" />
           Novo Cliente
         </Button>
