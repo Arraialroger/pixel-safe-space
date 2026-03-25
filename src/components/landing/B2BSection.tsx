@@ -2,49 +2,38 @@ import { useState } from "react";
 import { User, Building2, Check } from "lucide-react";
 
 const freelancerFeatures = [
-  "Propostas em cliques, sem formatação manual",
-  "Contratos modelo prontos para diversos nichos",
-  "Cobrança automatizada sem intervenção",
-  "Cofre Anti-Calote ativado em 80 segundos",
-  "Plano gratuito para sempre",
+  "Propostas profissionais geradas com IA em segundos",
+  "Contratos com validade jurídica prontos para uso",
+  "Envio de links públicos elegantes",
+  "Organização de clientes",
+  "Plano base acessível",
 ];
 
 const studioFeatures = [
-  "Operação White Label com sua marca",
-  "Multi-seat para toda a equipe",
-  "Fluxos de aprovação e compliance",
-  "ROI transparente com dashboard analítico",
-  "API para integração com sistemas internos",
+  "Operação White-label (Sem marca d'água PixelSafe)",
+  "Cofre Anti-Calote Integrado (Smart Handoff Vault)",
+  "Recebimentos Diretos (Integração Asaas/Mercado Pago)",
+  "Gestão de Equipe Colaborativa (Até 5 assentos)",
+  "Criação Ilimitada de Propostas e Contratos",
 ];
 
 export function B2BSection() {
   const [isStudio, setIsStudio] = useState(false);
-
   const features = isStudio ? studioFeatures : freelancerFeatures;
 
   return (
     <section className="relative px-6 py-24 lg:px-16 lg:py-32">
       <div className="mx-auto max-w-4xl">
-        <p
-          className="mb-3 text-center text-sm font-semibold uppercase tracking-widest"
-          style={{ color: "hsl(var(--landing-accent))" }}
-        >
+        <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-primary">
           Para todos os tamanhos
         </p>
-        <h2
-          className="mx-auto max-w-2xl text-center font-serif text-3xl leading-tight sm:text-4xl"
-          style={{ color: "hsl(var(--landing-text))", textWrap: "balance" } as React.CSSProperties}
-        >
+        <h2 className="mx-auto max-w-2xl text-center font-serif text-3xl leading-tight text-foreground sm:text-4xl [text-wrap:balance]">
           Feito para quem cria — sozinho ou em equipe
         </h2>
 
         {/* Toggle */}
         <div
-          className="mx-auto mt-10 flex w-fit rounded-xl border p-1"
-          style={{
-            background: "hsl(var(--landing-card) / 0.4)",
-            borderColor: "hsl(var(--landing-text) / 0.08)",
-          }}
+          className="mx-auto mt-10 flex w-fit rounded-xl border border-white/10 bg-card/40 p-1"
           role="tablist"
           aria-label="Tipo de usuário"
         >
@@ -52,11 +41,11 @@ export function B2BSection() {
             role="tab"
             aria-selected={!isStudio}
             onClick={() => setIsStudio(false)}
-            className="flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-all duration-300"
-            style={{
-              background: !isStudio ? "hsl(var(--landing-accent))" : "transparent",
-              color: !isStudio ? "hsl(var(--landing-accent-foreground))" : "hsl(var(--landing-text) / 0.5)",
-            }}
+            className={`flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-all duration-300 ${
+              !isStudio
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground"
+            }`}
           >
             <User className="h-4 w-4" aria-hidden="true" />
             Sou Independente
@@ -65,11 +54,11 @@ export function B2BSection() {
             role="tab"
             aria-selected={isStudio}
             onClick={() => setIsStudio(true)}
-            className="flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-all duration-300"
-            style={{
-              background: isStudio ? "hsl(var(--landing-accent))" : "transparent",
-              color: isStudio ? "hsl(var(--landing-accent-foreground))" : "hsl(var(--landing-text) / 0.5)",
-            }}
+            className={`flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-all duration-300 ${
+              isStudio
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground"
+            }`}
           >
             <Building2 className="h-4 w-4" aria-hidden="true" />
             Represento um Estúdio
@@ -78,25 +67,17 @@ export function B2BSection() {
 
         {/* Features */}
         <div
-          className="mx-auto mt-10 max-w-md rounded-2xl border p-8 backdrop-blur-lg"
+          className="mx-auto mt-10 max-w-md rounded-2xl border border-white/10 bg-card/30 p-8 backdrop-blur-xl"
           role="tabpanel"
-          style={{
-            background: "hsl(var(--landing-card) / 0.3)",
-            borderColor: "hsl(var(--landing-text) / 0.06)",
-          }}
         >
           <ul className="space-y-4">
             {features.map((f) => (
               <li key={f} className="flex items-start gap-3">
                 <Check
-                  className="mt-0.5 h-5 w-5 shrink-0"
-                  style={{ color: "hsl(var(--landing-success))" }}
+                  className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400"
                   aria-hidden="true"
                 />
-                <span
-                  className="text-sm leading-relaxed"
-                  style={{ color: "hsl(var(--landing-text) / 0.8)" }}
-                >
+                <span className="text-sm leading-relaxed text-foreground/80">
                   {f}
                 </span>
               </li>
