@@ -5,36 +5,26 @@ import { Shield, ArrowRight } from "lucide-react";
 export function HeroSection() {
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden px-6 lg:px-16">
-      {/* Gradient orbs */}
+      {/* Glow orbs */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full opacity-20"
-        style={{ background: "radial-gradient(circle, hsl(var(--landing-accent)) 0%, transparent 70%)" }}
+        className="pointer-events-none absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-primary/20 opacity-20"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-60 -right-40 h-[500px] w-[500px] rounded-full opacity-15"
-        style={{ background: "radial-gradient(circle, hsl(var(--landing-success)) 0%, transparent 70%)" }}
+        className="pointer-events-none absolute -bottom-60 -right-40 h-[500px] w-[500px] rounded-full bg-emerald-500/15 opacity-15"
       />
 
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center gap-16 lg:flex-row lg:items-center lg:justify-between">
         {/* Copy */}
         <div className="max-w-2xl space-y-8 text-center lg:text-left">
-          <h1
-            className="font-serif text-4xl font-normal leading-[1.15] tracking-tight sm:text-5xl md:text-6xl"
-            style={{ color: "hsl(var(--landing-text))", textWrap: "balance" } as React.CSSProperties}
-          >
+          <h1 className="font-serif text-4xl font-normal leading-[1.15] tracking-tight text-foreground sm:text-5xl md:text-6xl [text-wrap:balance]">
             Desenhe sem medo.{" "}
-            <span style={{ color: "hsl(var(--landing-accent))" }}>
-              Entregue com segurança.
-            </span>{" "}
+            <span className="text-primary">Entregue com segurança.</span>{" "}
             Receba no ato.
           </h1>
 
-          <p
-            className="mx-auto max-w-lg text-lg leading-relaxed lg:mx-0"
-            style={{ color: "hsl(var(--landing-text) / 0.7)" }}
-          >
+          <p className="mx-auto max-w-lg text-lg leading-relaxed text-muted-foreground lg:mx-0">
             Propostas inteligentes, contratos com assinatura digital e um Cofre Anti-Calote
             que só libera seus arquivos quando o pagamento é confirmado. Seu talento protegido
             por código e respaldo jurídico.
@@ -44,12 +34,7 @@ export function HeroSection() {
             <Button
               asChild
               size="lg"
-              className="relative h-14 min-w-[260px] rounded-xl text-base font-semibold shadow-lg transition-all duration-300 hover:scale-[1.02]"
-              style={{
-                background: "hsl(var(--landing-accent))",
-                color: "hsl(var(--landing-accent-foreground))",
-                boxShadow: "0 0 30px hsl(var(--landing-success) / 0.25)",
-              }}
+              className="relative h-14 min-w-[260px] rounded-xl bg-primary text-base font-semibold text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.3)] transition-all duration-300 hover:scale-[1.02]"
             >
               <Link to="/register">
                 Proteja Seu Primeiro Projeto
@@ -57,82 +42,53 @@ export function HeroSection() {
               </Link>
             </Button>
 
-            <p
-              className="text-sm"
-              style={{ color: "hsl(var(--landing-text) / 0.5)" }}
-            >
+            <p className="text-sm text-muted-foreground">
               Grátis para sempre · Sem cartão
             </p>
           </div>
         </div>
 
-        {/* Glassmorphism UI mockup */}
+        {/* Realistic UI mockup */}
         <div
-          className="relative w-full max-w-md shrink-0 rounded-2xl border p-6 backdrop-blur-xl motion-safe:animate-[fadeInUp_0.8s_ease-out_0.3s_both]"
-          style={{
-            background: "hsl(var(--landing-card) / 0.4)",
-            borderColor: "hsl(var(--landing-text) / 0.08)",
-          }}
+          className="relative w-full max-w-md shrink-0 rounded-2xl border border-white/10 bg-card/50 p-6 backdrop-blur-xl motion-safe:animate-[fadeInUp_0.8s_ease-out_0.3s_both]"
           aria-hidden="true"
         >
           {/* Mock header */}
           <div className="mb-6 flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-lg"
-              style={{ background: "hsl(var(--landing-accent) / 0.15)" }}
-            >
-              <Shield className="h-5 w-5" style={{ color: "hsl(var(--landing-accent))" }} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
+              <Shield className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <div className="h-3 w-28 rounded-full" style={{ background: "hsl(var(--landing-text) / 0.2)" }} />
-              <div className="mt-1.5 h-2 w-20 rounded-full" style={{ background: "hsl(var(--landing-text) / 0.1)" }} />
+              <p className="text-sm font-semibold text-foreground/90">Painel PixelSafe</p>
+              <p className="text-xs text-muted-foreground">Seus contratos ativos</p>
             </div>
           </div>
 
-          {/* Mock rows */}
+          {/* Mock table rows */}
           {[
-            { label: "Proposta #041", status: "Aceita", statusColor: "var(--landing-success)" },
-            { label: "Contrato #039", status: "Assinado", statusColor: "var(--landing-accent)" },
-            { label: "Cofre #039", status: "Liberado", statusColor: "var(--landing-success)" },
+            { label: "Proposta #041", status: "Aceita", color: "text-emerald-400 bg-emerald-400/12" },
+            { label: "Contrato #039", status: "Assinado", color: "text-primary bg-primary/12" },
+            { label: "Cofre #039", status: "Liberado", color: "text-emerald-400 bg-emerald-400/12" },
           ].map((item) => (
             <div
               key={item.label}
-              className="mb-3 flex items-center justify-between rounded-xl border px-4 py-3"
-              style={{
-                background: "hsl(var(--landing-bg) / 0.5)",
-                borderColor: "hsl(var(--landing-text) / 0.06)",
-              }}
+              className="mb-3 flex items-center justify-between rounded-xl border border-white/5 bg-background/50 px-4 py-3"
             >
-              <span className="text-sm font-medium" style={{ color: "hsl(var(--landing-text) / 0.8)" }}>
+              <span className="text-sm font-medium text-foreground/80">
                 {item.label}
               </span>
-              <span
-                className="rounded-full px-3 py-1 text-xs font-semibold"
-                style={{
-                  background: `hsl(${item.statusColor} / 0.12)`,
-                  color: `hsl(${item.statusColor})`,
-                }}
-              >
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.color}`}>
                 {item.status}
               </span>
             </div>
           ))}
 
           {/* Mock value */}
-          <div
-            className="mt-4 flex items-center justify-between rounded-xl border px-4 py-3"
-            style={{
-              background: "hsl(var(--landing-success) / 0.06)",
-              borderColor: "hsl(var(--landing-success) / 0.15)",
-            }}
-          >
-            <span className="text-xs" style={{ color: "hsl(var(--landing-text) / 0.5)" }}>
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-emerald-500/15 bg-emerald-500/5 px-4 py-3">
+            <span className="text-xs text-muted-foreground">
               Valor protegido
             </span>
-            <span
-              className="font-mono text-lg font-medium tabular-nums"
-              style={{ color: "hsl(var(--landing-success))" }}
-            >
+            <span className="font-mono text-lg font-medium tabular-nums text-emerald-400">
               R$&nbsp;12.500
             </span>
           </div>
