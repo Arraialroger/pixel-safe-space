@@ -10,6 +10,8 @@ import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Propostas from "./pages/Propostas";
 import PropostaNova from "./pages/PropostaNova";
 import Contratos from "./pages/Contratos";
@@ -36,6 +38,8 @@ const App = () => (
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route
                 path="/"
                 element={

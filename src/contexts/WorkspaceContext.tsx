@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface WorkspaceInfo {
   id: string;
   name: string;
+  subscriptionPlan: string | null;
 }
 
 interface WorkspaceContextType {
@@ -114,7 +115,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       // Fetch ALL workspaces the user belongs to
       const { data: memberships } = await supabase
         .from("workspace_members")
-        .select("workspace_id, workspaces(id, name)")
+        .select("workspace_id, workspaces(id, name, subscription_plan)")
         .eq("user_id", user.id);
 
       if (!memberships || memberships.length === 0) {
@@ -125,8 +126,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const wsList: WorkspaceInfo[] = memberships
         .filter((m) => m.workspaces)
         .map((m) => {
-          const ws = m.workspaces as unknown as { id: string; name: string };
-          return { id: ws.id, name: ws.name };
+          const ws = m.workspaces as unknown as { id: string; name: string; subscription_plan: string | null };
+          return { id: ws.id, name: ws.name, subscriptionPlan: ws.subscription_plan };
         });
 
       setAllWorkspaces(wsList);
