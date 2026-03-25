@@ -97,27 +97,19 @@ export default function ConfiguracoesWorkspace() {
 
   const loadMembers = async () => {
     if (!workspaceId) return;
-    const { data } = await supabase
-      .from("workspace_members")
-      .select("user_id, role")
-      .eq("workspace_id", workspaceId);
+    const { data } = await supabase.rpc("get_workspace_members", {
+      _workspace_id: workspaceId,
+    });
 
     if (data) {
-      // Fetch profile names for each member
-      const memberRows: MemberRow[] = [];
-      for (const m of data) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", m.user_id)
-          .single();
-        memberRows.push({
+      setMembers(
+        (data as { user_id: string; role: string; full_name: string | null; email: string | null }[]).map((m) => ({
           user_id: m.user_id,
           role: m.role,
-          full_name: profile?.full_name ?? undefined,
-        });
-      }
-      setMembers(memberRows);
+          full_name: m.full_name ?? undefined,
+          email: m.email ?? undefined,
+        }))
+      );
     }
   };
 
@@ -348,7 +340,7 @@ export default function ConfiguracoesWorkspace() {
                     <div className="flex items-center gap-2">
                       {m.user_id === ownerId && <Crown className="h-4 w-4 text-amber-400" />}
                       <span className="text-sm font-medium text-foreground">
-                        {m.full_name || "Sem nome"}
+                        {m.full_name || m.email || m.user_id.slice(0, 8)}
                       </span>
                       <span className="text-xs text-muted-foreground capitalize">({m.role})</span>
                     </div>
