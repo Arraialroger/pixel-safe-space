@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileCheck, Plus } from "lucide-react";
+import { FileCheck, Plus, MoreHorizontal, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
@@ -96,6 +99,7 @@ export default function Contratos() {
                 <TableHead>Execução</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Data</TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -103,7 +107,7 @@ export default function Contratos() {
                 const sc = contractStatusConfig[c.status] ?? contractStatusConfig.draft;
                 const ec = execStatusConfig[c.execution_status] ?? execStatusConfig.not_started;
                 return (
-                  <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/contratos/${c.id}`)}>
+                  <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.client_name}</TableCell>
                     <TableCell>
                       <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
@@ -113,6 +117,21 @@ export default function Contratos() {
                     </TableCell>
                     <TableCell>{formatCurrency(c.payment_value)}</TableCell>
                     <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/contratos/${c.id}`)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Visualizar Contrato
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 );
               })}
