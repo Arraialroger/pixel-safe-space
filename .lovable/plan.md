@@ -1,76 +1,85 @@
 
 
-# Plano: Fix Multi-tenant — Nomes de Membros + Workspace Switcher
+# Plano: Logo Refactor + Meu Perfil + Recuperacao de Senha + Switcher com Plano
 
-## Analise
+## 1. Migration SQL
 
-Concordo com sua analise. Confirmei no codigo:
-
-**Problema 1**: `loadMembers` ja faz queries individuais para `profiles.full_name`, mas o campo pode ser `null` (o cadastro salva em `raw_user_meta_data` mas profiles pode nao ter). O email nao e buscado. Solucao: buscar email via uma RPC (nao temos acesso direto a `auth.users` pelo client).
-
-**Problema 2**: `WorkspaceContext` usa `.limit(1).single()` na linha 56 — so carrega o primeiro workspace. Usuario com 2+ workspaces fica preso.
-
----
-
-## Correcoes
-
-### 1. RPC para buscar membros com email
-
-Criar uma database function `get_workspace_members` que faz JOIN entre `workspace_members`, `profiles` e `auth.users` (SECURITY DEFINER) para retornar `user_id, role, full_name, email`. Isso resolve o N+1 e o "Sem nome" (fallback para email).
+Adicionar coluna `logo_url` na tabela `workspaces` e atualizar as RPCs:
 
 ```sql
-CREATE OR REPLACE FUNCTION public.get_workspace_members(_workspace_id uuid)
-RETURNS TABLE(user_id uuid, role text, full_name text, email text)
+ALTER TABLE public.workspaces ADD COLUMN IF NOT EXISTS logo_url text;
+
+-- Migrar logos existentes de profiles para workspaces (owner)
+UPDATE public.workspaces w
+SET logo_url = p.logo_url
+FROM public.profiles p
+WHERE p.id = w.owner_id AND p.logo_url IS NOT NULL;
+
+-- Atualizar RPC get_workspace_public para buscar logo de workspaces
+CREATE OR REPLACE FUNCTION public.get_workspace_public(_workspace_id uuid)
+RETURNS TABLE(id uuid, name text, logo_url text, subscription_plan text)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
-  SELECT wm.user_id, wm.role, p.full_name, u.email
-  FROM public.workspace_members wm
-  LEFT JOIN public.profiles p ON p.id = wm.user_id
-  LEFT JOIN auth.users u ON u.id = wm.user_id
-  WHERE wm.workspace_id = _workspace_id
-    AND is_workspace_member(auth.uid(), _workspace_id)
+  SELECT w.id, w.name, w.logo_url, w.subscription_plan
+  FROM public.workspaces w
+  WHERE w.id = _workspace_id;
+$$;
+
+-- Atualizar RPC get_workspace_contract_info
+CREATE OR REPLACE FUNCTION public.get_workspace_contract_info(_workspace_id uuid)
+RETURNS TABLE(id uuid, name text, logo_url text, company_document text, company_address text, whatsapp text, subscription_plan text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT w.id, w.name, w.logo_url, w.company_document, w.company_address, w.whatsapp, w.subscription_plan
+  FROM public.workspaces w
+  WHERE w.id = _workspace_id;
 $$;
 ```
 
-### 2. Atualizar ConfiguracoesWorkspace.tsx
+## 2. Mover Upload de Logo para ConfiguracoesWorkspace.tsx
 
-- Substituir `loadMembers` para chamar `supabase.rpc('get_workspace_members', { _workspace_id: workspaceId })`
-- Exibir `m.full_name || m.email || m.user_id` no card do membro
+- Adicionar card de Logo (upload/preview/remove) na pagina de Workspace, salvando em `workspaces.logo_url`
+- Upload continua usando bucket `logos`, path `{workspaceId}/logo.{ext}`
 
-### 3. WorkspaceContext — Multi-workspace
+## 3. Refatorar Configuracoes.tsx → "Meu Perfil"
 
-Expandir o contexto:
+- Remover secao de Logo inteira
+- Renomear titulo para "Meu Perfil"
+- Adicionar campo Email (read-only, vindo de `user.email`)
+- Adicionar secao "Alterar Senha" com campos senha atual nao necessario (Supabase `updateUser` nao exige), nova senha + confirmacao, chamando `supabase.auth.updateUser({ password })`
 
-```typescript
-interface WorkspaceContextType {
-  workspaceId: string | null;
-  allWorkspaces: { id: string; name: string }[];
-  switchWorkspace: (id: string) => void;
-  // ...existing fields
-}
-```
+## 4. Atualizar NavLink no AppSidebar
 
-- Buscar todos os workspaces via `workspace_members` JOIN `workspaces(id, name)`
-- Persistir `activeWorkspaceId` em `localStorage` para manter a escolha entre sessoes
-- `switchWorkspace` atualiza o estado e re-fetcha subscription data + realtime channel
+- Mudar titulo "Configuracoes" para "Meu Perfil"
 
-### 4. Workspace Switcher na Sidebar
+## 5. Fluxo "Esqueci Minha Senha"
 
-No `AppSidebar.tsx`, substituir o bloco do logo/nome por um `DropdownMenu`:
+- **Login.tsx**: Adicionar link "Esqueci minha senha" abaixo do formulario
+- **ForgotPassword.tsx** (nova pagina): Input de email + botao, chama `supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' })`
+- **ResetPassword.tsx** (nova pagina): Detecta `type=recovery` no URL hash, exibe form de nova senha, chama `supabase.auth.updateUser({ password })`
+- **App.tsx**: Adicionar rotas `/forgot-password` e `/reset-password` (publicas)
 
-- Trigger: nome do workspace ativo + icone `ChevronsUpDown`
-- Items: lista de workspaces do contexto
-- onClick: chama `switchWorkspace(ws.id)`
-- Quando collapsed: mostra apenas o icone/avatar do workspace
+## 6. Workspace Switcher com Badge de Plano
 
----
+- **WorkspaceContext**: Expandir `WorkspaceInfo` para incluir `subscription_plan`
+- **AppSidebar**: No dropdown, exibir Badge ao lado do nome do workspace: "Studio" (accent) ou "Free" (muted)
+- Sidebar header (logo): Buscar `logo_url` do workspace ativo (nao mais de profiles)
 
-## Arquivos
+## 7. Sidebar Logo — Buscar de Workspaces
+
+- Atualizar `AppSidebar` para buscar `logo_url` de `workspaces` (via workspace ativo) em vez de `profiles`
+
+## Arquivos Modificados/Criados
 
 | Arquivo | Acao |
 |---------|------|
-| Migration SQL | Criar RPC `get_workspace_members` |
-| `src/pages/ConfiguracoesWorkspace.tsx` | Usar RPC, exibir nome/email fallback |
-| `src/contexts/WorkspaceContext.tsx` | Multi-workspace, switchWorkspace, localStorage |
-| `src/components/AppSidebar.tsx` | DropdownMenu workspace switcher |
+| Migration SQL | `logo_url` em workspaces, RPCs atualizadas |
+| `src/pages/ConfiguracoesWorkspace.tsx` | Adicionar upload de Logo do workspace |
+| `src/pages/Configuracoes.tsx` | Renomear "Meu Perfil", remover logo, add email + alterar senha |
+| `src/pages/Login.tsx` | Link "Esqueci minha senha" |
+| `src/pages/ForgotPassword.tsx` | Nova pagina |
+| `src/pages/ResetPassword.tsx` | Nova pagina |
+| `src/App.tsx` | Rotas novas |
+| `src/components/AppSidebar.tsx` | Nav rename, logo de workspaces, badge de plano no switcher |
+| `src/contexts/WorkspaceContext.tsx` | subscription_plan em WorkspaceInfo |
 
