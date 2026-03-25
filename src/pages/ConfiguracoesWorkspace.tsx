@@ -121,6 +121,51 @@ export default function ConfiguracoesWorkspace() {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !workspaceId) return;
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "Formato inválido", description: "Use PNG, JPG, WebP ou SVG.", variant: "destructive" });
+      return;
+    }
+
+    setUploadingLogo(true);
+    const ext = file.name.split(".").pop();
+    const path = `${workspaceId}/logo.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("logos")
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
+      setUploadingLogo(false);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from("logos").getPublicUrl(path);
+    const url = publicUrlData.publicUrl;
+    setLogoUrl(url);
+    setLogoPreview(url);
+
+    // Save to workspace
+    await supabase.from("workspaces").update({ logo_url: url }).eq("id", workspaceId);
+
+    setUploadingLogo(false);
+    toast({ title: "Logo carregada com sucesso" });
+  };
+
+  const removeLogo = async () => {
+    setLogoUrl(null);
+    setLogoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (workspaceId) {
+      await supabase.from("workspaces").update({ logo_url: null }).eq("id", workspaceId);
+    }
+  };
+
   const onSubmit = async (values: WorkspaceFormValues) => {
     if (!workspaceId) return;
     setSaving(true);
