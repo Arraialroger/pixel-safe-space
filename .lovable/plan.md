@@ -1,68 +1,76 @@
 
 
-# Plano: Fase 5.4b — Refinamento UX + Documentacao V1.1 + ROADMAP
+# Plano: Fix Multi-tenant — Nomes de Membros + Workspace Switcher
 
-## 1. Refinamento UX — Alert de Convite
+## Analise
 
-**Arquivo:** `src/pages/ConfiguracoesWorkspace.tsx`
+Concordo com sua analise. Confirmei no codigo:
 
-Substituir o `<p>` discreto (linhas 337-339) por um componente `Alert` com icone `Info` (lucide-react) acima do input de e-mail:
+**Problema 1**: `loadMembers` ja faz queries individuais para `profiles.full_name`, mas o campo pode ser `null` (o cadastro salva em `raw_user_meta_data` mas profiles pode nao ter). O email nao e buscado. Solucao: buscar email via uma RPC (nao temos acesso direto a `auth.users` pelo client).
 
-```tsx
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+**Problema 2**: `WorkspaceContext` usa `.limit(1).single()` na linha 56 — so carrega o primeiro workspace. Usuario com 2+ workspaces fica preso.
 
-<Alert className="bg-blue-500/10 border-blue-500/20">
-  <Info className="h-4 w-4 text-blue-400" />
-  <AlertDescription className="text-sm text-blue-200">
-    💡 <strong>Como convidar:</strong> O membro precisa criar uma conta gratuita
-    no PixelSafe primeiro. Digite o e-mail cadastrado dele abaixo para
-    adicioná-lo ao seu estúdio.
-  </AlertDescription>
-</Alert>
+---
+
+## Correcoes
+
+### 1. RPC para buscar membros com email
+
+Criar uma database function `get_workspace_members` que faz JOIN entre `workspace_members`, `profiles` e `auth.users` (SECURITY DEFINER) para retornar `user_id, role, full_name, email`. Isso resolve o N+1 e o "Sem nome" (fallback para email).
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_workspace_members(_workspace_id uuid)
+RETURNS TABLE(user_id uuid, role text, full_name text, email text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT wm.user_id, wm.role, p.full_name, u.email
+  FROM public.workspace_members wm
+  LEFT JOIN public.profiles p ON p.id = wm.user_id
+  LEFT JOIN auth.users u ON u.id = wm.user_id
+  WHERE wm.workspace_id = _workspace_id
+    AND is_workspace_member(auth.uid(), _workspace_id)
+$$;
 ```
 
-Posicionar antes do `<div className="flex gap-2">` (linha 325). Remover o `<p>` antigo (linhas 337-339).
+### 2. Atualizar ConfiguracoesWorkspace.tsx
 
-## 2. TechSpec V1.1
+- Substituir `loadMembers` para chamar `supabase.rpc('get_workspace_members', { _workspace_id: workspaceId })`
+- Exibir `m.full_name || m.email || m.user_id` no card do membro
 
-**Arquivo:** `/mnt/documents/PixelSafe_TechSpec_V1.1.md`
+### 3. WorkspaceContext — Multi-workspace
 
-Criar nova versao com as seguintes adicoes:
+Expandir o contexto:
 
-- Header: `V1.1 — 24 de Marco de 2026`
-- Secao 2.2 `workspaces`: adicionar colunas `asaas_customer_id`, `asaas_subscription_id`, `subscription_status`, `subscription_plan`, `trial_ends_at`
-- Remover `stripe_token` da tabela workspaces
-- Nova secao **4.6 create-asaas-checkout** (Edge Function): descricao do fluxo Customer → Subscription → Payment → invoiceUrl
-- Nova secao **4.7 asaas-webhook**: eventos escutados (PAYMENT_CONFIRMED → active, PAYMENT_OVERDUE → past_due, SUBSCRIPTION_DELETED → canceled)
-- Nova secao **5.5 Paywall (Soft Block)**: hasAccess logic (active OR trialing+valid), intercept em botoes de criacao, banner global no AppLayout
-- Nova secao **5.6 White-label**: RPCs retornam subscription_plan, marca d'agua oculta para plano studio
-- Nova secao **5.7 Gestao de Equipe**: RPC invite_workspace_member, limite 5 assentos, UI bloqueada para non-studio
-- Nova secao **5.8 Realtime Sync**: listener postgres_changes na tabela workspaces para destravar paywall instantaneamente
-- Atualizar Tech Stack: adicionar Asaas API (billing)
-- Atualizar Roadmap Tecnico (secao 8): remover "Integracao Stripe BYOK" como prioridade alta (substituida por Asaas)
-
-## 3. ROADMAP.md
-
-**Arquivo:** `ROADMAP.md`
-
-Atualizar Fase 5:
-
-```markdown
-## FASE 5: Monetização B2B — SaaS Billing Engine ✅ (CONCLUÍDO)
-
-**Implementado:** Integração Asaas (checkout, webhooks, billing automático),
-Paywall com soft-block, White-label (marca d'água condicional),
-Gestão de Equipe (convites, limite de assentos por plano),
-Realtime sync para desbloqueio instantâneo pós-pagamento.
-Trial de 7 dias com bloqueio automático ao expirar.
+```typescript
+interface WorkspaceContextType {
+  workspaceId: string | null;
+  allWorkspaces: { id: string; name: string }[];
+  switchWorkspace: (id: string) => void;
+  // ...existing fields
+}
 ```
 
-## Arquivos Modificados/Criados
+- Buscar todos os workspaces via `workspace_members` JOIN `workspaces(id, name)`
+- Persistir `activeWorkspaceId` em `localStorage` para manter a escolha entre sessoes
+- `switchWorkspace` atualiza o estado e re-fetcha subscription data + realtime channel
+
+### 4. Workspace Switcher na Sidebar
+
+No `AppSidebar.tsx`, substituir o bloco do logo/nome por um `DropdownMenu`:
+
+- Trigger: nome do workspace ativo + icone `ChevronsUpDown`
+- Items: lista de workspaces do contexto
+- onClick: chama `switchWorkspace(ws.id)`
+- Quando collapsed: mostra apenas o icone/avatar do workspace
+
+---
+
+## Arquivos
 
 | Arquivo | Acao |
 |---------|------|
-| `src/pages/ConfiguracoesWorkspace.tsx` | Alert visual acima do input de convite |
-| `/mnt/documents/PixelSafe_TechSpec_V1.1.md` | Criar V1.1 com arquitetura Fase 5 |
-| `ROADMAP.md` | Fase 5 marcada como CONCLUIDO |
+| Migration SQL | Criar RPC `get_workspace_members` |
+| `src/pages/ConfiguracoesWorkspace.tsx` | Usar RPC, exibir nome/email fallback |
+| `src/contexts/WorkspaceContext.tsx` | Multi-workspace, switchWorkspace, localStorage |
+| `src/components/AppSidebar.tsx` | DropdownMenu workspace switcher |
 
