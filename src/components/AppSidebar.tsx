@@ -1,6 +1,7 @@
-import { LayoutDashboard, FileText, FileCheck, Users, Settings, LogOut, Shield, Building2, CreditCard } from "lucide-react";
+import { LayoutDashboard, FileText, FileCheck, Users, Settings, LogOut, Shield, Building2, CreditCard, ChevronsUpDown, Check } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -14,6 +15,12 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -29,7 +36,10 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut, user } = useAuth();
+  const { workspaceId, allWorkspaces, switchWorkspace } = useWorkspace();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  const activeWorkspace = allWorkspaces.find((w) => w.id === workspaceId);
 
   useEffect(() => {
     if (!user) return;
@@ -46,14 +56,51 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className="flex items-center gap-2.5 px-4 py-5">
-          {logoUrl ? (
-            <img src={logoUrl} alt="Logo" className="h-7 max-w-[120px] object-contain shrink-0" />
+        {/* Workspace Switcher */}
+        <div className="px-3 pt-4 pb-2">
+          {allWorkspaces.length > 1 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex w-full items-center gap-2 rounded-md border border-border/40 bg-card/50 px-3 py-2.5 text-left hover:bg-accent/50 transition-colors">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="h-5 max-w-[24px] object-contain shrink-0" />
+                  ) : (
+                    <Shield className="h-5 w-5 text-primary shrink-0" />
+                  )}
+                  {!collapsed && (
+                    <>
+                      <span className="text-sm font-semibold truncate flex-1">
+                        {activeWorkspace?.name ?? "Workspace"}
+                      </span>
+                      <ChevronsUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {allWorkspaces.map((ws) => (
+                  <DropdownMenuItem
+                    key={ws.id}
+                    onClick={() => switchWorkspace(ws.id)}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="truncate">{ws.name}</span>
+                    {ws.id === workspaceId && <Check className="h-4 w-4 text-primary shrink-0" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <>
-              <Shield className="h-6 w-6 text-primary shrink-0" />
-              {!collapsed && <span className="text-lg font-bold tracking-tight">Pixel Safe</span>}
-            </>
+            <div className="flex items-center gap-2.5 px-1 py-1">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="h-7 max-w-[120px] object-contain shrink-0" />
+              ) : (
+                <>
+                  <Shield className="h-6 w-6 text-primary shrink-0" />
+                  {!collapsed && <span className="text-lg font-bold tracking-tight">Pixel Safe</span>}
+                </>
+              )}
+            </div>
           )}
         </div>
 

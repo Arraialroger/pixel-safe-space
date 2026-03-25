@@ -334,6 +334,15 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      get_workspace_members: {
+        Args: { _workspace_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          role: string
+          user_id: string
+        }[]
+      }
       get_workspace_public: {
         Args: { _workspace_id: string }
         Returns: {
