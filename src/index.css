@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=Roboto+Mono:wght@300;400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -45,6 +45,19 @@
     --sidebar-border: 240 5% 10%;
     --sidebar-ring: 217 91% 60%;
   }
+
+  .landing-page {
+    --landing-bg: 235 55% 23%;
+    --landing-bg-deep: 275 55% 18%;
+    --landing-card: 270 40% 15%;
+    --landing-text: 264 100% 96%;
+    --landing-text-muted: 0 3% 37%;
+    --landing-accent: 253 52% 67%;
+    --landing-accent-foreground: 0 0% 100%;
+    --landing-success: 157 100% 50%;
+    --landing-success-foreground: 235 55% 10%;
+    --landing-border: 253 20% 25%;
+  }
 }
 
 @layer base {
@@ -55,5 +68,24 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'DM Sans', system-ui, sans-serif;
+  }
+}
+
+.landing-page .font-serif {
+  font-family: 'DM Serif Display', serif;
+}
+
+.landing-page .font-mono {
+  font-family: 'Roboto Mono', monospace;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
