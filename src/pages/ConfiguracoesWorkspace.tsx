@@ -267,6 +267,61 @@ export default function ConfiguracoesWorkspace() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* Logo */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">Logo do Estúdio</CardTitle>
+              </div>
+              <CardDescription>Sua logo será exibida na barra lateral e nas propostas.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-5">
+                {logoPreview ? (
+                  <div className="relative group">
+                    <img
+                      src={logoPreview}
+                      alt="Logo"
+                      className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeLogo}
+                      className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                    <Upload className="h-5 w-5 text-muted-foreground/50" />
+                  </div>
+                )}
+                <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploadingLogo}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploadingLogo && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                    {uploadingLogo ? "Enviando..." : "Enviar logo"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WebP ou SVG.</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
