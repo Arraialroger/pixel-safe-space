@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Building2, CreditCard, Lock, Users, Trash2, Crown, Info } from "lucide-react";
+import { Loader2, Building2, CreditCard, Lock, Users, Trash2, Crown, Info, Upload, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const workspaceSchema = z.object({
@@ -44,6 +44,10 @@ export default function ConfiguracoesWorkspace() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<WorkspaceFormValues>({
     resolver: zodResolver(workspaceSchema),
@@ -73,7 +77,7 @@ export default function ConfiguracoesWorkspace() {
 
       const { data: ws } = await supabase
         .from("workspaces")
-        .select("name, company_document, company_address, whatsapp, mercado_pago_token, owner_id")
+        .select("name, company_document, company_address, whatsapp, mercado_pago_token, owner_id, logo_url")
         .eq("id", workspaceId)
         .single();
 
@@ -86,6 +90,10 @@ export default function ConfiguracoesWorkspace() {
           mercado_pago_token: ws.mercado_pago_token ?? "",
         });
         setOwnerId(ws.owner_id);
+        if (ws.logo_url) {
+          setLogoUrl(ws.logo_url);
+          setLogoPreview(ws.logo_url);
+        }
       }
 
       await loadMembers();
