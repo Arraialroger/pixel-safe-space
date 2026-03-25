@@ -270,6 +270,7 @@ export type Database = {
           company_document: string | null
           created_at: string
           id: string
+          logo_url: string | null
           mercado_pago_token: string | null
           name: string
           owner_id: string
@@ -286,6 +287,7 @@ export type Database = {
           company_document?: string | null
           created_at?: string
           id?: string
+          logo_url?: string | null
           mercado_pago_token?: string | null
           name: string
           owner_id: string
@@ -302,6 +304,7 @@ export type Database = {
           company_document?: string | null
           created_at?: string
           id?: string
+          logo_url?: string | null
           mercado_pago_token?: string | null
           name?: string
           owner_id?: string

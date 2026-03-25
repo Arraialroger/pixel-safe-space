@@ -1,4 +1,5 @@
-import { LayoutDashboard, FileText, FileCheck, Users, Settings, LogOut, Shield, Building2, CreditCard, ChevronsUpDown, Check } from "lucide-react";
+import { LayoutDashboard, FileText, FileCheck, Users, UserCircle, LogOut, Shield, Building2, CreditCard, ChevronsUpDown, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -27,7 +28,7 @@ const navItems = [
   { title: "Propostas", url: "/propostas", icon: FileText },
   { title: "Contratos", url: "/contratos", icon: FileCheck },
   { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Meu Perfil", url: "/configuracoes", icon: UserCircle },
   { title: "Estúdio/Agência", url: "/configuracoes-workspace", icon: Building2 },
   { title: "Minha Assinatura", url: "/assinatura", icon: CreditCard },
 ];
@@ -42,16 +43,16 @@ export function AppSidebar() {
   const activeWorkspace = allWorkspaces.find((w) => w.id === workspaceId);
 
   useEffect(() => {
-    if (!user) return;
+    if (!workspaceId) return;
     supabase
-      .from("profiles")
+      .from("workspaces")
       .select("logo_url")
-      .eq("id", user.id)
+      .eq("id", workspaceId)
       .single()
       .then(({ data }) => {
-        if (data?.logo_url) setLogoUrl(data.logo_url);
+        setLogoUrl(data?.logo_url ?? null);
       });
-  }, [user]);
+  }, [workspaceId]);
 
   return (
     <Sidebar collapsible="icon">
@@ -82,10 +83,17 @@ export function AppSidebar() {
                   <DropdownMenuItem
                     key={ws.id}
                     onClick={() => switchWorkspace(ws.id)}
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between gap-2"
                   >
                     <span className="truncate">{ws.name}</span>
-                    {ws.id === workspaceId && <Check className="h-4 w-4 text-primary shrink-0" />}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {ws.subscriptionPlan === "studio" ? (
+                        <Badge variant="default" className="text-[10px] px-1.5 py-0">Studio</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Free</Badge>
+                      )}
+                      {ws.id === workspaceId && <Check className="h-4 w-4 text-primary" />}
+                    </div>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Building2, CreditCard, Lock, Users, Trash2, Crown, Info } from "lucide-react";
+import { Loader2, Building2, CreditCard, Lock, Users, Trash2, Crown, Info, Upload, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const workspaceSchema = z.object({
@@ -44,6 +44,10 @@ export default function ConfiguracoesWorkspace() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<WorkspaceFormValues>({
     resolver: zodResolver(workspaceSchema),
@@ -73,7 +77,7 @@ export default function ConfiguracoesWorkspace() {
 
       const { data: ws } = await supabase
         .from("workspaces")
-        .select("name, company_document, company_address, whatsapp, mercado_pago_token, owner_id")
+        .select("name, company_document, company_address, whatsapp, mercado_pago_token, owner_id, logo_url")
         .eq("id", workspaceId)
         .single();
 
@@ -86,6 +90,10 @@ export default function ConfiguracoesWorkspace() {
           mercado_pago_token: ws.mercado_pago_token ?? "",
         });
         setOwnerId(ws.owner_id);
+        if (ws.logo_url) {
+          setLogoUrl(ws.logo_url);
+          setLogoPreview(ws.logo_url);
+        }
       }
 
       await loadMembers();
@@ -110,6 +118,51 @@ export default function ConfiguracoesWorkspace() {
           email: m.email ?? undefined,
         }))
       );
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !workspaceId) return;
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "Formato inválido", description: "Use PNG, JPG, WebP ou SVG.", variant: "destructive" });
+      return;
+    }
+
+    setUploadingLogo(true);
+    const ext = file.name.split(".").pop();
+    const path = `${workspaceId}/logo.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("logos")
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
+      setUploadingLogo(false);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from("logos").getPublicUrl(path);
+    const url = publicUrlData.publicUrl;
+    setLogoUrl(url);
+    setLogoPreview(url);
+
+    // Save to workspace
+    await supabase.from("workspaces").update({ logo_url: url }).eq("id", workspaceId);
+
+    setUploadingLogo(false);
+    toast({ title: "Logo carregada com sucesso" });
+  };
+
+  const removeLogo = async () => {
+    setLogoUrl(null);
+    setLogoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (workspaceId) {
+      await supabase.from("workspaces").update({ logo_url: null }).eq("id", workspaceId);
     }
   };
 
@@ -214,6 +267,61 @@ export default function ConfiguracoesWorkspace() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* Logo */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">Logo do Estúdio</CardTitle>
+              </div>
+              <CardDescription>Sua logo será exibida na barra lateral e nas propostas.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-5">
+                {logoPreview ? (
+                  <div className="relative group">
+                    <img
+                      src={logoPreview}
+                      alt="Logo"
+                      className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeLogo}
+                      className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                    <Upload className="h-5 w-5 text-muted-foreground/50" />
+                  </div>
+                )}
+                <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploadingLogo}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploadingLogo && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                    {uploadingLogo ? "Enviando..." : "Enviar logo"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WebP ou SVG.</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
