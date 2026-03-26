@@ -325,6 +325,7 @@ export type Database = {
         Args: { _email: string; _name: string; _proposal_id: string }
         Returns: undefined
       }
+      get_dashboard_metrics: { Args: { _workspace_id: string }; Returns: Json }
       get_workspace_contract_info: {
         Args: { _workspace_id: string }
         Returns: {
