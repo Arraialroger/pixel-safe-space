@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileCheck, Plus, MoreHorizontal, Eye } from "lucide-react";
+import { FileCheck, MoreHorizontal, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -15,7 +14,6 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
-import { usePaywall } from "@/hooks/use-paywall";
 
 type ContractWithClient = {
   id: string;
@@ -28,7 +26,6 @@ type ContractWithClient = {
 
 export default function Contratos() {
   const { workspaceId } = useWorkspace();
-  const { guard } = usePaywall();
   const navigate = useNavigate();
   const [contracts, setContracts] = useState<ContractWithClient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,16 +66,11 @@ export default function Contratos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Contratos</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie os contratos de prestação de serviço do seu estúdio.
-          </p>
-        </div>
-        <Button onClick={() => guard(() => toast.info("Em breve! O formulário de novo contrato está sendo construído."))}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Contrato
-        </Button>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Contratos</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Gerencie os contratos de prestação de serviço do seu estúdio.
+        </p>
       </div>
 
       {contracts.length === 0 ? (
@@ -86,7 +78,7 @@ export default function Contratos() {
           <FileCheck className="h-12 w-12 text-muted-foreground/40 mb-4" />
           <p className="text-muted-foreground">Nenhum contrato criado ainda.</p>
           <p className="text-sm text-muted-foreground/60 mt-1">
-            Clique em "+ Novo Contrato" para começar.
+            Para criar um contrato, vá até uma Proposta aceita e clique em "Gerar Contrato".
           </p>
         </div>
       ) : (
