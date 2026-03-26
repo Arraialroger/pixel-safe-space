@@ -103,7 +103,7 @@ export default function Configuracoes() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Meu Perfil</h1>
         <p className="text-muted-foreground text-sm mt-1">Gerencie seus dados pessoais e preferências.</p>
@@ -184,7 +184,7 @@ export default function Configuracoes() {
             </div>
             <CardDescription>Defina uma nova senha para sua conta.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+           <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Nova Senha</label>
               <Input
