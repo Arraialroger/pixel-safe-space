@@ -24,7 +24,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span>Seu período de uso expirou. Clique aqui para escolher um plano e liberar seu acesso.</span>
             </Link>
           )}
-          <main className="flex-1 p-6">{children}</main>
+          <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
         </div>
       </div>
     </SidebarProvider>
