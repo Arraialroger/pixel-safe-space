@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -15,7 +14,6 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
-import { usePaywall } from "@/hooks/use-paywall";
 
 type ContractWithClient = {
   id: string;
@@ -28,7 +26,7 @@ type ContractWithClient = {
 
 export default function Contratos() {
   const { workspaceId } = useWorkspace();
-  const { guard } = usePaywall();
+  const navigate = useNavigate();
   const navigate = useNavigate();
   const [contracts, setContracts] = useState<ContractWithClient[]>([]);
   const [loading, setLoading] = useState(true);
