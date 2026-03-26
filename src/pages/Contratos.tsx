@@ -66,16 +66,11 @@ export default function Contratos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Contratos</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie os contratos de prestação de serviço do seu estúdio.
-          </p>
-        </div>
-        <Button onClick={() => guard(() => toast.info("Em breve! O formulário de novo contrato está sendo construído."))}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Contrato
-        </Button>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Contratos</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Gerencie os contratos de prestação de serviço do seu estúdio.
+        </p>
       </div>
 
       {contracts.length === 0 ? (
@@ -83,7 +78,7 @@ export default function Contratos() {
           <FileCheck className="h-12 w-12 text-muted-foreground/40 mb-4" />
           <p className="text-muted-foreground">Nenhum contrato criado ainda.</p>
           <p className="text-sm text-muted-foreground/60 mt-1">
-            Clique em "+ Novo Contrato" para começar.
+            Para criar um contrato, vá até uma Proposta aceita e clique em "Gerar Contrato".
           </p>
         </div>
       ) : (
