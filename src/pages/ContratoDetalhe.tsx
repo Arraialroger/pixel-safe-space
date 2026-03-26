@@ -210,7 +210,11 @@ export default function ContratoDetalhe() {
   const sc = contractStatusConfig[status] ?? contractStatusConfig.draft;
   const ec = execStatusConfig[executionStatus] ?? execStatusConfig.not_started;
   const cleanPhone = clientPhone.replace(/\D/g, "");
-  const whatsappMsg = encodeURIComponent(`Olá! O contrato do nosso projeto está pronto para assinatura digital. Segue o link: ${contractLink}`);
+  const whatsappMsg = encodeURIComponent(
+    executionStatus === 'delivered'
+      ? `Seu projeto está pronto! 🚀 Acesse o link do nosso Cofre Seguro para quitar o saldo final e liberar o download dos seus arquivos finais: ${contractLink}`
+      : `Olá! O contrato do nosso projeto está pronto para assinatura digital. Segue o link: ${contractLink}`
+  );
   const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
   const showVaultTab = status === "paid";
 
