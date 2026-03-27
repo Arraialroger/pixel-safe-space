@@ -188,7 +188,7 @@ export default function Assinatura() {
                   )}
                 </ul>
                 <Button
-                  className="w-full"
+                  className="w-full text-muted"
                   variant={p.highlighted ? "default" : "secondary"}
                   disabled={isCurrentPlan || loadingTier !== null}
                   onClick={() => handleSubscribe(p.tier)}>
