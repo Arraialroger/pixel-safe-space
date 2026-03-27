@@ -13,11 +13,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,
-} from "@/components/ui/form";
+  Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from
+"@/components/ui/form";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from
+"@/components/ui/select";
 
 const schema = z.object({
   client_id: z.string().min(1, "Selecione um cliente"),
@@ -28,20 +28,20 @@ const schema = z.object({
   exclusions: z.string().min(1, "Campo obrigatório"),
   revisions: z.string().min(1, "Campo obrigatório"),
   pricing_tiers: z.string().min(1, "Campo obrigatório"),
-  scope: z.string().optional(),
+  scope: z.string().optional()
 });
 
 type FormValues = z.infer<typeof schema>;
-type Client = { id: string; name: string; document: string | null; address: string | null; phone: string | null; email: string | null; company: string | null };
+type Client = {id: string;name: string;document: string | null;address: string | null;phone: string | null;email: string | null;company: string | null;};
 
 const briefingFields = [
-  { name: "context" as const, label: "Contexto e Dores do Cliente", placeholder: "Descreva o cenário atual do cliente, seus problemas e dores que motivam este projeto...", description: "Ex: O cliente está com uma marca ultrapassada e perdendo vendas para o principal concorrente." },
-  { name: "objectives" as const, label: "Objetivos de Negócio (Retorno Esperado)", placeholder: "Quais resultados de negócio o cliente espera? Ex: aumentar conversão, fortalecer marca...", description: "Ex: Aumentar a percepção de valor para poder cobrar mais caro pelos produtos." },
-  { name: "deliverables" as const, label: "Entregáveis Rígidos (Escopo Positivo)", placeholder: "Liste todos os itens que serão entregues. Ex: 5 páginas de site, logo principal + variações..." },
-  { name: "exclusions" as const, label: "Exclusões (O que NÃO está incluso)", placeholder: "O que está fora do escopo? Ex: textos/copywriting, fotografia, hospedagem...", description: "A sua armadura. Ex: Não inclui redação de textos, banco de imagens ou gestão de tráfego." },
-  { name: "revisions" as const, label: "Limites de Revisão e Regras de Alteração", placeholder: "Quantas rodadas de revisão? Ex: 2 rodadas inclusas, alterações extras orçadas à parte..." },
-  { name: "pricing_tiers" as const, label: "Estrutura de Investimento (Pacotes)", placeholder: "Descreva os pacotes/valores. Ex: Pacote Básico R$3.000, Pacote Premium R$6.000...", description: "Ofereça pacotes para ancoragem. Ex: Pacote Essencial (R$ 2k) vs. Pacote Premium (R$ 5k)." },
-];
+{ name: "context" as const, label: "Contexto e Dores do Cliente", placeholder: "Descreva o cenário atual do cliente, seus problemas e dores que motivam este projeto...", description: "Ex: O cliente está com uma marca ultrapassada e perdendo vendas para o principal concorrente." },
+{ name: "objectives" as const, label: "Objetivos de Negócio (Retorno Esperado)", placeholder: "Quais resultados de negócio o cliente espera? Ex: aumentar conversão, fortalecer marca...", description: "Ex: Aumentar a percepção de valor para poder cobrar mais caro pelos produtos." },
+{ name: "deliverables" as const, label: "Entregáveis Rígidos (Escopo Positivo)", placeholder: "Liste todos os itens que serão entregues. Ex: 5 páginas de site, logo principal + variações..." },
+{ name: "exclusions" as const, label: "Exclusões (O que NÃO está incluso)", placeholder: "O que está fora do escopo? Ex: textos/copywriting, fotografia, hospedagem...", description: "A sua armadura. Ex: Não inclui redação de textos, banco de imagens ou gestão de tráfego." },
+{ name: "revisions" as const, label: "Limites de Revisão e Regras de Alteração", placeholder: "Quantas rodadas de revisão? Ex: 2 rodadas inclusas, alterações extras orçadas à parte..." },
+{ name: "pricing_tiers" as const, label: "Estrutura de Investimento (Pacotes)", placeholder: "Descreva os pacotes/valores. Ex: Pacote Básico R$3.000, Pacote Premium R$6.000...", description: "Ofereça pacotes para ancoragem. Ex: Pacote Essencial (R$ 2k) vs. Pacote Premium (R$ 5k)." }];
+
 
 export default function PropostaNova() {
   const { workspaceId } = useWorkspace();
@@ -58,28 +58,28 @@ export default function PropostaNova() {
     defaultValues: {
       client_id: "", title: "",
       context: "", objectives: "", deliverables: "", exclusions: "", revisions: "", pricing_tiers: "",
-      scope: "",
-    },
+      scope: ""
+    }
   });
 
   useEffect(() => {
     if (!workspaceId) return;
-    supabase
-      .from("clients")
-      .select("id, name, document, address, phone, email, company")
-      .eq("workspace_id", workspaceId)
-      .order("name")
-      .then(({ data }) => { if (data) setClients(data); });
+    supabase.
+    from("clients").
+    select("id, name, document, address, phone, email, company").
+    eq("workspace_id", workspaceId).
+    order("name").
+    then(({ data }) => {if (data) setClients(data);});
   }, [workspaceId]);
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("language_preference")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => { if (data?.language_preference) setLanguagePref(data.language_preference); });
+    supabase.
+    from("profiles").
+    select("language_preference").
+    eq("id", user.id).
+    single().
+    then(({ data }) => {if (data?.language_preference) setLanguagePref(data.language_preference);});
   }, [user]);
 
   const handleGenerateScope = async () => {
@@ -89,7 +89,7 @@ export default function PropostaNova() {
       toast({
         title: "Preencha todos os campos do briefing",
         description: `Campos faltando: ${missingFields.map((f) => f.label).join(", ")}`,
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -109,8 +109,8 @@ export default function PropostaNova() {
           deadline: "",
           language: languagePref,
           clientName: selectedClient?.name || "",
-          title: values.title,
-        },
+          title: values.title
+        }
       });
 
       if (error) throw new Error(error.message || "Falha na comunicação com a IA.");
@@ -135,13 +135,13 @@ export default function PropostaNova() {
     setSaving(true);
 
     const summary = [
-      `## Contexto e Dores do Cliente\n${values.context}`,
-      `## Objetivos de Negócio\n${values.objectives}`,
-      `## Entregáveis Rígidos\n${values.deliverables}`,
-      `## Exclusões\n${values.exclusions}`,
-      `## Limites de Revisão\n${values.revisions}`,
-      `## Estrutura de Investimento\n${values.pricing_tiers}`,
-    ].join("\n\n");
+    `## Contexto e Dores do Cliente\n${values.context}`,
+    `## Objetivos de Negócio\n${values.objectives}`,
+    `## Entregáveis Rígidos\n${values.deliverables}`,
+    `## Exclusões\n${values.exclusions}`,
+    `## Limites de Revisão\n${values.revisions}`,
+    `## Estrutura de Investimento\n${values.pricing_tiers}`].
+    join("\n\n");
 
     const { error } = await supabase.from("proposals").insert({
       workspace_id: workspaceId,
@@ -149,7 +149,7 @@ export default function PropostaNova() {
       title: values.title,
       summary,
       ai_generated_scope: values.scope || null,
-      status: "draft",
+      status: "draft"
     });
 
     setSaving(false);
@@ -172,8 +172,8 @@ export default function PropostaNova() {
               <CardTitle className="text-lg">Dados Básicos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField control={form.control} name="client_id" render={({ field }) => (
-                <FormItem>
+              <FormField control={form.control} name="client_id" render={({ field }) =>
+              <FormItem>
                   <FormLabel>Cliente</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
@@ -182,22 +182,22 @@ export default function PropostaNova() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {clients.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
+                      {clients.map((c) =>
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
-              )} />
+              } />
 
-              <FormField control={form.control} name="title" render={({ field }) => (
-                <FormItem>
+              <FormField control={form.control} name="title" render={({ field }) =>
+              <FormItem>
                   <FormLabel>Título da Proposta</FormLabel>
                   <FormControl><Input placeholder="Ex: Redesign do site institucional" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
-              )} />
+              } />
             </CardContent>
           </Card>
 
@@ -206,39 +206,39 @@ export default function PropostaNova() {
               <CardTitle className="text-lg">Briefing Estruturado para IA</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {briefingFields.map((bf) => (
-                <FormField key={bf.name} control={form.control} name={bf.name} render={({ field }) => (
-                  <FormItem>
+              {briefingFields.map((bf) =>
+              <FormField key={bf.name} control={form.control} name={bf.name} render={({ field }) =>
+              <FormItem>
                     <FormLabel>{bf.label} *</FormLabel>
                     <FormControl>
                       <Textarea placeholder={bf.placeholder} rows={3} {...field} />
                     </FormControl>
-                    {"description" in bf && bf.description && (
-                      <FormDescription>{bf.description}</FormDescription>
-                    )}
+                    {"description" in bf && bf.description &&
+                <FormDescription>{bf.description}</FormDescription>
+                }
                     <FormMessage />
                   </FormItem>
-                )} />
-              ))}
+              } />
+              )}
 
               <Button type="button" variant="outline" onClick={handleGenerateScope} disabled={generatingAI}
-                className="border-primary/30 text-primary hover:bg-primary/5">
-                {generatingAI ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando com IA...</>
-                ) : (
-                  <><Sparkles className="mr-2 h-4 w-4" /> Gerar Escopo Profissional com IA</>
-                )}
+              className="border-primary/30 text-primary hover:bg-primary/5">
+                {generatingAI ?
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando com IA...</> :
+
+                <><Sparkles className="mr-2 h-4 w-4" /> Gerar Escopo Profissional com IA</>
+                }
               </Button>
 
-              <FormField control={form.control} name="scope" render={({ field }) => (
-                <FormItem>
+              <FormField control={form.control} name="scope" render={({ field }) =>
+              <FormItem>
                   <FormLabel>Escopo Final</FormLabel>
                   <FormControl>
                     <Textarea placeholder="O escopo gerado aparecerá aqui..." rows={12} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
-              )} />
+              } />
             </CardContent>
           </Card>
 
@@ -246,12 +246,12 @@ export default function PropostaNova() {
             <Button type="button" variant="outline" onClick={() => navigate("/propostas")}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} className="text-muted">
               {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Proposta"}
             </Button>
           </div>
         </form>
       </Form>
-    </div>
-  );
+    </div>);
+
 }
