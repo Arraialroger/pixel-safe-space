@@ -25,8 +25,8 @@ export default function Register() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
-      },
+        emailRedirectTo: window.location.origin
+      }
     });
     if (error) {
       toast.error(error.message);
@@ -74,7 +74,7 @@ export default function Register() {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full text-muted" disabled={loading}>
               {loading ? "Criando..." : "Criar conta"}
             </Button>
           </form>
@@ -87,6 +87,6 @@ export default function Register() {
           </p>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
