@@ -482,7 +482,7 @@ export default function ConfiguracoesWorkspace() {
                 onChange={(e) => setInviteEmail(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleInvite())} />
               
-                <Button type="button" onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
+                <Button type="button" onClick={handleInvite} disabled={inviting || !inviteEmail.trim()} className="text-muted">
                   {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Convidar"}
                 </Button>
               </div>
