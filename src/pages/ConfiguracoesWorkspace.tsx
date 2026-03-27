@@ -376,14 +376,20 @@ export default function ConfiguracoesWorkspace() {
                 <FormField control={form.control} name="company_document" render={({ field }) => (
                   <FormItem>
                     <FormLabel>CNPJ / CPF da Agência</FormLabel>
-                    <FormControl><Input placeholder="Ex: 12.345.678/0001-90" {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: 12.345.678/0001-90"
+                        value={field.value}
+                        onChange={(e) => field.onChange(maskDocument(e.target.value))}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="company_address" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Endereço Completo</FormLabel>
-                    <FormControl><Input placeholder="Ex: Rua das Flores, 123 - São Paulo/SP" {...field} /></FormControl>
+                    <FormControl><Input placeholder="Rua Esperança, 83 - Centro, São Paulo/SP - CEP 00000-000" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -392,9 +398,15 @@ export default function ConfiguracoesWorkspace() {
               <FormField control={form.control} name="whatsapp" render={({ field }) => (
                 <FormItem>
                   <FormLabel>WhatsApp de Contato</FormLabel>
-                  <FormControl><Input placeholder="5511999999999" {...field} /></FormControl>
+                  <FormControl>
+                    <Input
+                      placeholder="+55 (11) 99999-0000"
+                      value={field.value}
+                      onChange={(e) => field.onChange(maskWhatsApp(e.target.value))}
+                    />
+                  </FormControl>
                   <p className="text-xs text-muted-foreground">
-                    DDI + DDD + número, sem espaços ou traços. Será exibido na proposta pública.
+                    O número será salvo apenas com dígitos para compatibilidade com links wa.me/.
                   </p>
                   <FormMessage />
                 </FormItem>
