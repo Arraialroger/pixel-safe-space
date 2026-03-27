@@ -9,17 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from
+"@/components/ui/table";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from
+"@/components/ui/dropdown-menu";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from
+"@/components/ui/select";
 import {
-  Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
-} from "@/components/ui/pagination";
+  Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from
+"@/components/ui/pagination";
 import { statusConfig } from "@/lib/proposal-utils";
 import { usePaywall } from "@/hooks/use-paywall";
 
@@ -51,11 +51,11 @@ export default function Propostas() {
   useEffect(() => {
     if (!workspaceId) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("proposals")
-        .select("id, title, status, created_at, client_id, clients(name, phone)")
-        .eq("workspace_id", workspaceId)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.
+      from("proposals").
+      select("id, title, status, created_at, client_id, clients(name, phone)").
+      eq("workspace_id", workspaceId).
+      order("created_at", { ascending: false });
 
       if (!error && data) {
         setProposals(
@@ -65,7 +65,7 @@ export default function Propostas() {
             status: p.status,
             created_at: p.created_at,
             client_name: p.clients?.name ?? "—",
-            client_phone: p.clients?.phone ?? null,
+            client_phone: p.clients?.phone ?? null
           }))
         );
       }
@@ -82,8 +82,8 @@ export default function Propostas() {
       const q = search.toLowerCase();
       result = result.filter(
         (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.client_name.toLowerCase().includes(q)
+        p.title.toLowerCase().includes(q) ||
+        p.client_name.toLowerCase().includes(q)
       );
     }
     return result;
@@ -100,38 +100,38 @@ export default function Propostas() {
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight">Propostas</h1>
         <p className="text-muted-foreground">Carregando...</p>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Propostas</h1>
-        <Button onClick={() => guard(() => navigate("/propostas/nova"))}>
+        <Button onClick={() => guard(() => navigate("/propostas/nova"))} className="text-muted">
           <Plus className="mr-2 h-4 w-4" /> Nova Proposta
         </Button>
       </div>
 
-      {proposals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
+      {proposals.length === 0 ?
+      <div className="flex flex-col items-center justify-center py-20 text-center">
           <FileText className="h-12 w-12 text-muted-foreground/40 mb-4" />
           <p className="text-muted-foreground">Nenhuma proposta criada ainda.</p>
           <p className="text-sm text-muted-foreground/60 mt-1">
             Clique em "+ Nova Proposta" para começar.
           </p>
-        </div>
-      ) : (
-        <>
+        </div> :
+
+      <>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por título ou cliente..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+              placeholder="Buscar por título ou cliente..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9" />
+            
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[200px]">
@@ -147,13 +147,13 @@ export default function Propostas() {
             </Select>
           </div>
 
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+          {filtered.length === 0 ?
+        <div className="flex flex-col items-center justify-center py-12 text-center">
               <Search className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-muted-foreground">Nenhuma proposta encontrada com esses filtros.</p>
-            </div>
-          ) : (
-            <>
+            </div> :
+
+        <>
               <div className="rounded-md border overflow-x-auto">
                 <Table className="min-w-[600px]">
                   <TableHeader>
@@ -168,23 +168,23 @@ export default function Propostas() {
                   </TableHeader>
                   <TableBody>
                     {paginated.map((p) => {
-                      const sc = statusConfig[p.status] ?? statusConfig.draft;
-                      return (
-                        <TableRow key={p.id}>
+                  const sc = statusConfig[p.status] ?? statusConfig.draft;
+                  return (
+                    <TableRow key={p.id}>
                           <TableCell className="font-medium">{p.title}</TableCell>
                           <TableCell>{p.client_name}</TableCell>
                           <TableCell>
-                            {p.client_phone ? (
-                              <a
-                                href={`https://wa.me/${p.client_phone.replace(/\D/g, "")}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors text-sm"
-                              >
+                            {p.client_phone ?
+                        <a
+                          href={`https://wa.me/${p.client_phone.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors text-sm">
+                          
                                 <MessageCircle className="h-3.5 w-3.5" />
                                 {p.client_phone}
-                              </a>
-                            ) : "—"}
+                              </a> :
+                        "—"}
                           </TableCell>
                           <TableCell>
                             <Badge variant={sc.variant} className={sc.className}>
@@ -209,46 +209,46 @@ export default function Propostas() {
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                        </TableRow>);
+
+                })}
                   </TableBody>
                 </Table>
               </div>
 
-              {totalPages > 1 && (
-                <Pagination>
+              {totalPages > 1 &&
+          <Pagination>
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                
                     </PaginationItem>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) =>
+              <PaginationItem key={page}>
                         <PaginationLink
-                          isActive={page === currentPage}
-                          onClick={() => setCurrentPage(page)}
-                          className="cursor-pointer"
-                        >
+                  isActive={page === currentPage}
+                  onClick={() => setCurrentPage(page)}
+                  className="cursor-pointer">
+                  
                           {page}
                         </PaginationLink>
                       </PaginationItem>
-                    ))}
+              )}
                     <PaginationItem>
                       <PaginationNext
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                
                     </PaginationItem>
                   </PaginationContent>
                 </Pagination>
-              )}
+          }
             </>
-          )}
+        }
         </>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
