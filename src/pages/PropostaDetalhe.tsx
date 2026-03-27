@@ -14,8 +14,8 @@ import { statusConfig, formatDate } from "@/lib/proposal-utils";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from
+"@/components/ui/alert-dialog";
 
 type ProposalDetail = {
   id: string;
@@ -60,7 +60,7 @@ function parseSummary(summary: string | null) {
 }
 
 export default function PropostaDetalhe() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{id: string;}>();
   const { workspaceId } = useWorkspace();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -78,12 +78,12 @@ export default function PropostaDetalhe() {
   useEffect(() => {
     if (!workspaceId || !id) return;
     (async () => {
-      const { data: d, error } = await supabase
-        .from("proposals")
-        .select("id, title, status, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_by_email, accepted_at, summary, clients(name, company, document, address, phone)")
-        .eq("id", id)
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
+      const { data: d, error } = await supabase.
+      from("proposals").
+      select("id, title, status, ai_generated_scope, workspace_id, client_id, accepted_by_name, accepted_by_email, accepted_at, summary, clients(name, company, document, address, phone)").
+      eq("id", id).
+      eq("workspace_id", workspaceId).
+      maybeSingle();
 
       if (error || !d) {
         toast({ title: "Proposta não encontrada", description: "Verifique se ela pertence ao seu workspace.", variant: "destructive" });
@@ -106,7 +106,7 @@ export default function PropostaDetalhe() {
         accepted_by_name: d.accepted_by_name,
         accepted_by_email: d.accepted_by_email,
         accepted_at: d.accepted_at,
-        summary: d.summary,
+        summary: d.summary
       });
       setScope(d.ai_generated_scope ?? "");
       setLoading(false);
@@ -116,10 +116,10 @@ export default function PropostaDetalhe() {
   const handleSave = async () => {
     if (!id) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("proposals")
-      .update({ ai_generated_scope: scope })
-      .eq("id", id);
+    const { error } = await supabase.
+    from("proposals").
+    update({ ai_generated_scope: scope }).
+    eq("id", id);
     setSaving(false);
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
@@ -136,10 +136,10 @@ export default function PropostaDetalhe() {
   const handleStatusChange = async (newStatus: "pending" | "draft") => {
     if (!id) return;
     setChangingStatus(true);
-    const { error } = await supabase
-      .from("proposals")
-      .update({ status: newStatus })
-      .eq("id", id);
+    const { error } = await supabase.
+    from("proposals").
+    update({ status: newStatus }).
+    eq("id", id);
     setChangingStatus(false);
     if (error) {
       toast({ title: "Erro ao alterar status", description: error.message, variant: "destructive" });
@@ -155,19 +155,19 @@ export default function PropostaDetalhe() {
 
     const { deliverables, exclusions, revisions } = parseSummary(proposal.summary);
 
-    const { data, error } = await supabase
-      .from("contracts")
-      .insert({
-        workspace_id: workspaceId,
-        client_id: proposal.client_id,
-        proposal_id: proposal.id,
-        content_deliverables: deliverables || null,
-        content_exclusions: exclusions || null,
-        content_revisions: revisions || null,
-        status: "draft",
-      })
-      .select("id")
-      .single();
+    const { data, error } = await supabase.
+    from("contracts").
+    insert({
+      workspace_id: workspaceId,
+      client_id: proposal.client_id,
+      proposal_id: proposal.id,
+      content_deliverables: deliverables || null,
+      content_exclusions: exclusions || null,
+      content_revisions: revisions || null,
+      status: "draft"
+    }).
+    select("id").
+    single();
 
     setGeneratingContract(false);
 
@@ -198,8 +198,8 @@ export default function PropostaDetalhe() {
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight">Detalhes da Proposta</h1>
         <p className="text-muted-foreground">Carregando...</p>
-      </div>
-    );
+      </div>);
+
   }
 
   if (!proposal) return null;
@@ -216,8 +216,8 @@ export default function PropostaDetalhe() {
           <ArrowLeft className="h-4 w-4" /> Voltar para Propostas
         </Button>
         <div className="flex gap-2 flex-wrap">
-          {isDraft && (
-            <AlertDialog>
+          {isDraft &&
+          <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
                   <Trash2 className="h-4 w-4" /> Excluir
@@ -239,35 +239,35 @@ export default function PropostaDetalhe() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          )}
-          {(isPending || isAccepted) && (
-            <Button onClick={handleGenerateContract} disabled={generatingContract} className="gap-2">
+          }
+          {(isPending || isAccepted) &&
+          <Button onClick={handleGenerateContract} disabled={generatingContract} className="gap-2">
               {generatingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
               Gerar Contrato
             </Button>
-          )}
-          {isDraft && (
-            <Button onClick={() => handleStatusChange("pending")} disabled={changingStatus} className="gap-2">
+          }
+          {isDraft &&
+          <Button onClick={() => handleStatusChange("pending")} disabled={changingStatus} className="gap-2">
               {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Liberar para o Cliente
             </Button>
-          )}
-          {isPending && (
-            <Button variant="outline" onClick={() => handleStatusChange("draft")} disabled={changingStatus} className="gap-2">
+          }
+          {isPending &&
+          <Button variant="outline" onClick={() => handleStatusChange("draft")} disabled={changingStatus} className="gap-2">
               {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
               Reverter para Rascunho
             </Button>
-          )}
+          }
         </div>
       </div>
 
-      {isAccepted && (
-        <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+      {isAccepted &&
+      <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
           <span className="text-sm text-emerald-400">
             ✅ Proposta aceita digitalmente por <strong>{proposal.accepted_by_name}</strong> em {formatDate(proposal.accepted_at)}. O escopo não pode mais ser editado.
           </span>
         </div>
-      )}
+      }
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -287,34 +287,34 @@ export default function PropostaDetalhe() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Escopo do Projeto</CardTitle>
-                {!isAccepted && scope && (
-                  <Button variant="ghost" size="sm" onClick={() => setPreviewMode(!previewMode)} className="gap-1 text-muted-foreground">
+                {!isAccepted && scope &&
+                <Button variant="ghost" size="sm" onClick={() => setPreviewMode(!previewMode)} className="gap-1 text-muted-foreground">
                     {previewMode ? <><Pencil className="h-4 w-4" /> Editar</> : <><Eye className="h-4 w-4" /> Visualizar</>}
                   </Button>
-                )}
+                }
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isAccepted || previewMode ? (
-                <div className="prose prose-sm max-w-none prose-invert rounded-lg border border-white/10 bg-card p-6">
+              {isAccepted || previewMode ?
+              <div className="prose prose-sm max-w-none prose-invert rounded-lg border border-white/10 bg-card p-6">
                   <ReactMarkdown>{scope || "*Nenhum escopo definido ainda...*"}</ReactMarkdown>
-                </div>
-              ) : (
-                <Textarea
-                  value={scope}
-                  onChange={(e) => setScope(e.target.value)}
-                  rows={16}
-                  placeholder="Nenhum escopo definido ainda..."
-                  className="font-mono text-sm"
-                />
-              )}
-              {!isAccepted && !previewMode && (
-                <div className="flex justify-end">
-                  <Button onClick={handleSave} disabled={saving}>
+                </div> :
+
+              <Textarea
+                value={scope}
+                onChange={(e) => setScope(e.target.value)}
+                rows={16}
+                placeholder="Nenhum escopo definido ainda..."
+                className="font-mono text-sm" />
+
+              }
+              {!isAccepted && !previewMode &&
+              <div className="flex justify-end">
+                  <Button onClick={handleSave} disabled={saving} className="text-muted">
                     {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Alterações"}
                   </Button>
                 </div>
-              )}
+              }
             </CardContent>
           </Card>
         </div>
@@ -327,44 +327,44 @@ export default function PropostaDetalhe() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {isDraft && (
-                <div className="flex items-start gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-3">
+              {isDraft &&
+              <div className="flex items-start gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-3">
                   <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
                   <p className="text-xs text-amber-400">O link está desativado pois a proposta é um rascunho. Libere-a para ativar o acesso público.</p>
                 </div>
-              )}
-              {(isPending || isAccepted) && (
-                <div className="flex items-start gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3">
+              }
+              {(isPending || isAccepted) &&
+              <div className="flex items-start gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
                   <p className="text-xs text-emerald-400">O link público está ativo e pronto para envio.</p>
                 </div>
-              )}
+              }
               {(() => {
                 const cleanPhone = proposal.client_phone?.replace(/\D/g, "") ?? "";
                 const whatsappMsg = encodeURIComponent(`Olá! Segue o link da proposta para você analisar: ${publicLink}`);
                 const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
                 return (
                   <>
-                    {whatsappUrl && !isDraft && (
-                      <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                    {whatsappUrl && !isDraft &&
+                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                         <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-500 text-white">
                           <MessageCircle className="h-4 w-4" /> Enviar via WhatsApp
                         </Button>
                       </a>
-                    )}
+                    }
                     <div className="flex gap-2">
                       <Input value={publicLink} readOnly className="text-xs" />
                       <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link" disabled={isDraft}>
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
-                  </>
-                );
+                  </>);
+
               })()}
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
