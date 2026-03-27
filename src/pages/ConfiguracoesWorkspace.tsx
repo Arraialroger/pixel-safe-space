@@ -16,16 +16,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 function maskDocument(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 14);
   if (digits.length <= 11) {
-    return digits
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    return digits.
+    replace(/(\d{3})(\d)/, "$1.$2").
+    replace(/(\d{3})(\d)/, "$1.$2").
+    replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   }
-  return digits
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  return digits.
+  replace(/(\d{2})(\d)/, "$1.$2").
+  replace(/(\d{3})(\d)/, "$1.$2").
+  replace(/(\d{3})(\d)/, "$1/$2").
+  replace(/(\d{4})(\d{1,2})$/, "$1-$2");
 }
 
 function maskWhatsApp(value: string): string {
@@ -51,7 +51,7 @@ const workspaceSchema = z.object({
   company_document: z.string().max(25).optional().or(z.literal("")),
   company_address: z.string().max(300).optional().or(z.literal("")),
   whatsapp: z.string().max(25).optional().or(z.literal("")),
-  mercado_pago_token: z.string().max(500).optional().or(z.literal("")),
+  mercado_pago_token: z.string().max(500).optional().or(z.literal(""))
 });
 
 type WorkspaceFormValues = z.infer<typeof workspaceSchema>;
@@ -84,7 +84,7 @@ export default function ConfiguracoesWorkspace() {
 
   const form = useForm<WorkspaceFormValues>({
     resolver: zodResolver(workspaceSchema),
-    defaultValues: { name: "", company_document: "", company_address: "", whatsapp: "", mercado_pago_token: "" },
+    defaultValues: { name: "", company_document: "", company_address: "", whatsapp: "", mercado_pago_token: "" }
   });
 
   const isStudio = subscriptionPlan === "studio";
@@ -93,12 +93,12 @@ export default function ConfiguracoesWorkspace() {
     if (!user || !workspaceId || wsLoading) return;
 
     const load = async () => {
-      const { data: member } = await supabase
-        .from("workspace_members")
-        .select("role")
-        .eq("workspace_id", workspaceId)
-        .eq("user_id", user.id)
-        .single();
+      const { data: member } = await supabase.
+      from("workspace_members").
+      select("role").
+      eq("workspace_id", workspaceId).
+      eq("user_id", user.id).
+      single();
 
       if (member?.role !== "admin") {
         setIsAdmin(false);
@@ -108,11 +108,11 @@ export default function ConfiguracoesWorkspace() {
 
       setIsAdmin(true);
 
-      const { data: ws } = await supabase
-        .from("workspaces")
-        .select("name, company_document, company_address, whatsapp, mercado_pago_token, owner_id, logo_url")
-        .eq("id", workspaceId)
-        .single();
+      const { data: ws } = await supabase.
+      from("workspaces").
+      select("name, company_document, company_address, whatsapp, mercado_pago_token, owner_id, logo_url").
+      eq("id", workspaceId).
+      single();
 
       if (ws) {
         form.reset({
@@ -120,7 +120,7 @@ export default function ConfiguracoesWorkspace() {
           company_document: ws.company_document ? maskDocument(ws.company_document) : "",
           company_address: ws.company_address ?? "",
           whatsapp: ws.whatsapp ? maskWhatsApp(ws.whatsapp) : "",
-          mercado_pago_token: ws.mercado_pago_token ?? "",
+          mercado_pago_token: ws.mercado_pago_token ?? ""
         });
         setOwnerId(ws.owner_id);
         if (ws.logo_url) {
@@ -139,16 +139,16 @@ export default function ConfiguracoesWorkspace() {
   const loadMembers = async () => {
     if (!workspaceId) return;
     const { data } = await supabase.rpc("get_workspace_members", {
-      _workspace_id: workspaceId,
+      _workspace_id: workspaceId
     });
 
     if (data) {
       setMembers(
-        (data as { user_id: string; role: string; full_name: string | null; email: string | null }[]).map((m) => ({
+        (data as {user_id: string;role: string;full_name: string | null;email: string | null;}[]).map((m) => ({
           user_id: m.user_id,
           role: m.role,
           full_name: m.full_name ?? undefined,
-          email: m.email ?? undefined,
+          email: m.email ?? undefined
         }))
       );
     }
@@ -168,9 +168,9 @@ export default function ConfiguracoesWorkspace() {
     const ext = file.name.split(".").pop();
     const path = `${workspaceId}/logo.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("logos")
-      .upload(path, file, { upsert: true });
+    const { error: uploadError } = await supabase.storage.
+    from("logos").
+    upload(path, file, { upsert: true });
 
     if (uploadError) {
       toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
@@ -203,16 +203,16 @@ export default function ConfiguracoesWorkspace() {
     if (!workspaceId) return;
     setSaving(true);
 
-    const { error } = await supabase
-      .from("workspaces")
-      .update({
-        name: values.name,
-        company_document: values.company_document?.replace(/\D/g, "") || null,
-        company_address: values.company_address || null,
-        whatsapp: values.whatsapp?.replace(/\D/g, "") || null,
-        mercado_pago_token: values.mercado_pago_token || null,
-      })
-      .eq("id", workspaceId);
+    const { error } = await supabase.
+    from("workspaces").
+    update({
+      name: values.name,
+      company_document: values.company_document?.replace(/\D/g, "") || null,
+      company_address: values.company_address || null,
+      whatsapp: values.whatsapp?.replace(/\D/g, "") || null,
+      mercado_pago_token: values.mercado_pago_token || null
+    }).
+    eq("id", workspaceId);
 
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
@@ -228,17 +228,17 @@ export default function ConfiguracoesWorkspace() {
 
     const { data, error } = await supabase.rpc("invite_workspace_member", {
       _workspace_id: workspaceId,
-      _email: inviteEmail.trim(),
+      _email: inviteEmail.trim()
     });
 
     if (error) {
-      const msg = error.message.includes("User not found")
-        ? "Nenhum usuário encontrado com esse e-mail. O membro precisa criar uma conta primeiro."
-        : error.message.includes("Already a member")
-        ? "Esse usuário já faz parte da equipe."
-        : error.message.includes("Seat limit")
-        ? "Limite de 5 assentos atingido."
-        : error.message;
+      const msg = error.message.includes("User not found") ?
+      "Nenhum usuário encontrado com esse e-mail. O membro precisa criar uma conta primeiro." :
+      error.message.includes("Already a member") ?
+      "Esse usuário já faz parte da equipe." :
+      error.message.includes("Seat limit") ?
+      "Limite de 5 assentos atingido." :
+      error.message;
       toast({ title: "Erro ao convidar", description: msg, variant: "destructive" });
     } else {
       toast({ title: "Membro adicionado com sucesso!" });
@@ -252,11 +252,11 @@ export default function ConfiguracoesWorkspace() {
     if (!workspaceId) return;
     setRemovingId(userId);
 
-    const { error } = await supabase
-      .from("workspace_members")
-      .delete()
-      .eq("workspace_id", workspaceId)
-      .eq("user_id", userId);
+    const { error } = await supabase.
+    from("workspace_members").
+    delete().
+    eq("workspace_id", workspaceId).
+    eq("user_id", userId);
 
     if (error) {
       toast({ title: "Erro ao remover membro", description: error.message, variant: "destructive" });
@@ -271,8 +271,8 @@ export default function ConfiguracoesWorkspace() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+      </div>);
+
   }
 
   if (!isAdmin) {
@@ -285,8 +285,8 @@ export default function ConfiguracoesWorkspace() {
         <p className="text-muted-foreground max-w-md">
           Apenas administradores podem gerenciar as configurações do Estúdio.
         </p>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -311,34 +311,34 @@ export default function ConfiguracoesWorkspace() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-5">
-                {logoPreview ? (
-                  <div className="relative group">
+                {logoPreview ?
+                <div className="relative group">
                     <img
-                      src={logoPreview}
-                      alt="Logo"
-                      className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
-                    />
+                    src={logoPreview}
+                    alt="Logo"
+                    className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1" />
+                  
                     <button
-                      type="button"
-                      onClick={removeLogo}
-                      className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
+                    type="button"
+                    onClick={removeLogo}
+                    className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    
                       <X className="h-3 w-3" />
                     </button>
-                  </div>
-                ) : (
-                  <div className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                  </div> :
+
+                <div className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
                     <Upload className="h-5 w-5 text-muted-foreground/50" />
                   </div>
-                )}
+                }
                 <div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     disabled={uploadingLogo}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
+                    onClick={() => fileInputRef.current?.click()}>
+                    
                     {uploadingLogo && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
                     {uploadingLogo ? "Enviando..." : "Enviar logo"}
                   </Button>
@@ -349,8 +349,8 @@ export default function ConfiguracoesWorkspace() {
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/svg+xml"
                   className="hidden"
-                  onChange={handleLogoUpload}
-                />
+                  onChange={handleLogoUpload} />
+                
               </div>
             </CardContent>
           </Card>
@@ -364,53 +364,53 @@ export default function ConfiguracoesWorkspace() {
               <CardDescription>Informações básicas do seu workspace.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem>
+              <FormField control={form.control} name="name" render={({ field }) =>
+              <FormItem>
                   <FormLabel>Nome do Workspace</FormLabel>
                   <FormControl><Input placeholder="Ex: Minha Agência Digital" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
-              )} />
+              } />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField control={form.control} name="company_document" render={({ field }) => (
-                  <FormItem>
+                <FormField control={form.control} name="company_document" render={({ field }) =>
+                <FormItem>
                     <FormLabel>CNPJ / CPF da Agência</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Ex: 12.345.678/0001-90"
-                        value={field.value}
-                        onChange={(e) => field.onChange(maskDocument(e.target.value))}
-                      />
+                      placeholder="Ex: 12.345.678/0001-90"
+                      value={field.value}
+                      onChange={(e) => field.onChange(maskDocument(e.target.value))} />
+                    
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
-                <FormField control={form.control} name="company_address" render={({ field }) => (
-                  <FormItem>
+                } />
+                <FormField control={form.control} name="company_address" render={({ field }) =>
+                <FormItem>
                     <FormLabel>Endereço Completo</FormLabel>
                     <FormControl><Input placeholder="Rua Esperança, 83 - Centro, São Paulo/SP - CEP 00000-000" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
+                } />
               </div>
 
-              <FormField control={form.control} name="whatsapp" render={({ field }) => (
-                <FormItem>
+              <FormField control={form.control} name="whatsapp" render={({ field }) =>
+              <FormItem>
                   <FormLabel>WhatsApp de Contato</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="+55 (11) 99999-0000"
-                      value={field.value}
-                      onChange={(e) => field.onChange(maskWhatsApp(e.target.value))}
-                    />
+                    placeholder="+55 (11) 99999-0000"
+                    value={field.value}
+                    onChange={(e) => field.onChange(maskWhatsApp(e.target.value))} />
+                  
                   </FormControl>
                   <p className="text-xs text-muted-foreground">
                     O número será salvo apenas com dígitos para compatibilidade com links wa.me/.
                   </p>
                   <FormMessage />
                 </FormItem>
-              )} />
+              } />
             </CardContent>
           </Card>
 
@@ -425,8 +425,8 @@ export default function ConfiguracoesWorkspace() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField control={form.control} name="mercado_pago_token" render={({ field }) => (
-                <FormItem>
+              <FormField control={form.control} name="mercado_pago_token" render={({ field }) =>
+              <FormItem>
                   <FormLabel>Mercado Pago Access Token</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="APP_USR-..." autoComplete="off" {...field} />
@@ -436,7 +436,7 @@ export default function ConfiguracoesWorkspace() {
                   </p>
                   <FormMessage />
                 </FormItem>
-              )} />
+              } />
             </CardContent>
           </Card>
 
@@ -446,7 +446,7 @@ export default function ConfiguracoesWorkspace() {
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} className="text-muted">
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
               {saving ? "Salvando..." : "Salvar Configurações"}
             </Button>
@@ -466,8 +466,8 @@ export default function ConfiguracoesWorkspace() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isStudio ? (
-            <div className="space-y-4">
+          {isStudio ?
+          <div className="space-y-4">
               <Alert className="bg-accent/10 border-accent/20">
                 <Info className="h-4 w-4 text-accent-foreground" />
                 <AlertDescription className="text-sm text-muted-foreground">
@@ -476,20 +476,20 @@ export default function ConfiguracoesWorkspace() {
               </Alert>
               <div className="flex gap-2">
                 <Input
-                  type="email"
-                  placeholder="email@membro.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleInvite())}
-                />
+                type="email"
+                placeholder="email@membro.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleInvite())} />
+              
                 <Button type="button" onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
                   {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Convidar"}
                 </Button>
               </div>
 
               <div className="space-y-2 pt-2">
-                {members.map((m) => (
-                  <div key={m.user_id} className="flex items-center justify-between rounded-lg border border-white/10 bg-card/30 px-4 py-3">
+                {members.map((m) =>
+              <div key={m.user_id} className="flex items-center justify-between rounded-lg border border-white/10 bg-card/30 px-4 py-3">
                     <div className="flex items-center gap-2">
                       {m.user_id === ownerId && <Crown className="h-4 w-4 text-amber-400" />}
                       <span className="text-sm font-medium text-foreground">
@@ -497,28 +497,28 @@ export default function ConfiguracoesWorkspace() {
                       </span>
                       <span className="text-xs text-muted-foreground capitalize">({m.role})</span>
                     </div>
-                    {m.user_id !== ownerId && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveMember(m.user_id)}
-                        disabled={removingId === m.user_id}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        {removingId === m.user_id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
+                    {m.user_id !== ownerId &&
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveMember(m.user_id)}
+                  disabled={removingId === m.user_id}
+                  className="text-destructive hover:text-destructive">
+                  
+                        {removingId === m.user_id ?
+                  <Loader2 className="h-4 w-4 animate-spin" /> :
+
+                  <Trash2 className="h-4 w-4" />
+                  }
                       </Button>
-                    )}
+                }
                   </div>
-                ))}
+              )}
               </div>
               <p className="text-xs text-muted-foreground">{members.length}/5 assentos utilizados</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-center space-y-3">
+            </div> :
+
+          <div className="flex flex-col items-center justify-center py-8 text-center space-y-3">
               <div className="rounded-full bg-muted/20 p-3">
                 <Lock className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -529,9 +529,9 @@ export default function ConfiguracoesWorkspace() {
                 <a href="/assinatura">Ver Planos</a>
               </Button>
             </div>
-          )}
+          }
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>);
+
 }
