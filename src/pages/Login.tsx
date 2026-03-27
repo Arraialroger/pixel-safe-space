@@ -72,7 +72,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full text-muted" disabled={loading}>
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
@@ -90,6 +90,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
