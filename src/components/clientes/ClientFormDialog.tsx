@@ -191,7 +191,7 @@ export default function ClientFormDialog({ open, onOpenChange, editingClient, on
             <FormField control={form.control} name="address" render={({ field }) =>
             <FormItem>
                 <FormLabel>Endereço Completo *</FormLabel>
-                <FormControl placeholder="Rua Esperan\xE7a, 83 - Centro, S\xE3o Paulo/SP - CEP  00000-000"><Input placeholder="Rua, nº, bairro, cidade - UF, CEP" {...field} /></FormControl>
+                <FormControl placeholder="Rua Esperan\xE7a, 83 - Centro, S\xE3o Paulo/SP - CEP 00000-000"><Input placeholder="Rua, nº, bairro, cidade - UF, CEP" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             } />
