@@ -13,11 +13,44 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Building2, CreditCard, Lock, Users, Trash2, Crown, Info, Upload, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+function maskDocument(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
+function maskWhatsApp(value: string): string {
+  let digits = value.replace(/\D/g, "").slice(0, 13);
+  if (digits.length === 0) return "";
+  // Auto-prepend 55 if not present
+  if (!digits.startsWith("55") && digits.length <= 11) {
+    digits = "55" + digits;
+  }
+  const ddi = digits.slice(0, 2);
+  const ddd = digits.slice(2, 4);
+  const part1 = digits.slice(4, 9);
+  const part2 = digits.slice(9, 13);
+  let result = `+${ddi}`;
+  if (ddd) result += ` (${ddd}`;
+  if (part1) result += `) ${part1}`;
+  if (part2) result += `-${part2}`;
+  return result;
+}
+
 const workspaceSchema = z.object({
   name: z.string().min(1, "Nome do estúdio é obrigatório").max(100),
-  company_document: z.string().max(20).optional().or(z.literal("")),
+  company_document: z.string().max(25).optional().or(z.literal("")),
   company_address: z.string().max(300).optional().or(z.literal("")),
-  whatsapp: z.string().max(20).optional().or(z.literal("")),
+  whatsapp: z.string().max(25).optional().or(z.literal("")),
   mercado_pago_token: z.string().max(500).optional().or(z.literal("")),
 });
 
@@ -84,9 +117,9 @@ export default function ConfiguracoesWorkspace() {
       if (ws) {
         form.reset({
           name: ws.name ?? "",
-          company_document: ws.company_document ?? "",
+          company_document: ws.company_document ? maskDocument(ws.company_document) : "",
           company_address: ws.company_address ?? "",
-          whatsapp: ws.whatsapp ?? "",
+          whatsapp: ws.whatsapp ? maskWhatsApp(ws.whatsapp) : "",
           mercado_pago_token: ws.mercado_pago_token ?? "",
         });
         setOwnerId(ws.owner_id);
@@ -174,9 +207,9 @@ export default function ConfiguracoesWorkspace() {
       .from("workspaces")
       .update({
         name: values.name,
-        company_document: values.company_document || null,
+        company_document: values.company_document?.replace(/\D/g, "") || null,
         company_address: values.company_address || null,
-        whatsapp: values.whatsapp || null,
+        whatsapp: values.whatsapp?.replace(/\D/g, "") || null,
         mercado_pago_token: values.mercado_pago_token || null,
       })
       .eq("id", workspaceId);
@@ -343,14 +376,20 @@ export default function ConfiguracoesWorkspace() {
                 <FormField control={form.control} name="company_document" render={({ field }) => (
                   <FormItem>
                     <FormLabel>CNPJ / CPF da Agência</FormLabel>
-                    <FormControl><Input placeholder="Ex: 12.345.678/0001-90" {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: 12.345.678/0001-90"
+                        value={field.value}
+                        onChange={(e) => field.onChange(maskDocument(e.target.value))}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="company_address" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Endereço Completo</FormLabel>
-                    <FormControl><Input placeholder="Ex: Rua das Flores, 123 - São Paulo/SP" {...field} /></FormControl>
+                    <FormControl><Input placeholder="Rua Esperança, 83 - Centro, São Paulo/SP - CEP 00000-000" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -359,9 +398,15 @@ export default function ConfiguracoesWorkspace() {
               <FormField control={form.control} name="whatsapp" render={({ field }) => (
                 <FormItem>
                   <FormLabel>WhatsApp de Contato</FormLabel>
-                  <FormControl><Input placeholder="5511999999999" {...field} /></FormControl>
+                  <FormControl>
+                    <Input
+                      placeholder="+55 (11) 99999-0000"
+                      value={field.value}
+                      onChange={(e) => field.onChange(maskWhatsApp(e.target.value))}
+                    />
+                  </FormControl>
                   <p className="text-xs text-muted-foreground">
-                    DDI + DDD + número, sem espaços ou traços. Será exibido na proposta pública.
+                    O número será salvo apenas com dígitos para compatibilidade com links wa.me/.
                   </p>
                   <FormMessage />
                 </FormItem>
