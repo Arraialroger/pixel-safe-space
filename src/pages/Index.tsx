@@ -169,7 +169,7 @@ const Index = () => {
                         {card.label}
                       </p>
                       <p
-                    className="tracking-tight mt-0.5 text-xl font-extrabold"
+                    className="tracking-tight mt-0.5 text-xl font-extrabold font-sans"
                     style={{ fontFamily: "'DM Serif Display', serif" }}>
                     
                         {card.value}
