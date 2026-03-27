@@ -35,7 +35,7 @@ export default function Login() {
             <h1 className="text-3xl font-bold text-foreground">PixelSafe</h1>
           </div>
           <p className="text-muted-foreground text-lg leading-relaxed">
-            Gerencie suas propostas e clientes com elegância e simplicidade.
+            Gere propostas com IA, envie contratos, receba pagamentos e só libere os arquivos finais quando tudo estiver pago.
           </p>
         </div>
       </div>
