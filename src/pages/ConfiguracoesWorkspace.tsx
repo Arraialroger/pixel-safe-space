@@ -117,9 +117,9 @@ export default function ConfiguracoesWorkspace() {
       if (ws) {
         form.reset({
           name: ws.name ?? "",
-          company_document: ws.company_document ?? "",
+          company_document: ws.company_document ? maskDocument(ws.company_document) : "",
           company_address: ws.company_address ?? "",
-          whatsapp: ws.whatsapp ?? "",
+          whatsapp: ws.whatsapp ? maskWhatsApp(ws.whatsapp) : "",
           mercado_pago_token: ws.mercado_pago_token ?? "",
         });
         setOwnerId(ws.owner_id);
@@ -207,9 +207,9 @@ export default function ConfiguracoesWorkspace() {
       .from("workspaces")
       .update({
         name: values.name,
-        company_document: values.company_document || null,
+        company_document: values.company_document?.replace(/\D/g, "") || null,
         company_address: values.company_address || null,
-        whatsapp: values.whatsapp || null,
+        whatsapp: values.whatsapp?.replace(/\D/g, "") || null,
         mercado_pago_token: values.mercado_pago_token || null,
       })
       .eq("id", workspaceId);
