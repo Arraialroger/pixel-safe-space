@@ -1,80 +1,27 @@
 
 
-# Mascaras de Input + RLS do Storage
+# Paginacao + Cor Primaria #06c1e7
 
-## Concordancia
+## 1. Trocar cor primaria para #06c1e7
 
-Concordo 100% com as 3 correcoes. Apenas uma sugestao: no WhatsApp, incluir o DDI `+55` na mascara visual para ficar `+55 (00) 00000-0000`, mas sanitizar para salvar apenas os digitos (ex: `5511999999999`). Isso mantem compatibilidade com links `wa.me/`.
+`#06c1e7` = HSL `187 95% 46%`. Alterar as variaveis `--primary`, `--ring`, `--sidebar-primary` e `--sidebar-ring` em `src/index.css`.
 
----
+## 2. Paginacao nas tabelas
 
-## 1. Mascaras e Sanitizacao (ConfiguracoesWorkspace.tsx)
+Adicionar paginacao client-side em `Propostas.tsx` e `Contratos.tsx`:
 
-Reutilizar as funcoes `maskDocument` e `maskPhone` que ja existem no `ClientFormDialog.tsx` (copiar para o arquivo ou extrair para um utilitario compartilhado).
+- Estado `currentPage` (default 1), constante `ITEMS_PER_PAGE = 10`
+- Calcular `paginatedItems` a partir do array `filtered` com `.slice()`
+- Reset de `currentPage` para 1 quando `search` ou `statusFilter` mudam
+- Renderizar controles de paginacao abaixo da tabela: "Anterior / Proxima" + indicador "Pagina X de Y"
+- Usar os componentes de `pagination.tsx` ja existentes no projeto
+- Manter `overflow-x-auto` + `min-w-[600px]` intactos
 
-### Alteracoes:
-- Adicionar funcoes `maskDocument(value)` e `maskWhatsApp(value)` no topo do arquivo
-- `maskWhatsApp`: formata como `+55 (11) 99999-0000` (inclui DDI)
-- Nos campos `company_document` e `whatsapp`, usar `onChange` customizado que aplica a mascara visual
-- No `onSubmit`, sanitizar com `.replace(/\D/g, '')` antes de enviar ao Supabase
-- Atualizar placeholder do endereco para `Rua Esperança, 83 - Centro, São Paulo/SP - CEP 00000-000`
-- Aumentar `max` do schema de whatsapp para 25 (a mascara adiciona caracteres)
-
-## 2. RLS do Bucket `logos` (Migration SQL)
-
-O bucket `logos` ja existe e e publico, mas faltam as politicas RLS em `storage.objects`. A migration criara:
-
-```sql
--- SELECT: qualquer pessoa pode ver (bucket publico)
-CREATE POLICY "Public read logos"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'logos');
-
--- INSERT: usuario autenticado pode fazer upload no path do seu workspace
-CREATE POLICY "Authenticated upload logos"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (
-  bucket_id = 'logos'
-  AND (storage.foldername(name))[1] IN (
-    SELECT id::text FROM public.workspaces
-    WHERE owner_id = auth.uid()
-  )
-);
-
--- UPDATE (upsert): mesmo criterio do INSERT
-CREATE POLICY "Authenticated update logos"
-ON storage.objects FOR UPDATE
-TO authenticated
-USING (
-  bucket_id = 'logos'
-  AND (storage.foldername(name))[1] IN (
-    SELECT id::text FROM public.workspaces
-    WHERE owner_id = auth.uid()
-  )
-);
-
--- DELETE: mesmo criterio
-CREATE POLICY "Authenticated delete logos"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (
-  bucket_id = 'logos'
-  AND (storage.foldername(name))[1] IN (
-    SELECT id::text FROM public.workspaces
-    WHERE owner_id = auth.uid()
-  )
-);
-```
-
-A politica usa `storage.foldername(name)[1]` para extrair o workspace_id do path (`{workspace_id}/logo.png`) e verificar que o usuario autenticado e o owner daquele workspace.
-
----
-
-## Arquivos Alterados
+## Arquivos alterados
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| Migration SQL | Politicas RLS para bucket `logos` |
-| `ConfiguracoesWorkspace.tsx` | Mascaras visuais + sanitizacao no submit + placeholder endereco |
+| `src/index.css` | `--primary`, `--ring`, `--sidebar-primary`, `--sidebar-ring` para `187 95% 46%` |
+| `src/pages/Propostas.tsx` | Estado de paginacao + controles |
+| `src/pages/Contratos.tsx` | Estado de paginacao + controles |
 
