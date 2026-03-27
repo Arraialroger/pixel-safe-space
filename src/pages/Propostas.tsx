@@ -17,8 +17,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
+} from "@/components/ui/pagination";
 import { statusConfig } from "@/lib/proposal-utils";
 import { usePaywall } from "@/hooks/use-paywall";
+
+const ITEMS_PER_PAGE = 10;
 
 type ProposalWithClient = {
   id: string;
@@ -37,6 +42,11 @@ export default function Propostas() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -78,6 +88,12 @@ export default function Propostas() {
     }
     return result;
   }, [proposals, search, statusFilter]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginated = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   if (loading) {
     return (
@@ -137,67 +153,99 @@ export default function Propostas() {
               <p className="text-muted-foreground">Nenhuma proposta encontrada com esses filtros.</p>
             </div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table className="min-w-[600px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>WhatsApp</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Criado em</TableHead>
-                    <TableHead className="w-[80px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((p) => {
-                    const sc = statusConfig[p.status] ?? statusConfig.draft;
-                    return (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.title}</TableCell>
-                        <TableCell>{p.client_name}</TableCell>
-                        <TableCell>
-                          {p.client_phone ? (
-                            <a
-                              href={`https://wa.me/${p.client_phone.replace(/\D/g, "")}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors text-sm"
-                            >
-                              <MessageCircle className="h-3.5 w-3.5" />
-                              {p.client_phone}
-                            </a>
-                          ) : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={sc.variant} className={sc.className}>
-                            {sc.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {format(new Date(p.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => navigate(`/propostas/${p.id}`)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Visualizar Proposta
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <>
+              <div className="rounded-md border overflow-x-auto">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>WhatsApp</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Criado em</TableHead>
+                      <TableHead className="w-[80px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginated.map((p) => {
+                      const sc = statusConfig[p.status] ?? statusConfig.draft;
+                      return (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">{p.title}</TableCell>
+                          <TableCell>{p.client_name}</TableCell>
+                          <TableCell>
+                            {p.client_phone ? (
+                              <a
+                                href={`https://wa.me/${p.client_phone.replace(/\D/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors text-sm"
+                              >
+                                <MessageCircle className="h-3.5 w-3.5" />
+                                {p.client_phone}
+                              </a>
+                            ) : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={sc.variant} className={sc.className}>
+                              {sc.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {format(new Date(p.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => navigate(`/propostas/${p.id}`)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Visualizar Proposta
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalPages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          isActive={page === currentPage}
+                          onClick={() => setCurrentPage(page)}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </>
           )}
         </>
       )}
