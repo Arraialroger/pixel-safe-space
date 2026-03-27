@@ -14,15 +14,15 @@ import { Loader2, User, KeyRound } from "lucide-react";
 
 const profileSchema = z.object({
   full_name: z.string().min(1, "Nome é obrigatório"),
-  language_preference: z.enum(["PT", "EN"]),
+  language_preference: z.enum(["PT", "EN"])
 });
 
 const passwordSchema = z.object({
   new_password: z.string().min(6, "Mínimo de 6 caracteres"),
-  confirm_password: z.string(),
+  confirm_password: z.string()
 }).refine((d) => d.new_password === d.confirm_password, {
   message: "As senhas não coincidem",
-  path: ["confirm_password"],
+  path: ["confirm_password"]
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -37,42 +37,42 @@ export default function Configuracoes() {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { full_name: "", language_preference: "PT" },
+    defaultValues: { full_name: "", language_preference: "PT" }
   });
 
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
-    defaultValues: { new_password: "", confirm_password: "" },
+    defaultValues: { new_password: "", confirm_password: "" }
   });
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("full_name, language_preference")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          form.reset({
-            full_name: data.full_name ?? "",
-            language_preference: (data.language_preference as "PT" | "EN") ?? "PT",
-          });
-        }
-        setLoading(false);
-      });
+    supabase.
+    from("profiles").
+    select("full_name, language_preference").
+    eq("id", user.id).
+    single().
+    then(({ data }) => {
+      if (data) {
+        form.reset({
+          full_name: data.full_name ?? "",
+          language_preference: data.language_preference as "PT" | "EN" ?? "PT"
+        });
+      }
+      setLoading(false);
+    });
   }, [user]);
 
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        full_name: values.full_name,
-        language_preference: values.language_preference,
-      })
-      .eq("id", user.id);
+    const { error } = await supabase.
+    from("profiles").
+    update({
+      full_name: values.full_name,
+      language_preference: values.language_preference
+    }).
+    eq("id", user.id);
 
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
@@ -98,8 +98,8 @@ export default function Configuracoes() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -130,22 +130,22 @@ export default function Configuracoes() {
               <FormField
                 control={form.control}
                 name="full_name"
-                render={({ field }) => (
-                  <FormItem>
+                render={({ field }) =>
+                <FormItem>
                     <FormLabel>Nome Completo</FormLabel>
                     <FormControl>
                       <Input placeholder="Seu nome" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
+                } />
+              
 
               <FormField
                 control={form.control}
                 name="language_preference"
-                render={({ field }) => (
-                  <FormItem>
+                render={({ field }) =>
+                <FormItem>
                     <FormLabel>Idioma das Propostas</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
@@ -160,13 +160,13 @@ export default function Configuracoes() {
                     </Select>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
+                } />
+              
             </CardContent>
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} className="text-muted">
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
               {saving ? "Salvando..." : "Salvar Perfil"}
             </Button>
@@ -190,22 +190,22 @@ export default function Configuracoes() {
               <Input
                 type="password"
                 placeholder="••••••••"
-                {...passwordForm.register("new_password")}
-              />
-              {passwordForm.formState.errors.new_password && (
-                <p className="text-sm text-destructive">{passwordForm.formState.errors.new_password.message}</p>
-              )}
+                {...passwordForm.register("new_password")} />
+              
+              {passwordForm.formState.errors.new_password &&
+              <p className="text-sm text-destructive">{passwordForm.formState.errors.new_password.message}</p>
+              }
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Confirmar Nova Senha</label>
               <Input
                 type="password"
                 placeholder="••••••••"
-                {...passwordForm.register("confirm_password")}
-              />
-              {passwordForm.formState.errors.confirm_password && (
-                <p className="text-sm text-destructive">{passwordForm.formState.errors.confirm_password.message}</p>
-              )}
+                {...passwordForm.register("confirm_password")} />
+              
+              {passwordForm.formState.errors.confirm_password &&
+              <p className="text-sm text-destructive">{passwordForm.formState.errors.confirm_password.message}</p>
+              }
             </div>
           </CardContent>
         </Card>
@@ -216,6 +216,6 @@ export default function Configuracoes() {
           </Button>
         </div>
       </form>
-    </div>
-  );
+    </div>);
+
 }
