@@ -32,11 +32,11 @@ export default function Clientes() {
 
   const fetchClients = async () => {
     if (!workspaceId) return;
-    const { data, error } = await supabase
-      .from("clients")
-      .select("*")
-      .eq("workspace_id", workspaceId)
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.
+    from("clients").
+    select("*").
+    eq("workspace_id", workspaceId).
+    order("created_at", { ascending: false });
 
     if (error) {
       toast({ title: "Erro ao carregar clientes", description: error.message, variant: "destructive" });
@@ -74,44 +74,44 @@ export default function Clientes() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
-        <Button onClick={() => guard(() => setFormOpen(true))}>
+        <Button onClick={() => guard(() => setFormOpen(true))} className="text-muted">
           <Plus className="mr-2 h-4 w-4" />
           Novo Cliente
         </Button>
       </div>
 
-      {clients.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
+      {clients.length === 0 ?
+      <div className="flex flex-col items-center justify-center py-20 text-center">
           <Users className="h-12 w-12 text-muted-foreground/40 mb-4" />
           <p className="text-muted-foreground">Nenhum cliente cadastrado.</p>
           <p className="text-sm text-muted-foreground/60 mt-1">
             Clique em &quot;Novo Cliente&quot; para começar.
           </p>
-        </div>
-      ) : (
-        <ClientTable clients={clients} onEdit={handleEdit} onDelete={setDeletingClient} />
-      )}
+        </div> :
+
+      <ClientTable clients={clients} onEdit={handleEdit} onDelete={setDeletingClient} />
+      }
 
       <ClientFormDialog
         open={formOpen}
         onOpenChange={handleCloseForm}
         editingClient={editingClient}
-        onSaved={handleSaved}
-      />
+        onSaved={handleSaved} />
+      
 
       <ClientDeleteDialog
         client={deletingClient}
         onOpenChange={() => setDeletingClient(null)}
-        onDeleted={handleDeleted}
-      />
-    </div>
-  );
+        onDeleted={handleDeleted} />
+      
+    </div>);
+
 }
