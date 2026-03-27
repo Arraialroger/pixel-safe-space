@@ -42,7 +42,7 @@ export default function Register() {
         <div className="max-w-md space-y-4 p-8">
           <div className="flex items-center gap-3">
             <Shield className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">Pixel Safe</h1>
+            <h1 className="text-3xl font-bold text-foreground">PixelSafe</h1>
           </div>
           <p className="text-muted-foreground text-lg leading-relaxed">
             Comece a organizar seus projetos de design de forma profissional.
