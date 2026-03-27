@@ -15,9 +15,14 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
+} from "@/components/ui/pagination";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
+
+const ITEMS_PER_PAGE = 10;
 
 type ContractWithClient = {
   id: string;
@@ -35,6 +40,11 @@ export default function Contratos() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -72,6 +82,12 @@ export default function Contratos() {
     }
     return result;
   }, [contracts, search, statusFilter]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginated = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   if (loading) {
     return (
@@ -131,54 +147,86 @@ export default function Contratos() {
               <p className="text-muted-foreground">Nenhum contrato encontrado com esses filtros.</p>
             </div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table className="min-w-[600px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Comercial</TableHead>
-                    <TableHead>Execução</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead className="w-12" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((c) => {
-                    const sc = contractStatusConfig[c.status] ?? contractStatusConfig.draft;
-                    const ec = execStatusConfig[c.execution_status] ?? execStatusConfig.not_started;
-                    return (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-medium">{c.client_name}</TableCell>
-                        <TableCell>
-                          <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={ec.className}>{ec.label}</Badge>
-                        </TableCell>
-                        <TableCell>{formatCurrency(c.payment_value)}</TableCell>
-                        <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => navigate(`/contratos/${c.id}`)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Visualizar Contrato
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <>
+              <div className="rounded-md border overflow-x-auto">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Comercial</TableHead>
+                      <TableHead>Execução</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead className="w-12" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginated.map((c) => {
+                      const sc = contractStatusConfig[c.status] ?? contractStatusConfig.draft;
+                      const ec = execStatusConfig[c.execution_status] ?? execStatusConfig.not_started;
+                      return (
+                        <TableRow key={c.id}>
+                          <TableCell className="font-medium">{c.client_name}</TableCell>
+                          <TableCell>
+                            <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={ec.className}>{ec.label}</Badge>
+                          </TableCell>
+                          <TableCell>{formatCurrency(c.payment_value)}</TableCell>
+                          <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => navigate(`/contratos/${c.id}`)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Visualizar Contrato
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalPages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          isActive={page === currentPage}
+                          onClick={() => setCurrentPage(page)}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </>
           )}
         </>
       )}
