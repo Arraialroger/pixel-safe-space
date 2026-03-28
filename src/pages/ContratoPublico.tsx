@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { CheckCircle2, Download, ExternalLink, Loader2, Package, Shield } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import { CheckCircle2, Download, ExternalLink, Loader2, Package, Shield, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import {
   Form,
   FormControl,
@@ -63,8 +64,12 @@ type WorkspaceInfo = {
   subscription_plan: string | null;
 };
 
+const POLL_INTERVAL_MS = 3000;
+const POLL_MAX_DURATION_MS = 60000;
+
 export default function ContratoPublico() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [contract, setContract] = useState<ContractData | null>(null);
@@ -73,11 +78,107 @@ export default function ContratoPublico() {
   const [generatingPayment, setGeneratingPayment] = useState(false);
   const [dynamicPaymentUrl, setDynamicPaymentUrl] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [polling, setPolling] = useState(false);
+  const [pollProgress, setPollProgress] = useState(0);
+  const pollingRef = useRef(false);
 
   const form = useForm<SignForm>({
     resolver: zodResolver(signSchema),
     defaultValues: { name: "", email: "", accepted: undefined as unknown as true },
   });
+
+  const pollContractStatus = useCallback(async (contractId: string) => {
+    if (pollingRef.current) return;
+    pollingRef.current = true;
+    setPolling(true);
+    setPollProgress(0);
+
+    const startTime = Date.now();
+
+    const interval = setInterval(async () => {
+      const elapsed = Date.now() - startTime;
+      setPollProgress(Math.min((elapsed / POLL_MAX_DURATION_MS) * 100, 100));
+
+      if (elapsed >= POLL_MAX_DURATION_MS) {
+        clearInterval(interval);
+        pollingRef.current = false;
+        setPolling(false);
+        toast({
+          title: "Verificação expirou",
+          description: "O pagamento pode levar alguns minutos para ser confirmado. Use o botão abaixo para verificar novamente.",
+        });
+        return;
+      }
+
+      try {
+        const { data } = await supabase
+          .from("contracts")
+          .select("status, is_fully_paid")
+          .eq("id", contractId)
+          .maybeSingle();
+
+        if (data) {
+          const statusChanged =
+            (data.status === "paid" && contract?.status === "signed") ||
+            (data.is_fully_paid === true && contract?.is_fully_paid === false);
+
+          if (statusChanged) {
+            clearInterval(interval);
+            pollingRef.current = false;
+            setPolling(false);
+            // Reload full contract data
+            window.location.reload();
+          }
+        }
+      } catch {
+        // Ignore polling errors, will retry
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      clearInterval(interval);
+      pollingRef.current = false;
+    };
+  }, [contract, toast]);
+
+  // Detect MP redirect params and start polling
+  useEffect(() => {
+    if (!id) return;
+    const collectionStatus = searchParams.get("collection_status") || searchParams.get("status");
+    if (collectionStatus === "approved" && contract && !polling) {
+      pollContractStatus(id);
+    }
+  }, [id, searchParams, contract, polling, pollContractStatus]);
+
+  const handleManualCheck = async () => {
+    if (!id) return;
+    setPolling(true);
+    try {
+      const { data } = await supabase
+        .from("contracts")
+        .select("status, is_fully_paid")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (data) {
+        const statusChanged =
+          (data.status === "paid" && contract?.status === "signed") ||
+          (data.is_fully_paid === true && contract?.is_fully_paid === false);
+
+        if (statusChanged) {
+          window.location.reload();
+          return;
+        }
+      }
+      toast({
+        title: "Pagamento ainda não confirmado",
+        description: "O Mercado Pago pode levar alguns minutos. Tente novamente em instantes.",
+      });
+    } catch {
+      toast({ title: "Erro ao verificar", variant: "destructive" });
+    }
+    setPolling(false);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -121,11 +222,9 @@ export default function ContratoPublico() {
         setWorkspace(wsData[0] as WorkspaceInfo);
       }
 
-      // Auto-generate entrance payment link for signed contracts
       if (contractData.status === "signed") {
         generatePaymentLink(contractData.id, "entrance");
       }
-      // Auto-generate balance payment link for paid contracts with deliverable awaiting payment
       if (contractData.status === "paid" && contractData.final_deliverable_url && !contractData.is_fully_paid) {
         generatePaymentLink(contractData.id, "balance");
       }
@@ -212,6 +311,7 @@ export default function ContratoPublico() {
 
   const paymentUrl = dynamicPaymentUrl || contract.payment_link;
   const balanceAmount = (contract.payment_value ?? 0) - (contract.down_payment ?? 0);
+  const showPollingFromRedirect = searchParams.get("collection_status") === "approved" || searchParams.get("status") === "approved";
 
   return (
     <div className="min-h-screen bg-background">
@@ -242,6 +342,48 @@ export default function ContratoPublico() {
         </div>
 
         <Separator className="my-8 bg-white/10" />
+
+        {/* Payment Verification Polling UI */}
+        {polling && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-md p-6 mb-6 text-center space-y-4 animate-in fade-in duration-500">
+            <div className="flex items-center justify-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <h3 className="text-lg font-semibold text-primary">Verificando pagamento...</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Estamos aguardando a confirmação do Mercado Pago. Isso pode levar alguns segundos.
+            </p>
+            <Progress value={pollProgress} className="h-2" />
+          </div>
+        )}
+
+        {/* Manual check button after redirect (when not polling) */}
+        {showPollingFromRedirect && !polling && contract.status !== "paid" && (
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              onClick={handleManualCheck}
+              className="w-full gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Verificar Pagamento
+            </Button>
+          </div>
+        )}
+
+        {/* Manual check for balance after redirect */}
+        {showPollingFromRedirect && !polling && contract.status === "paid" && !contract.is_fully_paid && (
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              onClick={handleManualCheck}
+              className="w-full gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Verificar Pagamento do Saldo
+            </Button>
+          </div>
+        )}
 
         {/* Signature */}
         {contract.status === "pending_signature" && (
