@@ -12,6 +12,8 @@ Deno.serve(async (req) => {
 
   try {
     const { contract_id, payment_type = "entrance" } = await req.json();
+    console.log(">>> generate-payment called. contract_id:", contract_id, "payment_type:", payment_type);
+
     if (!contract_id) {
       return new Response(JSON.stringify({ error: "contract_id is required" }), {
         status: 400,
@@ -31,6 +33,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (contractError || !contract) {
+      console.error(">>> Contract not found:", contract_id, contractError);
       return new Response(JSON.stringify({ error: "Contract not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -45,6 +48,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (wsError || !workspace?.mercado_pago_token) {
+      console.error(">>> No MP token for workspace:", contract.workspace_id);
       return new Response(JSON.stringify({ error: "no_token" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -66,6 +70,7 @@ Deno.serve(async (req) => {
     }
 
     if (!amount || amount <= 0) {
+      console.error(">>> Invalid amount:", amount, "payment_type:", payment_type);
       return new Response(JSON.stringify({ error: "No valid amount" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -78,6 +83,32 @@ Deno.serve(async (req) => {
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/+$/, "") || "https://pixel-safe-space.lovable.app";
     const contractUrl = `${origin}/c/${contract_id}`;
 
+    const notificationUrl = `${supabaseUrl}/functions/v1/mp-webhook?contract_id=${contract_id}&type=${payment_type}`;
+
+    const mpPayload = {
+      items: [
+        {
+          title: itemTitle,
+          quantity: 1,
+          unit_price: Number(amount),
+          currency_id: "BRL",
+        },
+      ],
+      payer: { name: clientName },
+      external_reference: contract_id,
+      notification_url: notificationUrl,
+      back_urls: {
+        success: contractUrl,
+        pending: contractUrl,
+        failure: contractUrl,
+      },
+      auto_return: "approved",
+    };
+
+    // >>> LOG COMPLETO DO PAYLOAD ANTES DE ENVIAR
+    console.log(">>> PAYLOAD MP:", JSON.stringify(mpPayload));
+    console.log(">>> notification_url:", notificationUrl);
+
     // Create Mercado Pago preference
     const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
@@ -86,43 +117,30 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${workspace.mercado_pago_token}`,
       },
       signal: AbortSignal.timeout(15000),
-      body: JSON.stringify({
-        items: [
-          {
-            title: itemTitle,
-            quantity: 1,
-            unit_price: Number(amount),
-            currency_id: "BRL",
-          },
-        ],
-        payer: { name: clientName },
-        external_reference: contract_id,
-        notification_url: `${supabaseUrl}/functions/v1/mp-webhook?contract_id=${contract_id}&type=${payment_type}`,
-        back_urls: {
-          success: contractUrl,
-          pending: contractUrl,
-          failure: contractUrl,
-        },
-        auto_return: "approved",
-      }),
+      body: JSON.stringify(mpPayload),
     });
 
+    const mpResponseText = await mpResponse.text();
+    console.log(">>> MP Response status:", mpResponse.status);
+    console.log(">>> MP Response body:", mpResponseText);
+
     if (!mpResponse.ok) {
-      const errorText = await mpResponse.text();
-      console.error("Mercado Pago API error:", mpResponse.status, errorText);
+      console.error(">>> Mercado Pago API error:", mpResponse.status, mpResponseText);
       return new Response(JSON.stringify({ error: "mp_api_error", details: `Status ${mpResponse.status}` }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const mpData = await mpResponse.json();
+    const mpData = JSON.parse(mpResponseText);
+    console.log(">>> checkout_url (init_point):", mpData.init_point);
+
     return new Response(JSON.stringify({ checkout_url: mpData.init_point }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("generate-payment error:", err);
+    console.error(">>> generate-payment EXCEPTION:", err);
     const message = err instanceof DOMException && err.name === "TimeoutError"
       ? "O Mercado Pago demorou demais para responder. Tente novamente."
       : "Internal error";
