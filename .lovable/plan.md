@@ -1,79 +1,53 @@
 
 
-# Debugging do Webhook MP: Analise Tecnica e Plano
+# Bypass de Entrada: Contratos sem Down Payment
 
-## Pontos Cegos Identificados
+## Analise Arquitetural
 
-Apos revisar o codigo linha a linha, encontrei **3 problemas concretos** que explicam por que o webhook nao esta a ser invocado (ou parece nao estar):
+A pergunta e valida: o sistema esta preparado para o Vault num contrato apenas "signed"? **Nao esta.** O Vault (aba Cofre no dashboard) so aparece quando `status === "paid"` (linha 219 e 360 de ContratoDetalhe.tsx). O balance update no webhook tambem filtra por `.eq("status", "paid")` (linha 121 do mp-webhook).
 
-### 1. `req.json()` antes de qualquer log -- crash silencioso
+## Solucao Proposta: Auto-transicao para "paid"
 
-Na linha 18 do `mp-webhook`, a primeira coisa que fazemos apos extrair query params e `await req.json()`. Se o Mercado Pago enviar um body vazio, malformado, ou com content-type diferente de JSON (ex: `application/x-www-form-urlencoded`), a funcao **lanca uma excecao imediatamente**. O `catch` na linha 127 loga `mp-webhook error:`, mas se nao ha nenhuma invocacao nos logs, pode significar que:
+A abordagem mais limpa e: **quando nao ha entrada a cobrar, o contrato avanca automaticamente para "paid" no momento da assinatura.** A logica e simples — se `down_payment` e nulo ou zero, a entrada esta "quitada" (valor zero), entao o status "paid" e semanticamente correto.
 
-- A funcao esta crashando no cold start (improvavel mas possivel)
-- Ou o MP simplesmente nao esta chamando a URL
+Isso faz com que **todo o fluxo existente funcione sem alteracoes no dashboard, no vault, nem no webhook**:
+- Vault tab aparece imediatamente
+- Designer faz upload do arquivo
+- `generate-payment` e chamado com `type=balance` e cobra `payment_value - 0 = 100%`
+- Webhook recebe `type=balance`, marca `is_fully_paid = true`
+- Cliente desbloqueia download
 
-**Correcao**: Mover o log para ANTES de `req.json()` e proteger o parse com try/catch.
+## Alteracoes
 
-### 2. Mercado Pago envia `merchant_order` primeiro, nao `payment`
+### 1. Funcao `sign_contract` (Migration SQL)
 
-Em producao, o MP frequentemente envia uma notificacao do tipo `merchant_order` antes da `payment`. O nosso filtro na linha 22 (`if (type !== "payment")`) descarta silenciosamente essas notificacoes. Isso nao e o bug principal, mas significa que estamos a ignorar invocacoes reais do webhook sem saber.
+Adicionar logica apos o UPDATE: se o contrato recem-assinado tem `down_payment` nulo ou zero, atualizar imediatamente para `status = 'paid'`.
 
-### 3. Sem visibilidade no `generate-payment`
-
-Nao ha nenhum log do payload enviado ao MP nem da resposta completa. Nao sabemos se:
-- O `notification_url` esta correto
-- O MP aceitou a preferencia com sucesso
-- O `init_point` retornado e valido
-
-## Plano de Acao
-
-### Passo 1: Logs blindados no `mp-webhook`
-
-Adicionar um log **na primeira linha** da funcao (antes de qualquer parse) com metodo HTTP e URL. Proteger o `req.json()` com try/catch para capturar payloads invalidos. Logar tambem headers para ver se o MP esta a enviar content-type inesperado.
-
-```
-// ANTES de qualquer parse
-console.log(">>> mp-webhook HIT:", req.method, req.url);
-console.log(">>> Headers:", Object.fromEntries(req.headers.entries()));
-
-let body: any;
-try {
-  body = await req.json();
-} catch {
-  const raw = await req.text(); // fallback
-  console.log(">>> Non-JSON body:", raw);
-  return 200;
-}
+```sql
+-- Dentro de sign_contract, apos o UPDATE existente:
+UPDATE public.contracts
+SET status = 'paid'
+WHERE id = _contract_id
+  AND status = 'signed'
+  AND (down_payment IS NULL OR down_payment <= 0);
 ```
 
-### Passo 2: Logs completos no `generate-payment`
+### 2. `ContratoPublico.tsx` (Frontend)
 
-Logar o payload completo (incluindo `notification_url`) antes de enviar ao MP, e logar a resposta completa do MP apos criacao da preferencia.
+- Criar helper `hasEntrance`: `(contract.down_payment ?? 0) > 0`
+- Apos assinatura bem-sucedida: so chamar `generatePaymentLink("entrance")` se `hasEntrance`
+- No bloco `status === "signed"`: se `!hasEntrance`, mostrar mensagem de sucesso em vez do botao de pagamento: "Contrato assinado! O projeto ja esta em andamento. O pagamento sera solicitado na entrega."
+- No `useEffect` de carga inicial: so chamar `generatePaymentLink("entrance")` se `hasEntrance`
 
-### Passo 3: Redeploy das duas funcoes
-
-Forcar deploy para garantir que os logs estao ativos.
-
-### Passo 4: Teste real
-
-Gerar um novo pagamento de saldo, pagar, e verificar nos logs:
-- `generate-payment`: confirmar que `notification_url` e `https://ocfjtvrjkhwyxhphovsf.supabase.co/functions/v1/mp-webhook?contract_id=...&type=balance`
-- `mp-webhook`: confirmar se ha alguma invocacao (mesmo que crashe)
+### 3. Nenhuma alteracao necessaria em:
+- `ContratoDetalhe.tsx` (dashboard) — ja funciona com "paid"
+- `mp-webhook` — balance flow ja filtra por `status = "paid"`
+- `generate-payment` — ja rejeita `amount <= 0`
 
 ## Arquivos Alterados
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `supabase/functions/mp-webhook/index.ts` | Log antes do parse, try/catch no `req.json()`, log de headers |
-| `supabase/functions/generate-payment/index.ts` | Log do payload completo + resposta do MP |
-
-## Resultado Esperado
-
-Apos o redeploy, qualquer pagamento de teste vai produzir logs que nos dizem exatamente:
-1. Se o MP esta a chamar o webhook ou nao
-2. Se esta, com que payload e headers
-3. Qual `notification_url` foi enviada na preferencia
-
-Com esses dados, isolamos o problema em menos de um teste.
+| Migration SQL | Atualizar funcao `sign_contract` para auto-avançar para "paid" quando sem entrada |
+| `src/pages/ContratoPublico.tsx` | Condicionar geracao de pagamento e UI ao `hasEntrance` |
 
