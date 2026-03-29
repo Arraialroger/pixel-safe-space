@@ -6,6 +6,10 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  // >>> LOG IMEDIATO — antes de qualquer parse
+  console.log(">>> mp-webhook HIT:", req.method, new URL(req.url).pathname + new URL(req.url).search);
+  console.log(">>> Headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -15,12 +19,27 @@ Deno.serve(async (req) => {
     const contract_id = url.searchParams.get("contract_id");
     const payment_type = url.searchParams.get("type") || "entrance";
 
-    const body = await req.json();
-    console.log("mp-webhook received:", JSON.stringify(body));
+    // >>> Parse protegido com fallback para text
+    let body: any;
+    const rawText = await req.text();
+    console.log(">>> Raw body:", rawText);
+
+    try {
+      body = JSON.parse(rawText);
+    } catch {
+      console.log(">>> Body is NOT valid JSON. Content-Type:", req.headers.get("content-type"));
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log(">>> Parsed body:", JSON.stringify(body));
+    console.log(">>> contract_id:", contract_id, "payment_type:", payment_type);
 
     const type = body.type || body.topic;
     if (type !== "payment") {
-      console.log("Ignoring non-payment notification:", type);
+      console.log(">>> Ignoring non-payment notification type:", type);
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -29,7 +48,7 @@ Deno.serve(async (req) => {
 
     const payment_id = body.data?.id;
     if (!payment_id) {
-      console.error("No payment_id in payload");
+      console.error(">>> No payment_id in payload");
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -37,7 +56,7 @@ Deno.serve(async (req) => {
     }
 
     if (!contract_id) {
-      console.error("No contract_id in query params");
+      console.error(">>> No contract_id in query params");
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -55,16 +74,18 @@ Deno.serve(async (req) => {
       .single();
 
     if (contractError || !contract) {
-      console.error("Contract not found:", contract_id, contractError);
+      console.error(">>> Contract not found:", contract_id, contractError);
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log(">>> Contract found. Status:", contract.status, "payment_type:", payment_type);
+
     const token = (contract as any).workspaces?.mercado_pago_token;
     if (!token) {
-      console.error("No mercado_pago_token for workspace:", contract.workspace_id);
+      console.error(">>> No mercado_pago_token for workspace:", contract.workspace_id);
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -72,13 +93,14 @@ Deno.serve(async (req) => {
     }
 
     // Verify payment with Mercado Pago API
+    console.log(">>> Verifying payment with MP API, payment_id:", payment_id);
     const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${payment_id}`, {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(15000),
     });
 
     if (!mpRes.ok) {
-      console.error("MP API error verifying payment:", mpRes.status);
+      console.error(">>> MP API error verifying payment:", mpRes.status, await mpRes.text());
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -86,11 +108,12 @@ Deno.serve(async (req) => {
     }
 
     const payment = await mpRes.json();
-    console.log("MP payment status:", payment.status, "external_reference:", payment.external_reference, "payment_type:", payment_type);
+    console.log(">>> MP payment status:", payment.status, "external_reference:", payment.external_reference, "payment_type:", payment_type);
 
     if (payment.status === "approved" && payment.external_reference === contract_id) {
       if (payment_type === "balance") {
         // Balance payment: mark fully paid and completed
+        console.log(">>> Updating contract to fully paid. contract_id:", contract_id);
         const { error: updateError } = await supabase
           .from("contracts")
           .update({ is_fully_paid: true, execution_status: "completed" })
@@ -98,12 +121,13 @@ Deno.serve(async (req) => {
           .eq("status", "paid");
 
         if (updateError) {
-          console.error("Error updating contract to fully paid:", updateError);
+          console.error(">>> Error updating contract to fully paid:", updateError);
         } else {
-          console.log("Contract marked as fully paid:", contract_id);
+          console.log(">>> SUCCESS: Contract marked as fully paid:", contract_id);
         }
       } else {
         // Entrance payment: mark as paid
+        console.log(">>> Updating contract to paid. contract_id:", contract_id);
         const { error: updateError } = await supabase
           .from("contracts")
           .update({ status: "paid" })
@@ -111,13 +135,13 @@ Deno.serve(async (req) => {
           .eq("status", "signed");
 
         if (updateError) {
-          console.error("Error updating contract to paid:", updateError);
+          console.error(">>> Error updating contract to paid:", updateError);
         } else {
-          console.log("Contract updated to paid:", contract_id);
+          console.log(">>> SUCCESS: Contract updated to paid:", contract_id);
         }
       }
     } else {
-      console.log("Payment not approved or reference mismatch. Skipping update.");
+      console.log(">>> Payment not approved or reference mismatch. status:", payment.status, "ref:", payment.external_reference, "expected:", contract_id);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -125,7 +149,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("mp-webhook error:", err);
+    console.error(">>> mp-webhook EXCEPTION:", err);
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
