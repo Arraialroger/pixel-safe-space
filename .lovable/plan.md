@@ -1,53 +1,51 @@
 
 
-# Bypass de Entrada: Contratos sem Down Payment
+# Refinamento Pos-Bypass: 3 Pontos de QA
 
-## Analise Arquitetural
+## Analise e Opiniao
 
-A pergunta e valida: o sistema esta preparado para o Vault num contrato apenas "signed"? **Nao esta.** O Vault (aba Cofre no dashboard) so aparece quando `status === "paid"` (linha 219 e 360 de ContratoDetalhe.tsx). O balance update no webhook tambem filtra por `.eq("status", "paid")` (linha 121 do mp-webhook).
+### Ponto 1: Comunicacao Visual — Concordo totalmente
 
-## Solucao Proposta: Auto-transicao para "paid"
+A abordagem esta correta. O `hasEntrance` ja existe no codigo. O problema esta nos blocos `contract.status === "paid"` (linhas 477-536) que mostram "Entrada Paga" indiscriminadamente.
 
-A abordagem mais limpa e: **quando nao ha entrada a cobrar, o contrato avanca automaticamente para "paid" no momento da assinatura.** A logica e simples — se `down_payment` e nulo ou zero, a entrada esta "quitada" (valor zero), entao o status "paid" e semanticamente correto.
+**Solucao**: Dentro do bloco `paid`, usar `hasEntrance` para bifurcar a mensagem:
+- **Com entrada**: manter "Entrada Paga" (comportamento atual)
+- **Sem entrada**: mostrar "Contrato assinado com sucesso" + "O designer esta trabalhando no seu projeto..."
 
-Isso faz com que **todo o fluxo existente funcione sem alteracoes no dashboard, no vault, nem no webhook**:
-- Vault tab aparece imediatamente
-- Designer faz upload do arquivo
-- `generate-payment` e chamado com `type=balance` e cobra `payment_value - 0 = 100%`
-- Webhook recebe `type=balance`, marca `is_fully_paid = true`
-- Cliente desbloqueia download
+Pontos especificos a corrigir:
+- Linha 498: "Entrada Paga" → condicional
+- Linha 529: "Entrada Paga" → condicional  
+- Linha 484: "Pagamento Total Confirmado" — este pode manter, pois so aparece quando `is_fully_paid` e true (houve pagamento real do balance)
+
+### Ponto 2: Sincronizacao Proposals — Concordo, sem risco
+
+O trigger `sync_proposal_status` ja atualiza `proposals.status = 'accepted'` quando o contrato muda para `signed` ou `paid`. O que falta sao os campos `accepted_by_name`, `accepted_by_email`, `accepted_at`.
+
+**Solucao**: Adicionar ao `sign_contract` RPC, logo apos o UPDATE existente:
+
+```sql
+UPDATE public.proposals
+SET accepted_by_name = _name,
+    accepted_by_email = _email,
+    accepted_at = now()
+WHERE id = (SELECT proposal_id FROM public.contracts WHERE id = _contract_id)
+  AND proposal_id IS NOT NULL;
+```
+
+**Risco de performance/concorrencia**: Zero. E uma unica query adicional dentro da mesma transacao, usando um subselect por PK. Sem deadlock possivel pois o fluxo e unidirecional (contrato → proposta).
+
+### Ponto 3: Textarea para Condicoes de Pagamento — Discordo parcialmente
+
+O campo atual e um `<Select>` com 3 opcoes fixas (`50_50`, `100_upfront`, `custom`). Transformar em Textarea puro perderia a padronizacao (o `ContratoDocumento` usa `formatPaymentTermsLabel()` para traduzir esses valores).
+
+**Contraproposta**: Manter o Select com as opcoes atuais, mas quando o designer selecionar "Personalizado" (`custom`), revelar um Textarea abaixo para texto livre. Assim mantemos a padronizacao para casos comuns e damos flexibilidade total quando necessario. O valor salvo no `payment_terms` seria o texto livre quando `custom`.
 
 ## Alteracoes
 
-### 1. Funcao `sign_contract` (Migration SQL)
-
-Adicionar logica apos o UPDATE: se o contrato recem-assinado tem `down_payment` nulo ou zero, atualizar imediatamente para `status = 'paid'`.
-
-```sql
--- Dentro de sign_contract, apos o UPDATE existente:
-UPDATE public.contracts
-SET status = 'paid'
-WHERE id = _contract_id
-  AND status = 'signed'
-  AND (down_payment IS NULL OR down_payment <= 0);
-```
-
-### 2. `ContratoPublico.tsx` (Frontend)
-
-- Criar helper `hasEntrance`: `(contract.down_payment ?? 0) > 0`
-- Apos assinatura bem-sucedida: so chamar `generatePaymentLink("entrance")` se `hasEntrance`
-- No bloco `status === "signed"`: se `!hasEntrance`, mostrar mensagem de sucesso em vez do botao de pagamento: "Contrato assinado! O projeto ja esta em andamento. O pagamento sera solicitado na entrega."
-- No `useEffect` de carga inicial: so chamar `generatePaymentLink("entrance")` se `hasEntrance`
-
-### 3. Nenhuma alteracao necessaria em:
-- `ContratoDetalhe.tsx` (dashboard) — ja funciona com "paid"
-- `mp-webhook` — balance flow ja filtra por `status = "paid"`
-- `generate-payment` — ja rejeita `amount <= 0`
-
-## Arquivos Alterados
-
-| Arquivo | Alteracao |
+| Arquivo | O que muda |
 |---------|-----------|
-| Migration SQL | Atualizar funcao `sign_contract` para auto-avançar para "paid" quando sem entrada |
-| `src/pages/ContratoPublico.tsx` | Condicionar geracao de pagamento e UI ao `hasEntrance` |
+| `src/pages/ContratoPublico.tsx` | Condicionar mensagens "Entrada Paga" com `hasEntrance`; sem entrada mostra "Contrato assinado" |
+| Migration SQL (`sign_contract`) | Adicionar UPDATE em `proposals` com `accepted_by_name/email/at` |
+| `src/pages/ContratoDetalhe.tsx` | Adicionar Textarea condicional quando `paymentTerms === "custom"` + novo estado `customPaymentTermsText` |
+| `src/components/contratos/ContratoDocumento.tsx` | Ajustar `formatPaymentTermsLabel` para retornar o texto livre quando o valor nao for um dos codigos conhecidos |
 
