@@ -34,7 +34,8 @@ function formatPaymentTermsLabel(terms: string | null) {
   if (!terms) return null;
   if (terms === "50_50") return "50% no início / 50% na entrega";
   if (terms === "100_upfront") return "100% antecipado";
-  return "Personalizado";
+  if (terms === "custom") return "Personalizado";
+  return terms;
 }
 
 export default function ContratoDocumento({

@@ -305,7 +305,7 @@ export default function ContratoDetalhe() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="payment_terms">Condições de Pagamento</Label>
-                  <Select value={paymentTerms} onValueChange={setPaymentTerms} disabled={!isDraft}>
+                  <Select value={paymentTerms === "50_50" || paymentTerms === "100_upfront" || paymentTerms === "" ? paymentTerms : "custom"} onValueChange={(val) => { if (val !== "custom") setPaymentTerms(val); else setPaymentTerms("custom"); }} disabled={!isDraft}>
                     <SelectTrigger id="payment_terms"><SelectValue placeholder="Selecione as condições" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="50_50">50% no início / 50% na entrega</SelectItem>
@@ -319,6 +319,13 @@ export default function ContratoDetalhe() {
                   <Input id="payment_link" type="url" value={paymentLink} onChange={(e) => setPaymentLink(e.target.value)} placeholder="https://... (gerado automaticamente via Mercado Pago)" disabled={!isDraft} />
                 </div>
               </div>
+
+              {(paymentTerms !== "50_50" && paymentTerms !== "100_upfront" && paymentTerms !== "") && (
+                <div className="space-y-2">
+                  <Label htmlFor="custom_payment_terms">Condições Personalizadas</Label>
+                  <Textarea id="custom_payment_terms" value={paymentTerms === "custom" ? "" : paymentTerms} onChange={(e) => setPaymentTerms(e.target.value || "custom")} rows={3} placeholder="Descreva as condições de pagamento personalizadas..." disabled={!isDraft} />
+                </div>
+              )}
 
               {isDraft && (
                 <div className="flex gap-3 justify-end pt-2">
