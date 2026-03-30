@@ -222,7 +222,8 @@ export default function ContratoPublico() {
         setWorkspace(wsData[0] as WorkspaceInfo);
       }
 
-      if (contractData.status === "signed") {
+      const hasEntrance = (contractData.down_payment ?? 0) > 0;
+      if (contractData.status === "signed" && hasEntrance) {
         generatePaymentLink(contractData.id, "entrance");
       }
       if (contractData.status === "paid" && contractData.final_deliverable_url && !contractData.is_fully_paid) {
@@ -278,11 +279,19 @@ export default function ContratoPublico() {
     if (error) {
       toast({ title: "Erro ao assinar", description: error.message, variant: "destructive" });
     } else {
+      const hasEntrance = (contract?.down_payment ?? 0) > 0;
       toast({ title: "Contrato assinado com sucesso!" });
-      setContract((prev) =>
-        prev ? { ...prev, status: "signed", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
-      );
-      generatePaymentLink(id, "entrance");
+      if (hasEntrance) {
+        setContract((prev) =>
+          prev ? { ...prev, status: "signed", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
+        );
+        generatePaymentLink(id, "entrance");
+      } else {
+        // No entrance fee — contract auto-advanced to "paid" in the DB
+        setContract((prev) =>
+          prev ? { ...prev, status: "paid", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
+        );
+      }
     }
   };
 
