@@ -241,7 +241,7 @@ export default function PropostaDetalhe() {
             </AlertDialog>
           }
           {(isPending || isAccepted) &&
-          <Button onClick={handleGenerateContract} disabled={generatingContract} className="gap-2">
+          <Button onClick={handleGenerateContract} disabled={generatingContract} className="gap-2 text-muted">
               {generatingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
               Gerar Contrato
             </Button>
