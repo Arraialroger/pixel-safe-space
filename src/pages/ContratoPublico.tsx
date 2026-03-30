@@ -445,24 +445,31 @@ export default function ContratoPublico() {
                 <CheckCircle2 className="h-5 w-5" /> Assinado digitalmente
               </p>
             </div>
-            {generatingPayment ? (
-              <Button size="lg" disabled className="w-full text-lg py-6 gap-3">
-                <Loader2 className="h-5 w-5 animate-spin" /> Gerando link de pagamento...
-              </Button>
-            ) : paymentUrl ? (
-              <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
-                <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
-                  <ExternalLink className="h-5 w-5" />
-                  {contract.down_payment != null
-                    ? `Pagar Entrada de ${formatCurrency(contract.down_payment)} e Liberar Projeto`
-                    : "Pagar Entrada e Liberar Projeto"}
-                </Button>
-              </a>
-            ) : paymentError ? (
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-center">
-                <p className="text-amber-400 text-sm">{paymentError}</p>
+            {(contract.down_payment ?? 0) > 0 ? (
+              <>
+                {generatingPayment ? (
+                  <Button size="lg" disabled className="w-full text-lg py-6 gap-3">
+                    <Loader2 className="h-5 w-5 animate-spin" /> Gerando link de pagamento...
+                  </Button>
+                ) : paymentUrl ? (
+                  <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
+                    <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                      <ExternalLink className="h-5 w-5" />
+                      Pagar Entrada de {formatCurrency(contract.down_payment)} e Liberar Projeto
+                    </Button>
+                  </a>
+                ) : paymentError ? (
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-center">
+                    <p className="text-amber-400 text-sm">{paymentError}</p>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-center space-y-1">
+                <p className="text-emerald-400 font-medium">Contrato assinado! O projeto já está em andamento.</p>
+                <p className="text-muted-foreground text-sm">O pagamento será solicitado na entrega.</p>
               </div>
-            ) : null}
+            )}
           </div>
         )}
 
