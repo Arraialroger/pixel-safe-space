@@ -495,7 +495,7 @@ export default function ContratoPublico() {
               <div className="space-y-4">
                 <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
                   <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
-                    <CheckCircle2 className="h-5 w-5" /> Entrada Paga
+                    <CheckCircle2 className="h-5 w-5" /> {(contract.down_payment ?? 0) > 0 ? "Entrada Paga" : "Contrato Assinado"}
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 text-center space-y-4">
@@ -526,7 +526,7 @@ export default function ContratoPublico() {
               /* Scenario A: Paid but no deliverable yet */
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">
                 <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
-                  <CheckCircle2 className="h-5 w-5" /> ✅ Entrada Paga
+                  <CheckCircle2 className="h-5 w-5" /> {(contract.down_payment ?? 0) > 0 ? "✅ Entrada Paga" : "✅ Contrato Assinado"}
                 </p>
                 <p className="text-muted-foreground text-sm">
                   O designer está trabalhando no seu projeto. Você será notificado quando os arquivos estiverem prontos.
