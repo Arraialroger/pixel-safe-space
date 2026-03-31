@@ -77,12 +77,15 @@ export default function Contratos() {
     if (statusFilter !== "all") {
       result = result.filter((c) => c.status === statusFilter);
     }
+    if (execFilter !== "all") {
+      result = result.filter((c) => c.execution_status === execFilter);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((c) => c.client_name.toLowerCase().includes(q));
     }
     return result;
-  }, [contracts, search, statusFilter]);
+  }, [contracts, search, statusFilter, execFilter]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice(
