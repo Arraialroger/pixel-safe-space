@@ -133,14 +133,26 @@ export default function Contratos() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[220px]">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Comercial" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="all">Todos (Comercial)</SelectItem>
                 <SelectItem value="draft">Rascunho</SelectItem>
                 <SelectItem value="pending_signature">Aguardando Assinatura</SelectItem>
                 <SelectItem value="signed">Assinado</SelectItem>
                 <SelectItem value="paid">Pago</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={execFilter} onValueChange={setExecFilter}>
+              <SelectTrigger className="w-full sm:w-[220px]">
+                <SelectValue placeholder="Execução" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos (Execução)</SelectItem>
+                <SelectItem value="not_started">Não Iniciado</SelectItem>
+                <SelectItem value="in_progress">Em Desenvolvimento</SelectItem>
+                <SelectItem value="delivered">Entregue</SelectItem>
+                <SelectItem value="completed">Concluído</SelectItem>
               </SelectContent>
             </Select>
           </div>
