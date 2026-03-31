@@ -141,7 +141,6 @@ export default function Propostas() {
                 <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="draft">Rascunho</SelectItem>
                 <SelectItem value="pending">Em Negociação</SelectItem>
-                <SelectItem value="sent">Enviada</SelectItem>
                 <SelectItem value="accepted">Aceita</SelectItem>
               </SelectContent>
             </Select>

@@ -40,11 +40,12 @@ export default function Contratos() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [execFilter, setExecFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, execFilter]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -76,12 +77,15 @@ export default function Contratos() {
     if (statusFilter !== "all") {
       result = result.filter((c) => c.status === statusFilter);
     }
+    if (execFilter !== "all") {
+      result = result.filter((c) => c.execution_status === execFilter);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((c) => c.client_name.toLowerCase().includes(q));
     }
     return result;
-  }, [contracts, search, statusFilter]);
+  }, [contracts, search, statusFilter, execFilter]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice(
@@ -129,14 +133,26 @@ export default function Contratos() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[220px]">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Comercial" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="all">Todos (Comercial)</SelectItem>
                 <SelectItem value="draft">Rascunho</SelectItem>
                 <SelectItem value="pending_signature">Aguardando Assinatura</SelectItem>
                 <SelectItem value="signed">Assinado</SelectItem>
                 <SelectItem value="paid">Pago</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={execFilter} onValueChange={setExecFilter}>
+              <SelectTrigger className="w-full sm:w-[220px]">
+                <SelectValue placeholder="Execução" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos (Execução)</SelectItem>
+                <SelectItem value="not_started">Não Iniciado</SelectItem>
+                <SelectItem value="in_progress">Em Desenvolvimento</SelectItem>
+                <SelectItem value="delivered">Entregue</SelectItem>
+                <SelectItem value="completed">Concluído</SelectItem>
               </SelectContent>
             </Select>
           </div>
