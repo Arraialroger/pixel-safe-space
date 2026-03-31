@@ -1,51 +1,52 @@
 
 
-# Refinamento Pos-Bypass: 3 Pontos de QA
+# Padronizacao da Maquina de Estados: Plano de Execucao
 
-## Analise e Opiniao
+## Concordancia Arquitetural
 
-### Ponto 1: Comunicacao Visual — Concordo totalmente
+A decisao de limitar propostas a `draft → pending → accepted` esta correta. Elimina a poluicao semantica e cria uma separacao de responsabilidades limpa: **propostas gerem negociacao, contratos gerem execucao**.
 
-A abordagem esta correta. O `hasEntrance` ja existe no codigo. O problema esta nos blocos `contract.status === "paid"` (linhas 477-536) que mostram "Entrada Paga" indiscriminadamente.
-
-**Solucao**: Dentro do bloco `paid`, usar `hasEntrance` para bifurcar a mensagem:
-- **Com entrada**: manter "Entrada Paga" (comportamento atual)
-- **Sem entrada**: mostrar "Contrato assinado com sucesso" + "O designer esta trabalhando no seu projeto..."
-
-Pontos especificos a corrigir:
-- Linha 498: "Entrada Paga" → condicional
-- Linha 529: "Entrada Paga" → condicional  
-- Linha 484: "Pagamento Total Confirmado" — este pode manter, pois so aparece quando `is_fully_paid` e true (houve pagamento real do balance)
-
-### Ponto 2: Sincronizacao Proposals — Concordo, sem risco
-
-O trigger `sync_proposal_status` ja atualiza `proposals.status = 'accepted'` quando o contrato muda para `signed` ou `paid`. O que falta sao os campos `accepted_by_name`, `accepted_by_email`, `accepted_at`.
-
-**Solucao**: Adicionar ao `sign_contract` RPC, logo apos o UPDATE existente:
-
-```sql
-UPDATE public.proposals
-SET accepted_by_name = _name,
-    accepted_by_email = _email,
-    accepted_at = now()
-WHERE id = (SELECT proposal_id FROM public.contracts WHERE id = _contract_id)
-  AND proposal_id IS NOT NULL;
-```
-
-**Risco de performance/concorrencia**: Zero. E uma unica query adicional dentro da mesma transacao, usando um subselect por PK. Sem deadlock possivel pois o fluxo e unidirecional (contrato → proposta).
-
-### Ponto 3: Textarea para Condicoes de Pagamento — Discordo parcialmente
-
-O campo atual e um `<Select>` com 3 opcoes fixas (`50_50`, `100_upfront`, `custom`). Transformar em Textarea puro perderia a padronizacao (o `ContratoDocumento` usa `formatPaymentTermsLabel()` para traduzir esses valores).
-
-**Contraproposta**: Manter o Select com as opcoes atuais, mas quando o designer selecionar "Personalizado" (`custom`), revelar um Textarea abaixo para texto livre. Assim mantemos a padronizacao para casos comuns e damos flexibilidade total quando necessario. O valor salvo no `payment_terms` seria o texto livre quando `custom`.
+Sobre o `get_dashboard_metrics`: a query de `pending_proposals` inclui `status IN ('pending', 'sent')`. Precisa ser atualizada para apenas `'pending'`.
 
 ## Alteracoes
 
-| Arquivo | O que muda |
+### 1. Frontend — `src/lib/proposal-utils.ts`
+- Remover `sent`, `in_progress`, `delivered`, `completed` do `statusConfig`
+- Manter apenas `draft`, `pending`, `accepted`
+
+### 2. Frontend — `src/pages/Propostas.tsx`
+- Remover `<SelectItem value="sent">` do filtro
+- Resultado: filtros ficam `all`, `draft`, `pending`, `accepted`
+
+### 3. Frontend — `src/pages/Contratos.tsx`
+- Adicionar segundo `<Select>` para filtro de `execution_status`
+- Opcoes: `all`, `not_started`, `in_progress`, `delivered`, `completed`
+- Atualizar logica de `filtered` para considerar ambos os filtros
+
+### 4. Migration SQL — Limpeza de dados + trigger + dashboard
+```sql
+-- Migrar propostas com status mortos para o correto
+UPDATE proposals SET status = 'accepted'
+WHERE status IN ('in_progress', 'delivered', 'completed')
+  AND client_id IN (SELECT client_id FROM contracts WHERE proposal_id = proposals.id);
+
+UPDATE proposals SET status = 'pending'
+WHERE status IN ('sent', 'in_progress', 'delivered', 'completed');
+
+-- Atualizar trigger para parar de espelhar execucao
+CREATE OR REPLACE FUNCTION sync_proposal_status() ...
+  -- Manter apenas: IF NEW.status IN ('signed','paid') → proposals.status = 'accepted'
+  -- Remover: IF NEW.execution_status IN ('in_progress','delivered','completed')
+
+-- Atualizar get_dashboard_metrics: 'pending' apenas (sem 'sent')
+```
+
+## Resumo de Ficheiros
+
+| Arquivo | Alteracao |
 |---------|-----------|
-| `src/pages/ContratoPublico.tsx` | Condicionar mensagens "Entrada Paga" com `hasEntrance`; sem entrada mostra "Contrato assinado" |
-| Migration SQL (`sign_contract`) | Adicionar UPDATE em `proposals` com `accepted_by_name/email/at` |
-| `src/pages/ContratoDetalhe.tsx` | Adicionar Textarea condicional quando `paymentTerms === "custom"` + novo estado `customPaymentTermsText` |
-| `src/components/contratos/ContratoDocumento.tsx` | Ajustar `formatPaymentTermsLabel` para retornar o texto livre quando o valor nao for um dos codigos conhecidos |
+| `src/lib/proposal-utils.ts` | Remover `sent`, `in_progress`, `delivered`, `completed` |
+| `src/pages/Propostas.tsx` | Remover filtro `sent` |
+| `src/pages/Contratos.tsx` | Adicionar filtro de execucao |
+| Migration SQL | Data cleanup + trigger update + dashboard RPC fix |
 
