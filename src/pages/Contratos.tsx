@@ -40,6 +40,7 @@ export default function Contratos() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [execFilter, setExecFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
