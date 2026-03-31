@@ -12,28 +12,8 @@ export const statusConfig: Record<
     variant: "default",
     className: "bg-blue-500/15 text-blue-400 border-blue-500/20 hover:bg-blue-500/15",
   },
-  sent: {
-    label: "Enviada",
-    variant: "default",
-    className: "bg-blue-500/15 text-blue-400 border-blue-500/20 hover:bg-blue-500/15",
-  },
   accepted: {
     label: "Aceita",
-    variant: "default",
-    className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15",
-  },
-  in_progress: {
-    label: "Em Desenvolvimento",
-    variant: "default",
-    className: "bg-blue-500/15 text-blue-400 border-blue-500/20 hover:bg-blue-500/15",
-  },
-  delivered: {
-    label: "Entregue",
-    variant: "default",
-    className: "bg-amber-500/15 text-amber-400 border-amber-500/20 hover:bg-amber-500/15",
-  },
-  completed: {
-    label: "Concluído",
     variant: "default",
     className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15",
   },
