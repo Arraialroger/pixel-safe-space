@@ -45,7 +45,7 @@ export default function Contratos() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, execFilter]);
 
   useEffect(() => {
     if (!workspaceId) return;
