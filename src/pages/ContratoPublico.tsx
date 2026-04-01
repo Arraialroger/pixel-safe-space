@@ -363,7 +363,7 @@ export default function ContratoPublico() {
         )}
 
         {/* Manual check button after redirect (when not polling) */}
-        {showPollingFromRedirect && !polling && contract.status !== "paid" && (
+        {showPollingFromRedirect && !polling && !['paid'].includes(contract.status) && (
           <div className="mb-6">
             <Button
               variant="outline"
@@ -377,7 +377,7 @@ export default function ContratoPublico() {
         )}
 
         {/* Manual check for balance after redirect */}
-        {showPollingFromRedirect && !polling && contract.status === "paid" && !contract.is_fully_paid && (
+        {showPollingFromRedirect && !polling && ['partially_paid', 'signed'].includes(contract.status) && !contract.is_fully_paid && contract.final_deliverable_url && (
           <div className="mb-6">
             <Button
               variant="outline"
