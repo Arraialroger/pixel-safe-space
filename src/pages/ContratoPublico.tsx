@@ -119,7 +119,7 @@ export default function ContratoPublico() {
 
         if (data) {
           const statusChanged =
-            (data.status === "paid" && contract?.status === "signed") ||
+            (data.status !== contract?.status) ||
             (data.is_fully_paid === true && contract?.is_fully_paid === false);
 
           if (statusChanged) {
@@ -162,7 +162,7 @@ export default function ContratoPublico() {
 
       if (data) {
         const statusChanged =
-          (data.status === "paid" && contract?.status === "signed") ||
+          (data.status !== contract?.status) ||
           (data.is_fully_paid === true && contract?.is_fully_paid === false);
 
         if (statusChanged) {
@@ -226,7 +226,7 @@ export default function ContratoPublico() {
       if (contractData.status === "signed" && hasEntrance) {
         generatePaymentLink(contractData.id, "entrance");
       }
-      if (contractData.status === "paid" && contractData.final_deliverable_url && !contractData.is_fully_paid) {
+      if ((contractData.status === "partially_paid" || (contractData.status === "signed" && !hasEntrance)) && contractData.final_deliverable_url && !contractData.is_fully_paid) {
         generatePaymentLink(contractData.id, "balance");
       }
 
@@ -281,16 +281,12 @@ export default function ContratoPublico() {
     } else {
       const hasEntrance = (contract?.down_payment ?? 0) > 0;
       toast({ title: "Contrato assinado com sucesso!" });
+      // Contract stays as "signed" — no more auto-advance to "paid"
+      setContract((prev) =>
+        prev ? { ...prev, status: "signed", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
+      );
       if (hasEntrance) {
-        setContract((prev) =>
-          prev ? { ...prev, status: "signed", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
-        );
         generatePaymentLink(id, "entrance");
-      } else {
-        // No entrance fee — contract auto-advanced to "paid" in the DB
-        setContract((prev) =>
-          prev ? { ...prev, status: "paid", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
-        );
       }
     }
   };
@@ -367,7 +363,7 @@ export default function ContratoPublico() {
         )}
 
         {/* Manual check button after redirect (when not polling) */}
-        {showPollingFromRedirect && !polling && contract.status !== "paid" && (
+        {showPollingFromRedirect && !polling && !['paid'].includes(contract.status) && (
           <div className="mb-6">
             <Button
               variant="outline"
@@ -381,7 +377,7 @@ export default function ContratoPublico() {
         )}
 
         {/* Manual check for balance after redirect */}
-        {showPollingFromRedirect && !polling && contract.status === "paid" && !contract.is_fully_paid && (
+        {showPollingFromRedirect && !polling && ['partially_paid', 'signed'].includes(contract.status) && !contract.is_fully_paid && contract.final_deliverable_url && (
           <div className="mb-6">
             <Button
               variant="outline"
@@ -464,6 +460,33 @@ export default function ContratoPublico() {
                   </div>
                 ) : null}
               </>
+            ) : contract.final_deliverable_url && !contract.is_fully_paid ? (
+              /* No entrance, deliverable ready — show balance payment */
+              <div className="space-y-4">
+                <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 text-center space-y-4">
+                  <Package className="h-12 w-12 mx-auto text-primary" />
+                  <h3 className="text-lg font-semibold">Seus arquivos estão prontos!</h3>
+                  <p className="text-sm text-muted-foreground">
+                    O designer finalizou seu projeto. Efetue o pagamento para liberar o download dos arquivos finais.
+                  </p>
+                  {generatingPayment ? (
+                    <Button size="lg" disabled className="w-full text-lg py-6 gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin" /> Gerando link de pagamento...
+                    </Button>
+                  ) : paymentUrl ? (
+                    <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
+                      <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                        <ExternalLink className="h-5 w-5" />
+                        Pagar {formatCurrency(contract.payment_value)} para Liberar Arquivos
+                      </Button>
+                    </a>
+                  ) : paymentError ? (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-center">
+                      <p className="text-amber-400 text-sm">{paymentError}</p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             ) : (
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-center space-y-1">
                 <p className="text-emerald-400 font-medium">Contrato assinado! O projeto já está em andamento.</p>
@@ -473,29 +496,15 @@ export default function ContratoPublico() {
           </div>
         )}
 
-        {/* Paid scenarios */}
-        {contract.status === "paid" && (
+        {/* Partially paid — Entrance received, project in progress */}
+        {contract.status === "partially_paid" && (
           <div className="space-y-4">
-            {/* Scenario C: Fully paid — download available */}
-            {contract.is_fully_paid && contract.final_deliverable_url ? (
+            {contract.final_deliverable_url && !contract.is_fully_paid ? (
+              /* Deliverable uploaded, awaiting balance */
               <div className="space-y-4">
                 <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
                   <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
-                    <CheckCircle2 className="h-5 w-5" /> ✅ Pagamento Total Confirmado. Projeto Liberado!
-                  </p>
-                </div>
-                <a href={getPublicUrl(contract.final_deliverable_url)} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
-                    <Download className="h-5 w-5" /> Baixar Arquivos Finais
-                  </Button>
-                </a>
-              </div>
-            ) : contract.final_deliverable_url && !contract.is_fully_paid ? (
-              /* Scenario B: Deliverable uploaded, awaiting balance */
-              <div className="space-y-4">
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
-                  <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
-                    <CheckCircle2 className="h-5 w-5" /> {(contract.down_payment ?? 0) > 0 ? "Entrada Paga" : "Contrato Assinado"}
+                    <CheckCircle2 className="h-5 w-5" /> Entrada Paga
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 text-center space-y-4">
@@ -523,10 +532,39 @@ export default function ContratoPublico() {
                 </div>
               </div>
             ) : (
-              /* Scenario A: Paid but no deliverable yet */
+              /* Entrance paid, no deliverable yet */
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">
                 <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
-                  <CheckCircle2 className="h-5 w-5" /> {(contract.down_payment ?? 0) > 0 ? "✅ Entrada Paga" : "✅ Contrato Assinado"}
+                  <CheckCircle2 className="h-5 w-5" /> ✅ Entrada Paga
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  O designer está trabalhando no seu projeto. Você será notificado quando os arquivos estiverem prontos.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Paid / Fully paid scenarios */}
+        {contract.status === "paid" && (
+          <div className="space-y-4">
+            {contract.is_fully_paid && contract.final_deliverable_url ? (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
+                  <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+                    <CheckCircle2 className="h-5 w-5" /> ✅ Projeto Quitado e Liberado!
+                  </p>
+                </div>
+                <a href={getPublicUrl(contract.final_deliverable_url)} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                    <Download className="h-5 w-5" /> Baixar Arquivos Finais
+                  </Button>
+                </a>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">
+                <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+                  <CheckCircle2 className="h-5 w-5" /> ✅ Projeto Quitado
                 </p>
                 <p className="text-muted-foreground text-sm">
                   O designer está trabalhando no seu projeto. Você será notificado quando os arquivos estiverem prontos.

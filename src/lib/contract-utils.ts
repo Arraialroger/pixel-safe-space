@@ -5,7 +5,8 @@ export const contractStatusConfig: Record<
   draft: { label: "Rascunho", variant: "secondary" },
   pending_signature: { label: "Aguardando Assinatura", variant: "outline", className: "border-amber-500/30 text-amber-400" },
   signed: { label: "Assinado", variant: "default", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
-  paid: { label: "Pago", variant: "default", className: "bg-primary/15 text-primary border-primary/20" },
+  partially_paid: { label: "Entrada Paga", variant: "default", className: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  paid: { label: "Quitado", variant: "default", className: "bg-primary/15 text-primary border-primary/20" },
 };
 
 export const execStatusConfig: Record<string, { label: string; className: string }> = {

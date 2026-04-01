@@ -112,13 +112,14 @@ Deno.serve(async (req) => {
 
     if (payment.status === "approved" && payment.external_reference === contract_id) {
       if (payment_type === "balance") {
-        // Balance payment: mark fully paid and completed
+        // Balance payment: mark fully paid
         console.log(">>> Updating contract to fully paid. contract_id:", contract_id);
+        // Accept from signed (no entrance) or partially_paid
         const { error: updateError } = await supabase
           .from("contracts")
-          .update({ is_fully_paid: true, execution_status: "completed" })
+          .update({ status: "paid", is_fully_paid: true })
           .eq("id", contract_id)
-          .eq("status", "paid");
+          .in("status", ["signed", "partially_paid"]);
 
         if (updateError) {
           console.error(">>> Error updating contract to fully paid:", updateError);
@@ -126,18 +127,18 @@ Deno.serve(async (req) => {
           console.log(">>> SUCCESS: Contract marked as fully paid:", contract_id);
         }
       } else {
-        // Entrance payment: mark as paid
-        console.log(">>> Updating contract to paid. contract_id:", contract_id);
+        // Entrance payment: mark as partially_paid
+        console.log(">>> Updating contract to partially_paid. contract_id:", contract_id);
         const { error: updateError } = await supabase
           .from("contracts")
-          .update({ status: "paid" })
+          .update({ status: "partially_paid" })
           .eq("id", contract_id)
           .eq("status", "signed");
 
         if (updateError) {
-          console.error(">>> Error updating contract to paid:", updateError);
+          console.error(">>> Error updating contract to partially_paid:", updateError);
         } else {
-          console.log(">>> SUCCESS: Contract updated to paid:", contract_id);
+          console.log(">>> SUCCESS: Contract updated to partially_paid:", contract_id);
         }
       }
     } else {

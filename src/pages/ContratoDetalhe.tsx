@@ -138,11 +138,23 @@ export default function ContratoDetalhe() {
   const handleConfirmPayment = async () => {
     if (!id) return;
     setConfirmingPayment(true);
-    const { error } = await supabase.from("contracts").update({ status: "paid" }).eq("id", id);
-    setConfirmingPayment(false);
-    if (!error) {
-      setStatus("paid");
-      toast({ title: "Pagamento confirmado!" });
+    if (status === "signed") {
+      // Confirm entrance payment → partially_paid
+      const { error } = await supabase.from("contracts").update({ status: "partially_paid" }).eq("id", id);
+      setConfirmingPayment(false);
+      if (!error) {
+        setStatus("partially_paid");
+        toast({ title: "Entrada confirmada!" });
+      }
+    } else {
+      // Confirm full payment → paid
+      const { error } = await supabase.from("contracts").update({ status: "paid", is_fully_paid: true }).eq("id", id);
+      setConfirmingPayment(false);
+      if (!error) {
+        setStatus("paid");
+        setIsFullyPaid(true);
+        toast({ title: "Quitação confirmada!" });
+      }
     }
   };
 
@@ -216,7 +228,7 @@ export default function ContratoDetalhe() {
       : `Olá! O contrato do nosso projeto está pronto para assinatura digital. Segue o link: ${contractLink}`
   );
   const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
-  const showVaultTab = status === "paid";
+  const showVaultTab = ['signed', 'partially_paid', 'paid'].includes(status);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -253,10 +265,10 @@ export default function ContratoDetalhe() {
             <SelectItem value="completed">Concluído</SelectItem>
           </SelectContent>
         </Select>
-        {status === "signed" && (
+        {(status === "signed" || status === "partially_paid") && (
           <Button size="sm" variant="outline" onClick={handleConfirmPayment} disabled={confirmingPayment} className="gap-1 ml-auto">
             {confirmingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            Confirmar Pagamento
+            {status === "signed" ? "Confirmar Entrada" : "Confirmar Quitação"}
           </Button>
         )}
       </div>
