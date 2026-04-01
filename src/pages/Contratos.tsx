@@ -140,7 +140,8 @@ export default function Contratos() {
                 <SelectItem value="draft">Rascunho</SelectItem>
                 <SelectItem value="pending_signature">Aguardando Assinatura</SelectItem>
                 <SelectItem value="signed">Assinado</SelectItem>
-                <SelectItem value="paid">Pago</SelectItem>
+                <SelectItem value="partially_paid">Entrada Paga</SelectItem>
+                <SelectItem value="paid">Quitado</SelectItem>
               </SelectContent>
             </Select>
             <Select value={execFilter} onValueChange={setExecFilter}>

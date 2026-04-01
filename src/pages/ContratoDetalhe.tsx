@@ -138,11 +138,23 @@ export default function ContratoDetalhe() {
   const handleConfirmPayment = async () => {
     if (!id) return;
     setConfirmingPayment(true);
-    const { error } = await supabase.from("contracts").update({ status: "paid" }).eq("id", id);
-    setConfirmingPayment(false);
-    if (!error) {
-      setStatus("paid");
-      toast({ title: "Pagamento confirmado!" });
+    if (status === "signed") {
+      // Confirm entrance payment → partially_paid
+      const { error } = await supabase.from("contracts").update({ status: "partially_paid" }).eq("id", id);
+      setConfirmingPayment(false);
+      if (!error) {
+        setStatus("partially_paid");
+        toast({ title: "Entrada confirmada!" });
+      }
+    } else {
+      // Confirm full payment → paid
+      const { error } = await supabase.from("contracts").update({ status: "paid", is_fully_paid: true }).eq("id", id);
+      setConfirmingPayment(false);
+      if (!error) {
+        setStatus("paid");
+        setIsFullyPaid(true);
+        toast({ title: "Quitação confirmada!" });
+      }
     }
   };
 
