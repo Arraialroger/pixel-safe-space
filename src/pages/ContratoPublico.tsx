@@ -162,7 +162,7 @@ export default function ContratoPublico() {
 
       if (data) {
         const statusChanged =
-          (data.status === "paid" && contract?.status === "signed") ||
+          (data.status !== contract?.status) ||
           (data.is_fully_paid === true && contract?.is_fully_paid === false);
 
         if (statusChanged) {
