@@ -469,29 +469,15 @@ export default function ContratoPublico() {
           </div>
         )}
 
-        {/* Paid scenarios */}
-        {contract.status === "paid" && (
+        {/* Partially paid — Entrance received, project in progress */}
+        {contract.status === "partially_paid" && (
           <div className="space-y-4">
-            {/* Scenario C: Fully paid — download available */}
-            {contract.is_fully_paid && contract.final_deliverable_url ? (
+            {contract.final_deliverable_url && !contract.is_fully_paid ? (
+              /* Deliverable uploaded, awaiting balance */
               <div className="space-y-4">
                 <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
                   <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
-                    <CheckCircle2 className="h-5 w-5" /> ✅ Pagamento Total Confirmado. Projeto Liberado!
-                  </p>
-                </div>
-                <a href={getPublicUrl(contract.final_deliverable_url)} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
-                    <Download className="h-5 w-5" /> Baixar Arquivos Finais
-                  </Button>
-                </a>
-              </div>
-            ) : contract.final_deliverable_url && !contract.is_fully_paid ? (
-              /* Scenario B: Deliverable uploaded, awaiting balance */
-              <div className="space-y-4">
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
-                  <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
-                    <CheckCircle2 className="h-5 w-5" /> {(contract.down_payment ?? 0) > 0 ? "Entrada Paga" : "Contrato Assinado"}
+                    <CheckCircle2 className="h-5 w-5" /> Entrada Paga
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 text-center space-y-4">
@@ -519,10 +505,39 @@ export default function ContratoPublico() {
                 </div>
               </div>
             ) : (
-              /* Scenario A: Paid but no deliverable yet */
+              /* Entrance paid, no deliverable yet */
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">
                 <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
-                  <CheckCircle2 className="h-5 w-5" /> {(contract.down_payment ?? 0) > 0 ? "✅ Entrada Paga" : "✅ Contrato Assinado"}
+                  <CheckCircle2 className="h-5 w-5" /> ✅ Entrada Paga
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  O designer está trabalhando no seu projeto. Você será notificado quando os arquivos estiverem prontos.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Paid / Fully paid scenarios */}
+        {contract.status === "paid" && (
+          <div className="space-y-4">
+            {contract.is_fully_paid && contract.final_deliverable_url ? (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
+                  <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+                    <CheckCircle2 className="h-5 w-5" /> ✅ Projeto Quitado e Liberado!
+                  </p>
+                </div>
+                <a href={getPublicUrl(contract.final_deliverable_url)} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                    <Download className="h-5 w-5" /> Baixar Arquivos Finais
+                  </Button>
+                </a>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">
+                <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+                  <CheckCircle2 className="h-5 w-5" /> ✅ Projeto Quitado
                 </p>
                 <p className="text-muted-foreground text-sm">
                   O designer está trabalhando no seu projeto. Você será notificado quando os arquivos estiverem prontos.

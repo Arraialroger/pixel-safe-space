@@ -136,9 +136,9 @@ Deno.serve(async (req) => {
           .eq("status", "signed");
 
         if (updateError) {
-          console.error(">>> Error updating contract to paid:", updateError);
+          console.error(">>> Error updating contract to partially_paid:", updateError);
         } else {
-          console.log(">>> SUCCESS: Contract updated to paid:", contract_id);
+          console.log(">>> SUCCESS: Contract updated to partially_paid:", contract_id);
         }
       }
     } else {
