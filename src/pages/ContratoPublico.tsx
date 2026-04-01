@@ -226,7 +226,7 @@ export default function ContratoPublico() {
       if (contractData.status === "signed" && hasEntrance) {
         generatePaymentLink(contractData.id, "entrance");
       }
-      if (contractData.status === "paid" && contractData.final_deliverable_url && !contractData.is_fully_paid) {
+      if ((contractData.status === "partially_paid" || (contractData.status === "signed" && !hasEntrance)) && contractData.final_deliverable_url && !contractData.is_fully_paid) {
         generatePaymentLink(contractData.id, "balance");
       }
 
