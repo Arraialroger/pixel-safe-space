@@ -281,16 +281,12 @@ export default function ContratoPublico() {
     } else {
       const hasEntrance = (contract?.down_payment ?? 0) > 0;
       toast({ title: "Contrato assinado com sucesso!" });
+      // Contract stays as "signed" — no more auto-advance to "paid"
+      setContract((prev) =>
+        prev ? { ...prev, status: "signed", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
+      );
       if (hasEntrance) {
-        setContract((prev) =>
-          prev ? { ...prev, status: "signed", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
-        );
         generatePaymentLink(id, "entrance");
-      } else {
-        // No entrance fee — contract auto-advanced to "paid" in the DB
-        setContract((prev) =>
-          prev ? { ...prev, status: "paid", signed_by_name: values.name, signed_by_email: values.email, signed_at: new Date().toISOString() } : prev
-        );
       }
     }
   };
