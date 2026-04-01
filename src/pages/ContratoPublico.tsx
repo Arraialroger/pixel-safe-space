@@ -460,6 +460,33 @@ export default function ContratoPublico() {
                   </div>
                 ) : null}
               </>
+            ) : contract.final_deliverable_url && !contract.is_fully_paid ? (
+              /* No entrance, deliverable ready — show balance payment */
+              <div className="space-y-4">
+                <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 text-center space-y-4">
+                  <Package className="h-12 w-12 mx-auto text-primary" />
+                  <h3 className="text-lg font-semibold">Seus arquivos estão prontos!</h3>
+                  <p className="text-sm text-muted-foreground">
+                    O designer finalizou seu projeto. Efetue o pagamento para liberar o download dos arquivos finais.
+                  </p>
+                  {generatingPayment ? (
+                    <Button size="lg" disabled className="w-full text-lg py-6 gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin" /> Gerando link de pagamento...
+                    </Button>
+                  ) : paymentUrl ? (
+                    <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
+                      <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                        <ExternalLink className="h-5 w-5" />
+                        Pagar {formatCurrency(contract.payment_value)} para Liberar Arquivos
+                      </Button>
+                    </a>
+                  ) : paymentError ? (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-center">
+                      <p className="text-amber-400 text-sm">{paymentError}</p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             ) : (
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-center space-y-1">
                 <p className="text-emerald-400 font-medium">Contrato assinado! O projeto já está em andamento.</p>
