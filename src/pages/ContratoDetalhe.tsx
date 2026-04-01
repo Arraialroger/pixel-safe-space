@@ -253,10 +253,10 @@ export default function ContratoDetalhe() {
             <SelectItem value="completed">Concluído</SelectItem>
           </SelectContent>
         </Select>
-        {status === "signed" && (
+        {(status === "signed" || status === "partially_paid") && (
           <Button size="sm" variant="outline" onClick={handleConfirmPayment} disabled={confirmingPayment} className="gap-1 ml-auto">
             {confirmingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            Confirmar Pagamento
+            {status === "signed" ? "Confirmar Entrada" : "Confirmar Quitação"}
           </Button>
         )}
       </div>
