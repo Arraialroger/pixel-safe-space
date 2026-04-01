@@ -216,7 +216,7 @@ export default function ContratoDetalhe() {
       : `Olá! O contrato do nosso projeto está pronto para assinatura digital. Segue o link: ${contractLink}`
   );
   const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
-  const showVaultTab = status === "paid";
+  const showVaultTab = ['signed', 'partially_paid', 'paid'].includes(status);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
