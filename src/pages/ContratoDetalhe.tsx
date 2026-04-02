@@ -147,12 +147,13 @@ export default function ContratoDetalhe() {
         toast({ title: "Entrada confirmada!" });
       }
     } else {
-      // Confirm full payment → paid
-      const { error } = await supabase.from("contracts").update({ status: "paid", is_fully_paid: true }).eq("id", id);
+      // Confirm full payment → paid + execution completed
+      const { error } = await supabase.from("contracts").update({ status: "paid", is_fully_paid: true, execution_status: "completed" }).eq("id", id);
       setConfirmingPayment(false);
       if (!error) {
         setStatus("paid");
         setIsFullyPaid(true);
+        setExecutionStatus("completed");
         toast({ title: "Quitação confirmada!" });
       }
     }

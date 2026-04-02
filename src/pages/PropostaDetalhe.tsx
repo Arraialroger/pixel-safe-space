@@ -335,7 +335,7 @@ export default function PropostaDetalhe() {
                   <p className="text-xs text-amber-400">O link está desativado pois a proposta é um rascunho. Libere-a para ativar o acesso público.</p>
                 </div>
               }
-              {(isPending || isAccepted) &&
+              {(isPending || isLocked) &&
               <div className="flex items-start gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
                   <p className="text-xs text-emerald-400">O link público está ativo e pronto para envio.</p>
