@@ -289,7 +289,7 @@ export default function PropostaDetalhe() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Escopo do Projeto</CardTitle>
-                {!isAccepted && scope &&
+                {!isLocked && scope &&
                 <Button variant="ghost" size="sm" onClick={() => setPreviewMode(!previewMode)} className="gap-1 text-muted-foreground">
                     {previewMode ? <><Pencil className="h-4 w-4" /> Editar</> : <><Eye className="h-4 w-4" /> Visualizar</>}
                   </Button>
