@@ -142,6 +142,7 @@ export default function Propostas() {
                 <SelectItem value="draft">Rascunho</SelectItem>
                 <SelectItem value="pending">Em Negociação</SelectItem>
                 <SelectItem value="accepted">Aceita</SelectItem>
+                <SelectItem value="completed">Concluído</SelectItem>
               </SelectContent>
             </Select>
           </div>

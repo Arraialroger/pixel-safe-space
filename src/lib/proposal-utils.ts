@@ -17,6 +17,11 @@ export const statusConfig: Record<
     variant: "default",
     className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15",
   },
+  completed: {
+    label: "Concluído",
+    variant: "default",
+    className: "bg-primary/15 text-primary border-primary/20 hover:bg-primary/15",
+  },
 };
 
 export const paymentLabels: Record<string, string> = {

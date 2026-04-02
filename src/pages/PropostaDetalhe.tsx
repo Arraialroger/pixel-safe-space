@@ -208,6 +208,8 @@ export default function PropostaDetalhe() {
   const isDraft = proposal.status === "draft";
   const isPending = proposal.status === "pending";
   const isAccepted = proposal.status === "accepted";
+  const isCompleted = proposal.status === "completed";
+  const isLocked = isAccepted || isCompleted;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -240,7 +242,7 @@ export default function PropostaDetalhe() {
               </AlertDialogContent>
             </AlertDialog>
           }
-          {(isPending || isAccepted) &&
+          {isPending &&
           <Button onClick={handleGenerateContract} disabled={generatingContract} className="gap-2 text-muted">
               {generatingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
               Gerar Contrato
@@ -261,10 +263,10 @@ export default function PropostaDetalhe() {
         </div>
       </div>
 
-      {isAccepted &&
+      {isLocked &&
       <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
           <span className="text-sm text-emerald-400">
-            ✅ Proposta aceita digitalmente por <strong>{proposal.accepted_by_name}</strong> em {formatDate(proposal.accepted_at)}. O escopo não pode mais ser editado.
+            {isCompleted ? "✅ Proposta concluída" : "✅ Proposta aceita"} digitalmente por <strong>{proposal.accepted_by_name}</strong> em {formatDate(proposal.accepted_at)}. O escopo não pode mais ser editado.
           </span>
         </div>
       }
@@ -287,7 +289,7 @@ export default function PropostaDetalhe() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Escopo do Projeto</CardTitle>
-                {!isAccepted && scope &&
+                {!isLocked && scope &&
                 <Button variant="ghost" size="sm" onClick={() => setPreviewMode(!previewMode)} className="gap-1 text-muted-foreground">
                     {previewMode ? <><Pencil className="h-4 w-4" /> Editar</> : <><Eye className="h-4 w-4" /> Visualizar</>}
                   </Button>
@@ -295,7 +297,7 @@ export default function PropostaDetalhe() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isAccepted || previewMode ?
+              {isLocked || previewMode ?
               <div className="prose prose-sm max-w-none prose-invert rounded-lg border border-white/10 bg-card p-6">
                   <ReactMarkdown>{scope || "*Nenhum escopo definido ainda...*"}</ReactMarkdown>
                 </div> :
@@ -308,7 +310,7 @@ export default function PropostaDetalhe() {
                 className="font-mono text-sm" />
 
               }
-              {!isAccepted && !previewMode &&
+              {!isLocked && !previewMode &&
               <div className="flex justify-end">
                   <Button onClick={handleSave} disabled={saving} className="text-muted">
                     {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Alterações"}
@@ -333,7 +335,7 @@ export default function PropostaDetalhe() {
                   <p className="text-xs text-amber-400">O link está desativado pois a proposta é um rascunho. Libere-a para ativar o acesso público.</p>
                 </div>
               }
-              {(isPending || isAccepted) &&
+              {(isPending || isLocked) &&
               <div className="flex items-start gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
                   <p className="text-xs text-emerald-400">O link público está ativo e pronto para envio.</p>
