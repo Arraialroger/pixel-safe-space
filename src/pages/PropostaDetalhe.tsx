@@ -297,7 +297,7 @@ export default function PropostaDetalhe() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isAccepted || previewMode ?
+              {isLocked || previewMode ?
               <div className="prose prose-sm max-w-none prose-invert rounded-lg border border-white/10 bg-card p-6">
                   <ReactMarkdown>{scope || "*Nenhum escopo definido ainda...*"}</ReactMarkdown>
                 </div> :
