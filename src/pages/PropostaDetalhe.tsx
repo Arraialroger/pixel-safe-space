@@ -263,10 +263,10 @@ export default function PropostaDetalhe() {
         </div>
       </div>
 
-      {isAccepted &&
+      {isLocked &&
       <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
           <span className="text-sm text-emerald-400">
-            ✅ Proposta aceita digitalmente por <strong>{proposal.accepted_by_name}</strong> em {formatDate(proposal.accepted_at)}. O escopo não pode mais ser editado.
+            {isCompleted ? "✅ Proposta concluída" : "✅ Proposta aceita"} digitalmente por <strong>{proposal.accepted_by_name}</strong> em {formatDate(proposal.accepted_at)}. O escopo não pode mais ser editado.
           </span>
         </div>
       }
