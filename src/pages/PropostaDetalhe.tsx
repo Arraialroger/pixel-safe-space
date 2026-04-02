@@ -310,7 +310,7 @@ export default function PropostaDetalhe() {
                 className="font-mono text-sm" />
 
               }
-              {!isAccepted && !previewMode &&
+              {!isLocked && !previewMode &&
               <div className="flex justify-end">
                   <Button onClick={handleSave} disabled={saving} className="text-muted">
                     {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Alterações"}
