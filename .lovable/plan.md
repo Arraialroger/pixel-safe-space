@@ -1,94 +1,76 @@
 
 
-# Evolucao da Maquina de Estados: `partially_paid`
+# Auditoria e Correcao do Funil de Encerramento
 
-## Analise do Problema
+## Diagnostico das Falhas
 
-Hoje o status `paid` serve duas funcoes conflitantes:
-1. **Chave do Cofre** — libera a aba Vault para upload
-2. **Status financeiro** — indica pagamento completo
+### Falha 1: mp-webhook — Pagamento de saldo nao atualiza `execution_status`
+**Causa raiz**: Linha 118-122 do `mp-webhook`. O balance payment faz `update({ status: "paid", is_fully_paid: true })` mas **nunca seta `execution_status: "completed"`**. Resultado: contrato fica `paid` + `is_fully_paid: true` mas execution_status permanece `delivered`.
 
-Isso gera confusao: contratos sem entrada ficam "Pagos" sem pagar nada, e contratos com entrada ficam "Pagos" com apenas 50%.
+### Falha 2: mp-webhook — Contrato sem entrada recebe balance mas `.in("status", ["signed", "partially_paid"])` funciona... porem nao ha nada que avance a proposta
+**Causa raiz**: O trigger `sync_proposal_status` ja cobre `paid`, mas nao avanca para `completed` — apenas para `accepted`. O status `completed` para propostas nao existe no sistema.
 
-## Solucao: Desacoplar Cofre do Status Financeiro
+### Falha 3: PropostaDetalhe — Botao "Gerar Contrato" visivel em `accepted`
+**Causa raiz**: Linha 218 do `PropostaDetalhe.tsx`: `{(isPending || isAccepted) && <Button>Gerar Contrato</Button>}`. Permite geracao duplicada de contratos.
 
-### Nova Maquina de Estados Comercial
+### Falha 4: PropostaDetalhe — Escopo editavel em `accepted`
+**Causa raiz**: O campo Textarea do escopo so bloqueia edicao quando `isAccepted`. Porem, o botao "Salvar Alteracoes" continua visivel em `accepted` (linha ~267: `!isAccepted && !previewMode`). Na verdade, o bloqueio parece correto no codigo — o preview mode e forcado e o textarea nao aparece. Vou confirmar, mas o `completed` precisa do mesmo tratamento.
 
-```text
-draft → pending_signature → signed → partially_paid → paid
-                                │                        ↑
-                                └── (sem entrada) ───────┘
-                                    (bypass mantido)
-```
+### Falha 5: Dashboard — `get_dashboard_metrics` nao move valor para Receita Protegida
+**Causa raiz**: A query de `protected_revenue` ja inclui `is_fully_paid` no calculo. O problema e que o webhook nao seta `is_fully_paid = true` corretamente em todos os cenarios, e o `execution_status` nao avanca para `completed`. Isso afeta a condicao `execution_status IN ('delivered', 'completed')`.
 
-| Status | Label | Significado |
-|--------|-------|-------------|
-| `draft` | Rascunho | Em edicao |
-| `pending_signature` | Aguardando Assinatura | Link ativo |
-| `signed` | Assinado | Assinado, aguardando pagamento |
-| `partially_paid` | Entrada Paga | Sinal recebido, saldo pendente |
-| `paid` | Quitado | Totalmente pago |
+### Falha 6 (Adicional): `handleConfirmPayment` no ContratoDetalhe nao seta `execution_status`
+Quando o designer confirma quitacao manualmente (botao "Confirmar Quitacao"), faz `update({ status: "paid", is_fully_paid: true })` mas tambem **nao seta `execution_status: "completed"`**.
 
-### Regra do Cofre (a "Chave de Desbloqueio")
+### Falha 7 (Adicional): Proposta nao tem status `completed`
+O `statusConfig` em `proposal-utils.ts` e os filtros em `Propostas.tsx` nao incluem `completed`. O trigger `sync_proposal_status` nao avanca para `completed`.
 
-**Antes**: `status === "paid"`
-**Depois**: `status IN ('signed', 'partially_paid', 'paid')` — ou seja, qualquer contrato assinado libera o Cofre.
+## Plano de Acao
 
-Justificativa: O designer precisa fazer upload assim que o projeto comeca, independentemente do estado financeiro. O que protege o cliente e a flag `is_fully_paid` no download, nao o acesso do designer ao upload.
-
-### Fluxo Com Entrada
+### 1. Edge Function `mp-webhook` — Completar a esteira
+Ao processar balance payment aprovado:
+- Setar `status: "paid"`, `is_fully_paid: true`, **`execution_status: "completed"`**
+- Avancar a proposta vinculada para `completed`
 
 ```text
-signed → webhook entrance → partially_paid (Cofre ja aberto)
-       → designer faz upload → balance payment → paid (is_fully_paid=true)
+// Balance payment update:
+update({ status: "paid", is_fully_paid: true, execution_status: "completed" })
 ```
 
-### Fluxo Sem Entrada
+### 2. Migration SQL — Trigger + Proposta `completed`
+- **`sync_proposal_status`**: Quando contrato muda para `paid`, setar proposta como `completed` (nao `accepted`)
+- Manter: `signed` e `partially_paid` → proposta = `accepted`
+- Adicionar: `paid` → proposta = `completed`
 
-```text
-signed → sign_contract RPC (bypass removido, fica signed)
-       → designer faz upload → balance payment → paid (is_fully_paid=true)
-```
+### 3. Frontend — `src/lib/proposal-utils.ts`
+- Adicionar `completed: { label: "Concluido", variant: "default", className: "bg-primary/15 text-primary border-primary/20" }`
 
-**Mudanca critica**: O `sign_contract` RPC deixa de auto-avancar para `paid`. Contratos sem entrada permanecem `signed` ate o pagamento final.
+### 4. Frontend — `src/pages/Propostas.tsx`
+- Adicionar filtro `completed` (Concluido) no Select de status
 
-## Alteracoes por Arquivo
+### 5. Frontend — `src/pages/PropostaDetalhe.tsx`
+- Remover `isAccepted` da condicao do botao "Gerar Contrato": so exibir em `isPending`
+- Verificar se a proposta ja tem contrato vinculado antes de permitir geracao
+- Tratar `completed` igual a `accepted` para bloqueio de edicao
 
-### 1. Migration SQL
-- **sign_contract RPC**: Remover o bloco `UPDATE ... SET status = 'paid' WHERE down_payment IS NULL OR <= 0`
-- **mp-webhook**: Atualizar para `entrance → partially_paid` em vez de `entrance → paid`; `balance → paid + is_fully_paid` aceitar contratos em `signed` OU `partially_paid`
-- **get_dashboard_metrics**: Incluir `partially_paid` em todas as queries que hoje usam `'signed', 'paid'`
-- **sync_proposal_status trigger**: Incluir `partially_paid` na condicao que seta proposta como `accepted`
+### 6. Frontend — `src/pages/ContratoDetalhe.tsx`
+- `handleConfirmPayment` (quitacao manual): incluir `execution_status: "completed"` no update
 
-### 2. `src/lib/contract-utils.ts`
-- Adicionar config para `partially_paid`: label "Entrada Paga", badge amber/emerald
+### 7. Frontend — `src/pages/ContratoPublico.tsx`
+- O bloco `contract.status === "paid"` ja mostra o download corretamente quando `is_fully_paid && final_deliverable_url`. Sem alteracao necessaria aqui — o problema e que o webhook nao estava completando a esteira.
 
-### 3. `src/pages/ContratoDetalhe.tsx`
-- `showVaultTab`: mudar de `status === "paid"` para `['signed', 'partially_paid', 'paid'].includes(status)`
-- Botao "Confirmar Pagamento" (`handleConfirmPayment`): visivel quando `signed` ou `partially_paid`; a logica pode ser refinada (confirmar entrada → `partially_paid`, confirmar total → `paid`)
+### 8. Migration SQL — Dashboard `get_dashboard_metrics`
+- `protected_revenue`: confirmar que `is_fully_paid` ja cobre o cenario. A query atual esta correta — o bug era upstream (webhook nao setava `is_fully_paid`).
+- Nenhuma alteracao necessaria na query se o webhook for corrigido.
 
-### 4. `src/pages/ContratoPublico.tsx`
-- **handleSign** (sem entrada): setar estado local para `signed` em vez de `paid`
-- **Bloco `signed`**: mostrar mensagem "projeto em andamento" para contratos sem entrada (ja existe)
-- **Bloco `paid`**: renomear/reestruturar. Cenarios B e A (deliverable + saldo pendente) passam a ser mostrados quando `status === "partially_paid"` ou `status === "signed" && !hasEntrance`
-- **Polling**: detectar mudanca para `partially_paid` alem de `paid`
-- **Balance payment link**: gerar quando `partially_paid` (em vez de `paid`)
+## Resumo de Ficheiros
 
-### 5. `src/pages/Contratos.tsx`
-- Adicionar `partially_paid` ao filtro de status comercial
-
-### 6. `supabase/functions/mp-webhook/index.ts`
-- Entrance: `update({ status: "partially_paid" }).eq("status", "signed")`
-- Balance: `update({ status: "paid", is_fully_paid: true }).eq("status", …)` aceitando `partially_paid` OU `signed` (para contratos sem entrada que pagam tudo no final)
-
-### 7. `supabase/functions/generate-payment/index.ts`
-- Balance payment: aceitar contratos com status `partially_paid` OU `signed` (nao apenas `paid`)
-
-## Resumo da Regra de Desbloqueio
-
-| Recurso | Regra Antiga | Regra Nova |
-|---------|-------------|-----------|
-| Aba Cofre (designer) | `status === 'paid'` | `signed \| partially_paid \| paid` |
-| Download (cliente) | `is_fully_paid === true` | `is_fully_paid === true` (sem mudanca) |
-| Upload muda exec_status | `→ delivered` | `→ delivered` (sem mudanca) |
+| Arquivo | Alteracao |
+|---------|-----------|
+| `supabase/functions/mp-webhook/index.ts` | Balance: adicionar `execution_status: "completed"` ao update |
+| Migration SQL (trigger) | `paid` → proposta `completed`; `signed/partially_paid` → `accepted` |
+| `src/lib/proposal-utils.ts` | Adicionar status `completed` |
+| `src/pages/Propostas.tsx` | Adicionar filtro `completed` |
+| `src/pages/PropostaDetalhe.tsx` | Botao "Gerar Contrato" so em `pending`; bloquear edicao em `completed` |
+| `src/pages/ContratoDetalhe.tsx` | `handleConfirmPayment` quitacao: setar `execution_status: "completed"` |
 
