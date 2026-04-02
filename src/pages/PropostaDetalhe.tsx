@@ -208,6 +208,8 @@ export default function PropostaDetalhe() {
   const isDraft = proposal.status === "draft";
   const isPending = proposal.status === "pending";
   const isAccepted = proposal.status === "accepted";
+  const isCompleted = proposal.status === "completed";
+  const isLocked = isAccepted || isCompleted;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
