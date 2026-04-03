@@ -1,3 +1,4 @@
+// mp-webhook v2.1 — execution_status: completed on balance payment
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

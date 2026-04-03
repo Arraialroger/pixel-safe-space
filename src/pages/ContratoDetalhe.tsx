@@ -135,11 +135,14 @@ export default function ContratoDetalhe() {
     }
   };
 
+  const hasEntrance = Number(downPayment) > 0;
+
   const handleConfirmPayment = async () => {
     if (!id) return;
     setConfirmingPayment(true);
-    if (status === "signed") {
-      // Confirm entrance payment → partially_paid
+
+    if (status === "signed" && hasEntrance) {
+      // Has down payment → confirm entrance → partially_paid
       const { error } = await supabase.from("contracts").update({ status: "partially_paid" }).eq("id", id);
       setConfirmingPayment(false);
       if (!error) {
@@ -147,7 +150,7 @@ export default function ContratoDetalhe() {
         toast({ title: "Entrada confirmada!" });
       }
     } else {
-      // Confirm full payment → paid + execution completed
+      // No down payment (signed) OR balance settlement (partially_paid) → paid + completed
       const { error } = await supabase.from("contracts").update({ status: "paid", is_fully_paid: true, execution_status: "completed" }).eq("id", id);
       setConfirmingPayment(false);
       if (!error) {
@@ -269,7 +272,7 @@ export default function ContratoDetalhe() {
         {(status === "signed" || status === "partially_paid") && (
           <Button size="sm" variant="outline" onClick={handleConfirmPayment} disabled={confirmingPayment} className="gap-1 ml-auto">
             {confirmingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            {status === "signed" ? "Confirmar Entrada" : "Confirmar Quitação"}
+            {status === "signed" && hasEntrance ? "Confirmar Entrada" : "Confirmar Quitação"}
           </Button>
         )}
       </div>
