@@ -135,11 +135,14 @@ export default function ContratoDetalhe() {
     }
   };
 
+  const hasEntrance = Number(downPayment) > 0;
+
   const handleConfirmPayment = async () => {
     if (!id) return;
     setConfirmingPayment(true);
-    if (status === "signed") {
-      // Confirm entrance payment → partially_paid
+
+    if (status === "signed" && hasEntrance) {
+      // Has down payment → confirm entrance → partially_paid
       const { error } = await supabase.from("contracts").update({ status: "partially_paid" }).eq("id", id);
       setConfirmingPayment(false);
       if (!error) {
@@ -147,7 +150,7 @@ export default function ContratoDetalhe() {
         toast({ title: "Entrada confirmada!" });
       }
     } else {
-      // Confirm full payment → paid + execution completed
+      // No down payment (signed) OR balance settlement (partially_paid) → paid + completed
       const { error } = await supabase.from("contracts").update({ status: "paid", is_fully_paid: true, execution_status: "completed" }).eq("id", id);
       setConfirmingPayment(false);
       if (!error) {
