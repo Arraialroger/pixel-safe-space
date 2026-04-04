@@ -1,4 +1,4 @@
-// mp-webhook v2.1 — execution_status: completed on balance payment
+// mp-webhook v3.0 — state-driven payment processing with audit trail
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,28 +7,29 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // >>> LOG IMEDIATO — antes de qualquer parse
-  console.log(">>> mp-webhook HIT:", req.method, new URL(req.url).pathname + new URL(req.url).search);
-  console.log(">>> Headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+  console.log(">>> mp-webhook v3.0 HIT:", req.method, new URL(req.url).pathname + new URL(req.url).search);
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
+
   try {
     const url = new URL(req.url);
     const contract_id = url.searchParams.get("contract_id");
-    const payment_type = url.searchParams.get("type") || "entrance";
+    const query_phase = url.searchParams.get("type") || "entrance";
 
-    // >>> Parse protegido com fallback para text
-    let body: any;
     const rawText = await req.text();
     console.log(">>> Raw body:", rawText);
 
+    let body: any;
     try {
       body = JSON.parse(rawText);
     } catch {
-      console.log(">>> Body is NOT valid JSON. Content-Type:", req.headers.get("content-type"));
+      console.log(">>> Body is NOT valid JSON");
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -36,61 +37,45 @@ Deno.serve(async (req) => {
     }
 
     console.log(">>> Parsed body:", JSON.stringify(body));
-    console.log(">>> contract_id:", contract_id, "payment_type:", payment_type);
+    console.log(">>> contract_id:", contract_id, "query_phase:", query_phase);
 
     const type = body.type || body.topic;
     if (type !== "payment") {
       console.log(">>> Ignoring non-payment notification type:", type);
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok();
     }
 
     const payment_id = body.data?.id;
-    if (!payment_id) {
-      console.error(">>> No payment_id in payload");
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!payment_id || !contract_id) {
+      console.error(">>> Missing payment_id or contract_id");
+      return ok();
     }
 
-    if (!contract_id) {
-      console.error(">>> No contract_id in query params");
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-
+    // Load contract with full state
     const { data: contract, error: contractError } = await supabase
       .from("contracts")
-      .select("id, status, workspace_id, workspaces(mercado_pago_token)")
+      .select("id, status, down_payment, payment_value, is_fully_paid, execution_status, final_deliverable_url, proposal_id, workspace_id, workspaces(mercado_pago_token)")
       .eq("id", contract_id)
       .single();
 
     if (contractError || !contract) {
       console.error(">>> Contract not found:", contract_id, contractError);
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      await logEvent(supabase, { contract_id, payment_id, event_type: "contract_not_found", query_phase, processing_result: "skipped", raw_payload: body });
+      return ok();
     }
 
-    console.log(">>> Contract found. Status:", contract.status, "payment_type:", payment_type);
+    // Idempotent: already fully paid
+    if (contract.is_fully_paid && contract.status === "paid") {
+      console.log(">>> Contract already fully paid. Skipping.");
+      await logEvent(supabase, { contract_id, payment_id, event_type: "already_paid", query_phase, inferred_phase: "none", contract_status_before: contract.status, contract_status_after: contract.status, processing_result: "skipped_idempotent", raw_payload: body });
+      return ok();
+    }
 
     const token = (contract as any).workspaces?.mercado_pago_token;
     if (!token) {
-      console.error(">>> No mercado_pago_token for workspace:", contract.workspace_id);
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error(">>> No MP token for workspace:", contract.workspace_id);
+      await logEvent(supabase, { contract_id, payment_id, event_type: "no_token", query_phase, processing_result: "skipped", raw_payload: body });
+      return ok();
     }
 
     // Verify payment with Mercado Pago API
@@ -101,54 +86,106 @@ Deno.serve(async (req) => {
     });
 
     if (!mpRes.ok) {
-      console.error(">>> MP API error verifying payment:", mpRes.status, await mpRes.text());
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const errText = await mpRes.text();
+      console.error(">>> MP API error:", mpRes.status, errText);
+      await logEvent(supabase, { contract_id, payment_id, event_type: "mp_api_error", query_phase, processing_result: "error", error_message: `MP ${mpRes.status}`, raw_payload: body });
+      return ok();
     }
 
     const payment = await mpRes.json();
-    console.log(">>> MP payment status:", payment.status, "external_reference:", payment.external_reference, "payment_type:", payment_type);
+    console.log(">>> MP payment status:", payment.status, "amount:", payment.transaction_amount);
 
-    if (payment.status === "approved" && payment.external_reference === contract_id) {
-      if (payment_type === "balance") {
-        // Balance payment: mark fully paid + execution completed
-        console.log(">>> Updating contract to fully paid. contract_id:", contract_id);
-        const { error: updateError } = await supabase
-          .from("contracts")
-          .update({ status: "paid", is_fully_paid: true, execution_status: "completed" })
-          .eq("id", contract_id)
-          .in("status", ["signed", "partially_paid"]);
-
-        if (updateError) {
-          console.error(">>> Error updating contract to fully paid:", updateError);
-        } else {
-          console.log(">>> SUCCESS: Contract marked as fully paid + completed:", contract_id);
-        }
-      } else {
-        // Entrance payment: mark as partially_paid
-        console.log(">>> Updating contract to partially_paid. contract_id:", contract_id);
-        const { error: updateError } = await supabase
-          .from("contracts")
-          .update({ status: "partially_paid" })
-          .eq("id", contract_id)
-          .eq("status", "signed");
-
-        if (updateError) {
-          console.error(">>> Error updating contract to partially_paid:", updateError);
-        } else {
-          console.log(">>> SUCCESS: Contract updated to partially_paid:", contract_id);
-        }
-      }
-    } else {
-      console.log(">>> Payment not approved or reference mismatch. status:", payment.status, "ref:", payment.external_reference, "expected:", contract_id);
+    if (payment.status !== "approved" || payment.external_reference !== contract_id) {
+      console.log(">>> Payment not approved or ref mismatch. status:", payment.status, "ref:", payment.external_reference);
+      await logEvent(supabase, { contract_id, payment_id, event_type: "not_approved", query_phase, amount_received: payment.transaction_amount, contract_status_before: contract.status, processing_result: "skipped", raw_payload: body });
+      return ok();
     }
 
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // =====================================================
+    // STATE-DRIVEN PHASE INFERENCE (core fix)
+    // =====================================================
+    const downPayment = Number(contract.down_payment) || 0;
+    const totalValue = Number(contract.payment_value) || 0;
+    const amountReceived = Number(payment.transaction_amount) || 0;
+    const hasEntrance = downPayment > 0;
+
+    let inferred_phase: string;
+    let updateData: Record<string, any>;
+
+    if (!hasEntrance) {
+      // Contract without entrance: ANY approved payment = full settlement
+      inferred_phase = "balance";
+      updateData = { status: "paid", is_fully_paid: true, execution_status: "completed" };
+      console.log(">>> No entrance contract. Inferring BALANCE (full settlement).");
+    } else if (contract.status === "signed" && !contract.final_deliverable_url) {
+      // Has entrance, contract just signed, no delivery yet = entrance payment
+      inferred_phase = "entrance";
+      updateData = { status: "partially_paid" };
+      console.log(">>> Entrance payment inferred. signed -> partially_paid");
+    } else if (contract.status === "partially_paid" || contract.final_deliverable_url) {
+      // Has entrance, already partially paid or deliverable exists = balance payment
+      inferred_phase = "balance";
+      updateData = { status: "paid", is_fully_paid: true, execution_status: "completed" };
+      console.log(">>> Balance payment inferred. -> paid + completed");
+    } else {
+      // Edge case: unexpected state
+      console.log(">>> Unexpected contract state for payment. status:", contract.status, "final_deliverable_url:", contract.final_deliverable_url);
+      inferred_phase = "unknown";
+      updateData = {};
+    }
+
+    // Amount validation (warning only, don't block)
+    if (inferred_phase === "entrance" && hasEntrance && Math.abs(amountReceived - downPayment) > 1) {
+      console.warn(">>> Amount mismatch for entrance. Expected:", downPayment, "Received:", amountReceived);
+    }
+    if (inferred_phase === "balance") {
+      const expectedBalance = hasEntrance ? totalValue - downPayment : totalValue;
+      if (expectedBalance > 0 && Math.abs(amountReceived - expectedBalance) > 1) {
+        console.warn(">>> Amount mismatch for balance. Expected:", expectedBalance, "Received:", amountReceived);
+      }
+    }
+
+    // Apply update
+    if (Object.keys(updateData).length > 0) {
+      const { error: updateError } = await supabase
+        .from("contracts")
+        .update(updateData)
+        .eq("id", contract_id);
+
+      if (updateError) {
+        console.error(">>> Error updating contract:", updateError);
+        await logEvent(supabase, {
+          contract_id, payment_id, event_type: "update_error", inferred_phase, query_phase,
+          contract_status_before: contract.status, execution_status_before: contract.execution_status,
+          amount_received: amountReceived, processing_result: "error", error_message: updateError.message, raw_payload: body,
+        });
+      } else {
+        console.log(">>> SUCCESS: Contract updated.", JSON.stringify(updateData));
+
+        // Mark payment session as paid if exists
+        await supabase
+          .from("payment_sessions")
+          .update({ status: "paid", paid_at: new Date().toISOString() })
+          .eq("contract_id", contract_id)
+          .eq("phase", inferred_phase)
+          .eq("status", "pending");
+
+        await logEvent(supabase, {
+          contract_id, payment_id, event_type: "payment_processed", inferred_phase, query_phase,
+          contract_status_before: contract.status, contract_status_after: updateData.status || contract.status,
+          execution_status_before: contract.execution_status, execution_status_after: updateData.execution_status || contract.execution_status,
+          amount_received: amountReceived, processing_result: "success", raw_payload: body,
+        });
+      }
+    } else {
+      await logEvent(supabase, {
+        contract_id, payment_id, event_type: "no_action", inferred_phase, query_phase,
+        contract_status_before: contract.status, amount_received: amountReceived,
+        processing_result: "skipped_unknown_state", raw_payload: body,
+      });
+    }
+
+    return ok();
   } catch (err) {
     console.error(">>> mp-webhook EXCEPTION:", err);
     return new Response(JSON.stringify({ ok: true }), {
@@ -156,4 +193,35 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
+  function ok() {
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 });
+
+async function logEvent(supabase: any, event: Record<string, any>) {
+  try {
+    await supabase.from("payment_events").insert({
+      contract_id: event.contract_id || null,
+      session_id: event.session_id || null,
+      provider: "mercado_pago",
+      payment_id: String(event.payment_id || ""),
+      event_type: event.event_type,
+      inferred_phase: event.inferred_phase || null,
+      query_phase: event.query_phase || null,
+      contract_status_before: event.contract_status_before || null,
+      contract_status_after: event.contract_status_after || null,
+      execution_status_before: event.execution_status_before || null,
+      execution_status_after: event.execution_status_after || null,
+      amount_received: event.amount_received || null,
+      raw_payload: event.raw_payload || null,
+      processing_result: event.processing_result || null,
+      error_message: event.error_message || null,
+    });
+  } catch (e) {
+    console.error(">>> Failed to log payment event:", e);
+  }
+}
