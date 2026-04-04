@@ -149,6 +149,113 @@ export type Database = {
           },
         ]
       }
+      payment_events: {
+        Row: {
+          amount_received: number | null
+          contract_id: string | null
+          contract_status_after: string | null
+          contract_status_before: string | null
+          error_message: string | null
+          event_type: string
+          execution_status_after: string | null
+          execution_status_before: string | null
+          id: string
+          inferred_phase: string | null
+          payment_id: string | null
+          processed_at: string
+          processing_result: string | null
+          provider: string
+          query_phase: string | null
+          raw_payload: Json | null
+          session_id: string | null
+        }
+        Insert: {
+          amount_received?: number | null
+          contract_id?: string | null
+          contract_status_after?: string | null
+          contract_status_before?: string | null
+          error_message?: string | null
+          event_type: string
+          execution_status_after?: string | null
+          execution_status_before?: string | null
+          id?: string
+          inferred_phase?: string | null
+          payment_id?: string | null
+          processed_at?: string
+          processing_result?: string | null
+          provider?: string
+          query_phase?: string | null
+          raw_payload?: Json | null
+          session_id?: string | null
+        }
+        Update: {
+          amount_received?: number | null
+          contract_id?: string | null
+          contract_status_after?: string | null
+          contract_status_before?: string | null
+          error_message?: string | null
+          event_type?: string
+          execution_status_after?: string | null
+          execution_status_before?: string | null
+          id?: string
+          inferred_phase?: string | null
+          payment_id?: string | null
+          processed_at?: string
+          processing_result?: string | null
+          provider?: string
+          query_phase?: string | null
+          raw_payload?: Json | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "payment_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_sessions: {
+        Row: {
+          contract_id: string
+          created_at: string
+          expected_amount: number
+          external_reference: string | null
+          id: string
+          paid_at: string | null
+          phase: string
+          preference_id: string | null
+          provider: string
+          status: string
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          expected_amount: number
+          external_reference?: string | null
+          id?: string
+          paid_at?: string | null
+          phase: string
+          preference_id?: string | null
+          provider?: string
+          status?: string
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          expected_amount?: number
+          external_reference?: string | null
+          id?: string
+          paid_at?: string | null
+          phase?: string
+          preference_id?: string | null
+          provider?: string
+          status?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
