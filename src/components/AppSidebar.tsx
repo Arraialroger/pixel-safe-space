@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, FileCheck, Users, UserCircle, LogOut, Shield, Building2, CreditCard, ChevronsUpDown, Check } from "lucide-react";
+import { LayoutDashboard, FileText, FileCheck, Users, UserCircle, LogOut, Shield, Building2, CreditCard, ChevronsUpDown, Check, FolderLock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
