@@ -1,0 +1,1 @@
+UPDATE contracts SET status = 'partially_paid', is_fully_paid = false, execution_status = 'not_started' WHERE id = '2631ec8c-da85-4913-b189-c0c254596ada';
