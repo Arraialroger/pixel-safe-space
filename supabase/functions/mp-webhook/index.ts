@@ -1,4 +1,4 @@
-// mp-webhook v3.0 — state-driven payment processing with audit trail
+// mp-webhook v4.0 — idempotent, state-driven payment processing with audit trail
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,8 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** Extract payment ID from old MP format resource field */
+function extractIdFromResource(resource: string | undefined): string | null {
+  if (!resource) return null;
+  // resource can be "https://api.mercadopago.com/v1/payments/123456" or just "123456"
+  const match = resource.match(/(\d+)$/);
+  return match ? match[1] : null;
+}
+
 Deno.serve(async (req) => {
-  console.log(">>> mp-webhook v3.0 HIT:", req.method, new URL(req.url).pathname + new URL(req.url).search);
+  console.log(">>> mp-webhook v4.0 HIT:", req.method, new URL(req.url).pathname + new URL(req.url).search);
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -30,10 +38,7 @@ Deno.serve(async (req) => {
       body = JSON.parse(rawText);
     } catch {
       console.log(">>> Body is NOT valid JSON");
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok();
     }
 
     console.log(">>> Parsed body:", JSON.stringify(body));
@@ -45,11 +50,14 @@ Deno.serve(async (req) => {
       return ok();
     }
 
-    const payment_id = body.data?.id;
+    // Extract payment_id from new format (data.id) or old format (resource)
+    const payment_id = body.data?.id || extractIdFromResource(body.resource);
     if (!payment_id || !contract_id) {
-      console.error(">>> Missing payment_id or contract_id");
+      console.error(">>> Missing payment_id or contract_id. payment_id:", payment_id, "contract_id:", contract_id);
       return ok();
     }
+
+    console.log(">>> Resolved payment_id:", payment_id);
 
     // Load contract with full state
     const { data: contract, error: contractError } = await supabase
@@ -102,7 +110,27 @@ Deno.serve(async (req) => {
     }
 
     // =====================================================
-    // STATE-DRIVEN PHASE INFERENCE (core fix)
+    // IDEMPOTENCY CHECK: skip if this payment_id was already processed successfully
+    // =====================================================
+    const { data: existingEvent } = await supabase
+      .from("payment_events")
+      .select("id")
+      .eq("payment_id", String(payment_id))
+      .eq("processing_result", "success")
+      .maybeSingle();
+
+    if (existingEvent) {
+      console.log(">>> Payment already processed. Skipping duplicate. payment_id:", payment_id);
+      await logEvent(supabase, {
+        contract_id, payment_id, event_type: "duplicate_skipped",
+        query_phase, contract_status_before: contract.status,
+        processing_result: "skipped_idempotent", raw_payload: body,
+      });
+      return ok();
+    }
+
+    // =====================================================
+    // STATE-DRIVEN PHASE INFERENCE
     // =====================================================
     const downPayment = Number(contract.down_payment) || 0;
     const totalValue = Number(contract.payment_value) || 0;
@@ -113,22 +141,18 @@ Deno.serve(async (req) => {
     let updateData: Record<string, any>;
 
     if (!hasEntrance) {
-      // Contract without entrance: ANY approved payment = full settlement
       inferred_phase = "balance";
       updateData = { status: "paid", is_fully_paid: true, execution_status: "completed" };
       console.log(">>> No entrance contract. Inferring BALANCE (full settlement).");
     } else if (contract.status === "signed" && !contract.final_deliverable_url) {
-      // Has entrance, contract just signed, no delivery yet = entrance payment
       inferred_phase = "entrance";
       updateData = { status: "partially_paid" };
       console.log(">>> Entrance payment inferred. signed -> partially_paid");
     } else if (contract.status === "partially_paid" || contract.final_deliverable_url) {
-      // Has entrance, already partially paid or deliverable exists = balance payment
       inferred_phase = "balance";
       updateData = { status: "paid", is_fully_paid: true, execution_status: "completed" };
       console.log(">>> Balance payment inferred. -> paid + completed");
     } else {
-      // Edge case: unexpected state
       console.log(">>> Unexpected contract state for payment. status:", contract.status, "final_deliverable_url:", contract.final_deliverable_url);
       inferred_phase = "unknown";
       updateData = {};
@@ -145,6 +169,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Lookup session_id for audit trail
+    let session_id: string | null = null;
+    const { data: session } = await supabase
+      .from("payment_sessions")
+      .select("id")
+      .eq("contract_id", contract_id)
+      .eq("phase", inferred_phase)
+      .eq("status", "pending")
+      .maybeSingle();
+    if (session) {
+      session_id = session.id;
+    }
+
     // Apply update
     if (Object.keys(updateData).length > 0) {
       const { error: updateError } = await supabase
@@ -155,7 +192,7 @@ Deno.serve(async (req) => {
       if (updateError) {
         console.error(">>> Error updating contract:", updateError);
         await logEvent(supabase, {
-          contract_id, payment_id, event_type: "update_error", inferred_phase, query_phase,
+          contract_id, payment_id, session_id, event_type: "update_error", inferred_phase, query_phase,
           contract_status_before: contract.status, execution_status_before: contract.execution_status,
           amount_received: amountReceived, processing_result: "error", error_message: updateError.message, raw_payload: body,
         });
@@ -163,15 +200,23 @@ Deno.serve(async (req) => {
         console.log(">>> SUCCESS: Contract updated.", JSON.stringify(updateData));
 
         // Mark payment session as paid if exists
-        await supabase
-          .from("payment_sessions")
-          .update({ status: "paid", paid_at: new Date().toISOString() })
-          .eq("contract_id", contract_id)
-          .eq("phase", inferred_phase)
-          .eq("status", "pending");
+        if (session_id) {
+          await supabase
+            .from("payment_sessions")
+            .update({ status: "paid", paid_at: new Date().toISOString() })
+            .eq("id", session_id);
+        } else {
+          // Fallback: try by contract_id + phase
+          await supabase
+            .from("payment_sessions")
+            .update({ status: "paid", paid_at: new Date().toISOString() })
+            .eq("contract_id", contract_id)
+            .eq("phase", inferred_phase)
+            .eq("status", "pending");
+        }
 
         await logEvent(supabase, {
-          contract_id, payment_id, event_type: "payment_processed", inferred_phase, query_phase,
+          contract_id, payment_id, session_id, event_type: "payment_processed", inferred_phase, query_phase,
           contract_status_before: contract.status, contract_status_after: updateData.status || contract.status,
           execution_status_before: contract.execution_status, execution_status_after: updateData.execution_status || contract.execution_status,
           amount_received: amountReceived, processing_result: "success", raw_payload: body,
@@ -179,7 +224,7 @@ Deno.serve(async (req) => {
       }
     } else {
       await logEvent(supabase, {
-        contract_id, payment_id, event_type: "no_action", inferred_phase, query_phase,
+        contract_id, payment_id, session_id, event_type: "no_action", inferred_phase, query_phase,
         contract_status_before: contract.status, amount_received: amountReceived,
         processing_result: "skipped_unknown_state", raw_payload: body,
       });
