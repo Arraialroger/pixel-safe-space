@@ -27,6 +27,7 @@ const navItems = [
 { title: "Dashboard", url: "/", icon: LayoutDashboard },
 { title: "Propostas", url: "/propostas", icon: FileText },
 { title: "Contratos", url: "/contratos", icon: FileCheck },
+{ title: "Meu Cofre", url: "/cofre", icon: FolderLock },
 { title: "Clientes", url: "/clientes", icon: Users },
 { title: "Meu Perfil", url: "/configuracoes", icon: UserCircle },
 { title: "Estúdio/Agência", url: "/configuracoes-workspace", icon: Building2 },
