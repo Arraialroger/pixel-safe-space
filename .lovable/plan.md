@@ -1,51 +1,42 @@
 
 
-# Central do Cofre — "Meu Cofre"
+# Correção de 3 problemas: Dashboard, Filtro do Cofre e Link 404
 
-## Resumo
+## 1. Dashboard — Taxa de Conversão mostrando 0%
 
-Nova pagina de leitura que lista todos os entregaveis (arquivos do Cofre) do workspace em uma unica central, eliminando a necessidade de navegar contrato por contrato.
+**Causa raiz**: A RPC `get_dashboard_metrics` conta `accepted_proposals` filtrando `status = 'accepted'`. Porém, quando o contrato é quitado, o trigger `sync_proposal_status` move a proposta para `completed`. Resultado: propostas que foram aceitas e depois concluídas não são contadas como "aceitas", gerando 0%.
 
-## Analise do plano do CEO
+**Correção**: Alterar a query na RPC para contar propostas com status `accepted` **OU** `completed`:
 
-O plano esta solido. Concordo com a abordagem e tenho apenas uma sugestao complementar:
+```sql
+SELECT COUNT(*) FROM proposals
+WHERE workspace_id = _workspace_id AND status IN ('accepted', 'completed')
+```
 
-**Sugestao**: Adicionar um campo de busca por nome do cliente ou titulo do projeto, seguindo o mesmo padrao ja usado em Propostas e Contratos (`useMemo` + filtro textual). Isso torna a central realmente escalavel quando o designer tiver dezenas de entregas.
+## 2. Filtro por status financeiro no Meu Cofre
 
-## Alteracoes
+Adicionar um `<Select>` ao lado do campo de busca com as opções: Todos, Quitado, Entrada Paga, Assinado. Filtrar via `useMemo` no array já carregado, sem nova query.
 
-### 1. Nova pagina `src/pages/Cofre.tsx`
+**Arquivo**: `src/pages/Cofre.tsx`
 
-- Query Supabase: `contracts` filtrado por `workspace_id` e `final_deliverable_url IS NOT NULL`
-- JOIN com `clients(name)` e `proposals(title)` via select relacional
-- Colunas da tabela:
-  - Projeto (proposal title, com fallback para "Sem proposta vinculada")
-  - Cliente (client name)
-  - Data de Entrega (contract `updated_at`)
-  - Status Financeiro (badge: Quitado se `is_fully_paid`, Entrada Paga se `status = partially_paid`, Assinado se `status = signed`)
-  - Acoes: botao "Abrir" (nova aba) + botao "Copiar Link" (clipboard + toast)
-- Busca textual por cliente ou projeto
-- Paginacao client-side (10 itens, mesmo padrao de Propostas/Contratos)
+## 3. Erro 404 ao clicar "Abrir"
 
-### 2. Rota em `src/App.tsx`
+**Causa raiz**: O `final_deliverable_url` armazena o **caminho relativo no Storage** (ex: `contracts/{id}/{uuid}.zip`), não uma URL completa. O botão "Abrir" usa esse caminho diretamente como `href`, gerando uma URL inválida como `pixel-safe-space.lovable.app/contracts/{id}/{uuid}.zip` — que é uma rota SPA, não o arquivo.
 
-- Adicionar rota `/cofre` protegida com `AppLayout`
+**Correção**: Converter o caminho para URL pública do Supabase Storage antes de usar:
 
-### 3. Menu lateral em `src/components/AppSidebar.tsx`
+```typescript
+const publicUrl = supabase.storage.from("vault").getPublicUrl(item.final_deliverable_url).data.publicUrl;
+```
 
-- Adicionar item "Meu Cofre" com icone `FolderLock` (Lucide), posicionado abaixo de "Contratos"
+Aplicar tanto no botão "Abrir" quanto no "Copiar link".
 
-## Impacto
+**Arquivo**: `src/pages/Cofre.tsx`
 
-- Zero alteracoes no backend, banco de dados ou maquina de estados
-- Leitura pura usando RLS existente (`is_workspace_member`)
-- Segue exatamente os padroes visuais e de codigo de `Propostas.tsx` e `Contratos.tsx`
+## Resumo de alterações
 
-## Arquivos modificados
-
-| Arquivo | Tipo |
-|---------|------|
-| `src/pages/Cofre.tsx` | Novo |
-| `src/App.tsx` | Editar (adicionar rota) |
-| `src/components/AppSidebar.tsx` | Editar (adicionar item no menu) |
+| Arquivo | Alteração |
+|---------|-----------|
+| Migration SQL | Alterar RPC `get_dashboard_metrics` para contar `status IN ('accepted','completed')` |
+| `src/pages/Cofre.tsx` | Converter path → URL pública + adicionar filtro de status financeiro |
 
