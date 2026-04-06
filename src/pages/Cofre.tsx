@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExternalLink, Copy, Search, FolderLock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -23,11 +24,23 @@ type VaultItem = {
   project_title: string | null;
 };
 
+function getPublicUrl(path: string) {
+  return supabase.storage.from("vault").getPublicUrl(path).data.publicUrl;
+}
+
+function getFinancialKey(item: VaultItem): string {
+  if (item.is_fully_paid) return "paid";
+  if (item.status === "partially_paid") return "partially_paid";
+  if (item.status === "signed") return "signed";
+  return "other";
+}
+
 export default function Cofre() {
   const { workspaceId } = useWorkspace();
   const [items, setItems] = useState<VaultItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -61,19 +74,25 @@ export default function Cofre() {
   }, [workspaceId]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return items;
-    const q = search.toLowerCase();
-    return items.filter(
-      (i) =>
-        i.client_name.toLowerCase().includes(q) ||
-        (i.project_title ?? "").toLowerCase().includes(q)
-    );
-  }, [items, search]);
+    let result = items;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (i) =>
+          i.client_name.toLowerCase().includes(q) ||
+          (i.project_title ?? "").toLowerCase().includes(q)
+      );
+    }
+    if (statusFilter !== "all") {
+      result = result.filter((i) => getFinancialKey(i) === statusFilter);
+    }
+    return result;
+  }, [items, search, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  useEffect(() => { setPage(1); }, [search]);
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
 
   function getFinancialBadge(item: VaultItem) {
     if (item.is_fully_paid) return <Badge variant="default" className="bg-primary/15 text-primary border-primary/20">Quitado</Badge>;
@@ -83,7 +102,7 @@ export default function Cofre() {
   }
 
   function handleCopy(url: string) {
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(getPublicUrl(url));
     toast.success("Link copiado!");
   }
 
@@ -98,14 +117,27 @@ export default function Cofre() {
         </div>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por cliente ou projeto..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por cliente ou projeto..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Status financeiro" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="paid">Quitado</SelectItem>
+            <SelectItem value="partially_paid">Entrada Paga</SelectItem>
+            <SelectItem value="signed">Assinado</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
@@ -143,7 +175,7 @@ export default function Cofre() {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" asChild>
-                          <a href={item.final_deliverable_url} target="_blank" rel="noopener noreferrer" title="Abrir">
+                          <a href={getPublicUrl(item.final_deliverable_url)} target="_blank" rel="noopener noreferrer" title="Abrir">
                             <ExternalLink className="h-4 w-4" />
                           </a>
                         </Button>
