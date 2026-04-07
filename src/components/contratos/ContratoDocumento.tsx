@@ -59,6 +59,9 @@ function ShieldClauses({
         ) : (
           <p className="text-sm text-muted-foreground italic">Sem entregáveis definidos.</p>
         )}
+        <p className="text-sm leading-relaxed mt-3">
+          1.2. As partes declaram que a presente relação é de natureza estritamente civil e empresarial, não configurando relação de consumo.
+        </p>
       </section>
 
       <section className="mb-6">
@@ -93,6 +96,9 @@ function ShieldClauses({
         <p className="text-sm leading-relaxed mt-3">
           4.2. As solicitações de revisão devem ser formalizadas por escrito (e-mail ou plataforma oficial de gestão). Alterações que excedam os limites aqui estipulados serão consideradas novo escopo, sujeitas a novo orçamento e aprovação prévia obrigatória.
         </p>
+        <p className="text-sm leading-relaxed mt-3">
+          4.3. A ausência de feedback ou resposta do CONTRATANTE no prazo de 5 (cinco) dias úteis após a entrega de uma etapa será considerada como aceite tácito (aprovação automática) da respectiva fase.
+        </p>
       </section>
 
       <section className="mb-6">
@@ -121,6 +127,9 @@ function ShieldClauses({
         </p>
         <p className="text-sm leading-relaxed mt-3">
           6.3. Em caso de rescisão imotivada por parte do CONTRATANTE após o início dos trabalhos, os valores já pagos referentes às etapas concluídas não serão reembolsados, havendo ainda incidência de multa de 20% (vinte por cento) sobre o saldo devedor restante.
+        </p>
+        <p className="text-sm leading-relaxed mt-3">
+          6.4. O valor do projeto não inclui a aquisição de licenças de terceiros (fontes pagas, bancos de imagens, plugins). Se necessários, os custos e licenças serão de responsabilidade exclusiva do CONTRATANTE.
         </p>
       </section>
 
@@ -175,6 +184,9 @@ function DynamicClauses({
         <p className="text-sm leading-relaxed mt-3">
           4.2. As solicitações de revisão devem ser formalizadas por escrito (e-mail ou plataforma oficial de gestão). Alterações que excedam os limites aqui estipulados serão consideradas novo escopo, sujeitas a novo orçamento e aprovação prévia.
         </p>
+        <p className="text-sm leading-relaxed mt-3">
+          4.3. A ausência de feedback ou resposta do CONTRATANTE no prazo de 5 (cinco) dias úteis após a entrega de uma etapa será considerada como aceite tácito (aprovação automática) da respectiva fase.
+        </p>
       </section>
 
       <section className="mb-6">
@@ -201,6 +213,9 @@ function DynamicClauses({
         <p className="text-sm leading-relaxed mt-3">
           6.3. Em caso de rescisão imotivada por parte do CONTRATANTE após o início dos trabalhos, os valores já pagos referentes às etapas concluídas não serão reembolsados.
         </p>
+        <p className="text-sm leading-relaxed mt-3">
+          6.4. O valor do projeto não inclui a aquisição de licenças de terceiros (fontes pagas, bancos de imagens, plugins). Se necessários, os custos e licenças serão de responsabilidade exclusiva do CONTRATANTE.
+        </p>
       </section>
 
       <section className="mb-6">
@@ -215,8 +230,8 @@ function DynamicClauses({
 
 /* ──────────────────────────── TEMPLATE: FRIENDLY ────────────────────────────── */
 function FriendlyClauses({
-  deliverables, paymentValue, downPayment, deadline, paymentTerms,
-}: Pick<ContractDocProps, "deliverables" | "paymentValue" | "downPayment" | "deadline" | "paymentTerms">) {
+  deliverables, exclusions, paymentValue, downPayment, deadline, paymentTerms,
+}: Pick<ContractDocProps, "deliverables" | "exclusions" | "paymentValue" | "downPayment" | "deadline" | "paymentTerms">) {
   return (
     <>
       <section className="mb-6">
@@ -230,6 +245,16 @@ function FriendlyClauses({
           Se precisar de algo além do combinado, fazemos um novo orçamento juntos. Sem surpresas. 😊
         </p>
       </section>
+
+      {exclusions && (
+        <section className="mb-6">
+          <h2 className="text-base font-bold uppercase tracking-wide mb-2">O que fica de fora</h2>
+          <div className="text-sm leading-relaxed"><ReactMarkdown>{exclusions}</ReactMarkdown></div>
+          <p className="text-sm leading-relaxed mt-3">
+            Qualquer outro serviço não listado acima será orçado à parte.
+          </p>
+        </section>
+      )}
 
       <section className="mb-6">
         <h2 className="text-base font-bold uppercase tracking-wide mb-2">Como funciona o pagamento</h2>
@@ -257,6 +282,9 @@ function FriendlyClauses({
         </p>
         <p className="text-sm leading-relaxed mt-3">
           <strong>Foro:</strong> Fica combinado que qualquer questão sobre este acordo será resolvida na cidade do prestador de serviço.
+        </p>
+        <p className="text-sm leading-relaxed mt-3">
+          <strong>Licenças:</strong> O valor do projeto não inclui a aquisição de licenças de terceiros (fontes pagas, bancos de imagens, plugins). Se necessários, os custos serão de responsabilidade do cliente.
         </p>
       </section>
     </>
@@ -320,7 +348,7 @@ export default function ContratoDocumento({
       )}
       {template === "friendly" && (
         <FriendlyClauses
-          deliverables={deliverables}
+          deliverables={deliverables} exclusions={exclusions}
           paymentValue={paymentValue} downPayment={downPayment} deadline={deadline} paymentTerms={paymentTerms}
         />
       )}
