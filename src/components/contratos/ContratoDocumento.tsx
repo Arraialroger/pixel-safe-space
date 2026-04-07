@@ -246,6 +246,16 @@ function FriendlyClauses({
         </p>
       </section>
 
+      {exclusions && (
+        <section className="mb-6">
+          <h2 className="text-base font-bold uppercase tracking-wide mb-2">O que fica de fora</h2>
+          <div className="text-sm leading-relaxed"><ReactMarkdown>{exclusions}</ReactMarkdown></div>
+          <p className="text-sm leading-relaxed mt-3">
+            Qualquer outro serviço não listado acima será orçado à parte.
+          </p>
+        </section>
+      )}
+
       <section className="mb-6">
         <h2 className="text-base font-bold uppercase tracking-wide mb-2">Como funciona o pagamento</h2>
         <p className="text-sm leading-relaxed">
