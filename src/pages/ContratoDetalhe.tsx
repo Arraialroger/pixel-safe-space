@@ -119,6 +119,7 @@ export default function ContratoDetalhe() {
         payment_link: paymentLink || null,
         deadline: deadline || null,
         payment_terms: paymentTerms || null,
+        contract_template: contractTemplate,
       })
       .eq("id", id);
     setSaving(false);
