@@ -64,6 +64,7 @@ export type Database = {
           content_deliverables: string | null
           content_exclusions: string | null
           content_revisions: string | null
+          contract_template: string
           created_at: string
           deadline: string | null
           down_payment: number | null
@@ -86,6 +87,7 @@ export type Database = {
           content_deliverables?: string | null
           content_exclusions?: string | null
           content_revisions?: string | null
+          contract_template?: string
           created_at?: string
           deadline?: string | null
           down_payment?: number | null
@@ -108,6 +110,7 @@ export type Database = {
           content_deliverables?: string | null
           content_exclusions?: string | null
           content_revisions?: string | null
+          contract_template?: string
           created_at?: string
           deadline?: string | null
           down_payment?: number | null

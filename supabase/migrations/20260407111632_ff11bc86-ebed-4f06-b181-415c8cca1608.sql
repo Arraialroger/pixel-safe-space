@@ -1,0 +1,1 @@
+ALTER TABLE public.contracts ADD COLUMN contract_template TEXT NOT NULL DEFAULT 'dynamic';
