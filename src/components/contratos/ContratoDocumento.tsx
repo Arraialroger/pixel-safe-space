@@ -283,6 +283,9 @@ function FriendlyClauses({
         <p className="text-sm leading-relaxed mt-3">
           <strong>Foro:</strong> Fica combinado que qualquer questão sobre este acordo será resolvida na cidade do prestador de serviço.
         </p>
+        <p className="text-sm leading-relaxed mt-3">
+          <strong>Licenças:</strong> O valor do projeto não inclui a aquisição de licenças de terceiros (fontes pagas, bancos de imagens, plugins). Se necessários, os custos serão de responsabilidade do cliente.
+        </p>
       </section>
     </>
   );
