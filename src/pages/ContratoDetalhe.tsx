@@ -292,6 +292,29 @@ export default function ContratoDetalhe() {
               <CardTitle className="text-lg">Cláusulas do Contrato</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
+              {isDraft && (
+                <div className="space-y-2">
+                  <Label>Nível de Proteção</Label>
+                  <Select value={contractTemplate} onValueChange={(val) => setContractTemplate(val as "shield" | "dynamic" | "friendly")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(templateConfig).map(([key, cfg]) => (
+                        <SelectItem key={key} value={key}>
+                          <span className="flex items-center gap-2">
+                            <span>{cfg.icon}</span>
+                            <span>{cfg.label}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {templateConfig[contractTemplate] && (
+                    <p className="text-xs text-muted-foreground">
+                      {templateConfig[contractTemplate].description} — <em>{templateConfig[contractTemplate].useCase}</em>
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="deliverables">Entregáveis (Cláusula 1)</Label>
                 <Textarea id="deliverables" value={deliverables} onChange={(e) => setDeliverables(e.target.value)} rows={6} placeholder="Descreva os entregáveis..." disabled={!isDraft} />
