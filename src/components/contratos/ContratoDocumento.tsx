@@ -96,6 +96,9 @@ function ShieldClauses({
         <p className="text-sm leading-relaxed mt-3">
           4.2. As solicitações de revisão devem ser formalizadas por escrito (e-mail ou plataforma oficial de gestão). Alterações que excedam os limites aqui estipulados serão consideradas novo escopo, sujeitas a novo orçamento e aprovação prévia obrigatória.
         </p>
+        <p className="text-sm leading-relaxed mt-3">
+          4.3. A ausência de feedback ou resposta do CONTRATANTE no prazo de 5 (cinco) dias úteis após a entrega de uma etapa será considerada como aceite tácito (aprovação automática) da respectiva fase.
+        </p>
       </section>
 
       <section className="mb-6">
