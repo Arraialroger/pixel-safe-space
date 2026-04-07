@@ -55,6 +55,7 @@ export default function ContratoDetalhe() {
   const [finalDeliverableUrl, setFinalDeliverableUrl] = useState<string | null>(null);
   const [isFullyPaid, setIsFullyPaid] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [contractTemplate, setContractTemplate] = useState<"shield" | "dynamic" | "friendly">("dynamic");
 
   const contractLink = `${window.location.origin}/c/${id}`;
   const isDraft = status === "draft";
