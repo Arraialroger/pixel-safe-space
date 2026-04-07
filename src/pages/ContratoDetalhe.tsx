@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
-import { contractStatusConfig, execStatusConfig } from "@/lib/contract-utils";
+import { contractStatusConfig, execStatusConfig, templateConfig } from "@/lib/contract-utils";
 
 type WorkspaceDoc = {
   name: string;
