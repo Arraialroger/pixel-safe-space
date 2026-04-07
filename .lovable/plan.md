@@ -1,42 +1,35 @@
 
 
-# Correção de 3 problemas: Dashboard, Filtro do Cofre e Link 404
+# Ajustes Juridicos nos Templates de Contrato
 
-## 1. Dashboard — Taxa de Conversão mostrando 0%
+## Resumo
 
-**Causa raiz**: A RPC `get_dashboard_metrics` conta `accepted_proposals` filtrando `status = 'accepted'`. Porém, quando o contrato é quitado, o trigger `sync_proposal_status` move a proposta para `completed`. Resultado: propostas que foram aceitas e depois concluídas não são contadas como "aceitas", gerando 0%.
+4 alteracoes cirurgicas nos textos dos templates para fechar brechas legais identificadas na revisao juridica.
 
-**Correção**: Alterar a query na RPC para contar propostas com status `accepted` **OU** `completed`:
+## Alteracoes
 
-```sql
-SELECT COUNT(*) FROM proposals
-WHERE workspace_id = _workspace_id AND status IN ('accepted', 'completed')
-```
+### 1. Shield — Clausula 1 (Afastar CDC)
+Adicionar paragrafo 1.2 apos os entregaveis na secao "Clausula 1 — Do Objeto e Escopo" do ShieldClauses.
 
-## 2. Filtro por status financeiro no Meu Cofre
+### 2. Shield + Dynamic — Clausula 4 (Aceite Tacito)
+Adicionar paragrafo 4.3 sobre aprovacao automatica apos 5 dias uteis sem feedback, na secao de Revisoes de ambos os templates.
 
-Adicionar um `<Select>` ao lado do campo de busca com as opções: Todos, Quitado, Entrada Paga, Assinado. Filtrar via `useMemo` no array já carregado, sem nova query.
+### 3. Friendly — Exclusoes de Escopo
+Adicionar nova secao "O que fica de fora" entre "O que vamos fazer juntos" e "Como funciona o pagamento". Requer receber a prop `exclusions` no FriendlyClauses (atualmente nao recebe).
 
-**Arquivo**: `src/pages/Cofre.tsx`
+### 4. TODOS os Templates — Licencas de Terceiros
+Adicionar paragrafo sobre licencas de terceiros (fontes, imagens, plugins) serem responsabilidade do contratante:
+- Shield: na Clausula 6 (apos 6.3)
+- Dynamic: na Clausula 6 (apos 6.3)
+- Friendly: na secao "Combinados importantes"
 
-## 3. Erro 404 ao clicar "Abrir"
+## Sobre o ContratoPDF.tsx
 
-**Causa raiz**: O `final_deliverable_url` armazena o **caminho relativo no Storage** (ex: `contracts/{id}/{uuid}.zip`), não uma URL completa. O botão "Abrir" usa esse caminho diretamente como `href`, gerando uma URL inválida como `pixel-safe-space.lovable.app/contracts/{id}/{uuid}.zip` — que é uma rota SPA, não o arquivo.
+O `ContratoPDF.tsx` atual e um componente de PDF de **propostas** (nao contratos). Ele renderiza o escopo da proposta via `ai_generated_scope` e nao utiliza o sistema de templates. Nao necessita destas alteracoes — os ajustes aplicam-se apenas ao `ContratoDocumento.tsx`, que e o motor de documentos dos contratos.
 
-**Correção**: Converter o caminho para URL pública do Supabase Storage antes de usar:
+## Arquivos modificados
 
-```typescript
-const publicUrl = supabase.storage.from("vault").getPublicUrl(item.final_deliverable_url).data.publicUrl;
-```
-
-Aplicar tanto no botão "Abrir" quanto no "Copiar link".
-
-**Arquivo**: `src/pages/Cofre.tsx`
-
-## Resumo de alterações
-
-| Arquivo | Alteração |
+| Arquivo | Alteracao |
 |---------|-----------|
-| Migration SQL | Alterar RPC `get_dashboard_metrics` para contar `status IN ('accepted','completed')` |
-| `src/pages/Cofre.tsx` | Converter path → URL pública + adicionar filtro de status financeiro |
+| `src/components/contratos/ContratoDocumento.tsx` | Todos os 4 ajustes de texto + prop `exclusions` no FriendlyClauses |
 
