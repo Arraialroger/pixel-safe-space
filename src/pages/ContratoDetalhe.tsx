@@ -400,6 +400,7 @@ export default function ContratoDetalhe() {
                 signedByName={signedByName}
                 signedByEmail={signedByEmail}
                 signedAt={signedAt}
+                template={contractTemplate}
               />
             </CardContent>
           </Card>
