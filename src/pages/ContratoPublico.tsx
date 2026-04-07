@@ -345,6 +345,7 @@ export default function ContratoPublico() {
             signedByName={contract.signed_by_name}
             signedByEmail={contract.signed_by_email}
             signedAt={contract.signed_at}
+            template={contract.contract_template}
           />
         </div>
 
