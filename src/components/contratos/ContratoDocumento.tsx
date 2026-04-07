@@ -230,8 +230,8 @@ function DynamicClauses({
 
 /* ──────────────────────────── TEMPLATE: FRIENDLY ────────────────────────────── */
 function FriendlyClauses({
-  deliverables, paymentValue, downPayment, deadline, paymentTerms,
-}: Pick<ContractDocProps, "deliverables" | "paymentValue" | "downPayment" | "deadline" | "paymentTerms">) {
+  deliverables, exclusions, paymentValue, downPayment, deadline, paymentTerms,
+}: Pick<ContractDocProps, "deliverables" | "exclusions" | "paymentValue" | "downPayment" | "deadline" | "paymentTerms">) {
   return (
     <>
       <section className="mb-6">
