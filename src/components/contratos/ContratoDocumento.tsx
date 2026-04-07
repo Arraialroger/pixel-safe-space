@@ -348,7 +348,7 @@ export default function ContratoDocumento({
       )}
       {template === "friendly" && (
         <FriendlyClauses
-          deliverables={deliverables}
+          deliverables={deliverables} exclusions={exclusions}
           paymentValue={paymentValue} downPayment={downPayment} deadline={deadline} paymentTerms={paymentTerms}
         />
       )}
