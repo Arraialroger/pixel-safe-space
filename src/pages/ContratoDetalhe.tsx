@@ -94,7 +94,7 @@ export default function ContratoDetalhe() {
       setSignedAt(data.signed_at);
       setFinalDeliverableUrl(data.final_deliverable_url);
       setIsFullyPaid(data.is_fully_paid ?? false);
-
+      setContractTemplate((data as any).contract_template ?? "dynamic");
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: workspaceId });
       if (wsData && wsData.length > 0) {
         const w = wsData[0];
