@@ -128,6 +128,9 @@ function ShieldClauses({
         <p className="text-sm leading-relaxed mt-3">
           6.3. Em caso de rescisão imotivada por parte do CONTRATANTE após o início dos trabalhos, os valores já pagos referentes às etapas concluídas não serão reembolsados, havendo ainda incidência de multa de 20% (vinte por cento) sobre o saldo devedor restante.
         </p>
+        <p className="text-sm leading-relaxed mt-3">
+          6.4. O valor do projeto não inclui a aquisição de licenças de terceiros (fontes pagas, bancos de imagens, plugins). Se necessários, os custos e licenças serão de responsabilidade exclusiva do CONTRATANTE.
+        </p>
       </section>
 
       <section className="mb-6">
