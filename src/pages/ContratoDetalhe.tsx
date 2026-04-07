@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
-import { contractStatusConfig, execStatusConfig } from "@/lib/contract-utils";
+import { contractStatusConfig, execStatusConfig, templateConfig } from "@/lib/contract-utils";
 
 type WorkspaceDoc = {
   name: string;
@@ -55,6 +55,7 @@ export default function ContratoDetalhe() {
   const [finalDeliverableUrl, setFinalDeliverableUrl] = useState<string | null>(null);
   const [isFullyPaid, setIsFullyPaid] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [contractTemplate, setContractTemplate] = useState<"shield" | "dynamic" | "friendly">("dynamic");
 
   const contractLink = `${window.location.origin}/c/${id}`;
   const isDraft = status === "draft";
@@ -64,7 +65,7 @@ export default function ContratoDetalhe() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, execution_status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, down_payment, signed_by_name, signed_by_email, signed_at, final_deliverable_url, is_fully_paid, clients(name, phone, document, company, address)")
+        .select("id, status, execution_status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, down_payment, signed_by_name, signed_by_email, signed_at, final_deliverable_url, is_fully_paid, contract_template, clients(name, phone, document, company, address)")
         .eq("id", id)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
@@ -93,7 +94,7 @@ export default function ContratoDetalhe() {
       setSignedAt(data.signed_at);
       setFinalDeliverableUrl(data.final_deliverable_url);
       setIsFullyPaid(data.is_fully_paid ?? false);
-
+      setContractTemplate((data as any).contract_template ?? "dynamic");
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: workspaceId });
       if (wsData && wsData.length > 0) {
         const w = wsData[0];
@@ -118,6 +119,7 @@ export default function ContratoDetalhe() {
         payment_link: paymentLink || null,
         deadline: deadline || null,
         payment_terms: paymentTerms || null,
+        contract_template: contractTemplate,
       })
       .eq("id", id);
     setSaving(false);
@@ -290,6 +292,29 @@ export default function ContratoDetalhe() {
               <CardTitle className="text-lg">Cláusulas do Contrato</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
+              {isDraft && (
+                <div className="space-y-2">
+                  <Label>Nível de Proteção</Label>
+                  <Select value={contractTemplate} onValueChange={(val) => setContractTemplate(val as "shield" | "dynamic" | "friendly")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(templateConfig).map(([key, cfg]) => (
+                        <SelectItem key={key} value={key}>
+                          <span className="flex items-center gap-2">
+                            <span>{cfg.icon}</span>
+                            <span>{cfg.label}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {templateConfig[contractTemplate] && (
+                    <p className="text-xs text-muted-foreground">
+                      {templateConfig[contractTemplate].description} — <em>{templateConfig[contractTemplate].useCase}</em>
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="deliverables">Entregáveis (Cláusula 1)</Label>
                 <Textarea id="deliverables" value={deliverables} onChange={(e) => setDeliverables(e.target.value)} rows={6} placeholder="Descreva os entregáveis..." disabled={!isDraft} />
@@ -375,6 +400,7 @@ export default function ContratoDetalhe() {
                 signedByName={signedByName}
                 signedByEmail={signedByEmail}
                 signedAt={signedAt}
+                template={contractTemplate}
               />
             </CardContent>
           </Card>
