@@ -59,6 +59,9 @@ function ShieldClauses({
         ) : (
           <p className="text-sm text-muted-foreground italic">Sem entregáveis definidos.</p>
         )}
+        <p className="text-sm leading-relaxed mt-3">
+          1.2. As partes declaram que a presente relação é de natureza estritamente civil e empresarial, não configurando relação de consumo.
+        </p>
       </section>
 
       <section className="mb-6">
