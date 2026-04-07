@@ -212,6 +212,7 @@ export default function ContratoPublico() {
         signed_at: data.signed_at,
         final_deliverable_url: data.final_deliverable_url,
         is_fully_paid: data.is_fully_paid ?? false,
+        contract_template: ((data as any).contract_template ?? "dynamic") as ContractData["contract_template"],
         client: data.clients ?? { name: "—", document: null, company: null, address: null },
       };
       setContract(contractData);
