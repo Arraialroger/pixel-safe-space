@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Copy, Download, Loader2, MessageCircle, Save, Send, Upload } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, Download, Loader2, MessageCircle, RotateCcw, Save, Send, Trash2, Upload } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -13,6 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
 import { contractStatusConfig, execStatusConfig, templateConfig } from "@/lib/contract-utils";
@@ -34,6 +38,8 @@ export default function ContratoDetalhe() {
   const [saving, setSaving] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [reverting, setReverting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [status, setStatus] = useState("draft");
   const [executionStatus, setExecutionStatus] = useState("not_started");
@@ -173,6 +179,38 @@ export default function ContratoDetalhe() {
     }
   };
 
+  const handleRevertToDraft = async () => {
+    if (!id) return;
+    setReverting(true);
+    const { error } = await supabase
+      .from("contracts")
+      .update({ status: "draft", signed_by_name: null, signed_by_email: null, signed_at: null })
+      .eq("id", id);
+    setReverting(false);
+    if (!error) {
+      setStatus("draft");
+      setSignedByName(null);
+      setSignedByEmail(null);
+      setSignedAt(null);
+      toast({ title: "Contrato revertido para rascunho!" });
+    } else {
+      toast({ title: "Erro ao reverter", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleting(true);
+    const { error } = await supabase.from("contracts").delete().eq("id", id);
+    setDeleting(false);
+    if (!error) {
+      toast({ title: "Contrato excluído com sucesso!" });
+      navigate("/contratos");
+    } else {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    }
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(contractLink);
     toast({ title: "Link copiado!", description: contractLink });
@@ -243,6 +281,36 @@ export default function ContratoDetalhe() {
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
         <div className="flex items-center gap-2">
+          {status === "pending_signature" && (
+            <Button variant="outline" size="sm" onClick={handleRevertToDraft} disabled={reverting} className="gap-1">
+              {reverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              Reverter para Rascunho
+            </Button>
+          )}
+          {(status === "draft" || status === "pending_signature") && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Excluir contrato">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir contrato?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação é irreversível. O contrato de <strong>{clientName}</strong> será permanentemente excluído e o link de assinatura deixará de funcionar.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           {whatsappUrl && (
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="gap-1 bg-emerald-600 hover:bg-emerald-500 text-white">
