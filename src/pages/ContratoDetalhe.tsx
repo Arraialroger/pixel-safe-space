@@ -281,6 +281,36 @@ export default function ContratoDetalhe() {
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
         <div className="flex items-center gap-2">
+          {status === "pending_signature" && (
+            <Button variant="outline" size="sm" onClick={handleRevertToDraft} disabled={reverting} className="gap-1">
+              {reverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              Reverter para Rascunho
+            </Button>
+          )}
+          {(status === "draft" || status === "pending_signature") && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Excluir contrato">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir contrato?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação é irreversível. O contrato de <strong>{clientName}</strong> será permanentemente excluído e o link de assinatura deixará de funcionar.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           {whatsappUrl && (
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="gap-1 bg-emerald-600 hover:bg-emerald-500 text-white">
