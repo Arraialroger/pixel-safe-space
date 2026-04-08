@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Copy, Download, Loader2, MessageCircle, Save, Send, Upload } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, Download, Loader2, MessageCircle, RotateCcw, Save, Send, Trash2, Upload } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
