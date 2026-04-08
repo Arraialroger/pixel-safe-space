@@ -38,6 +38,8 @@ export default function ContratoDetalhe() {
   const [saving, setSaving] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [reverting, setReverting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [status, setStatus] = useState("draft");
   const [executionStatus, setExecutionStatus] = useState("not_started");
