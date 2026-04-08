@@ -179,6 +179,38 @@ export default function ContratoDetalhe() {
     }
   };
 
+  const handleRevertToDraft = async () => {
+    if (!id) return;
+    setReverting(true);
+    const { error } = await supabase
+      .from("contracts")
+      .update({ status: "draft", signed_by_name: null, signed_by_email: null, signed_at: null })
+      .eq("id", id);
+    setReverting(false);
+    if (!error) {
+      setStatus("draft");
+      setSignedByName(null);
+      setSignedByEmail(null);
+      setSignedAt(null);
+      toast({ title: "Contrato revertido para rascunho!" });
+    } else {
+      toast({ title: "Erro ao reverter", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleting(true);
+    const { error } = await supabase.from("contracts").delete().eq("id", id);
+    setDeleting(false);
+    if (!error) {
+      toast({ title: "Contrato excluído com sucesso!" });
+      navigate("/contratos");
+    } else {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    }
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(contractLink);
     toast({ title: "Link copiado!", description: contractLink });
