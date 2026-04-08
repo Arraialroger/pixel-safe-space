@@ -1,35 +1,31 @@
 
 
-# Ajustes Juridicos nos Templates de Contrato
+# Gestao de Contratos Pre-Assinatura — Reverter e Excluir
 
-## Resumo
+## Analise
 
-4 alteracoes cirurgicas nos textos dos templates para fechar brechas legais identificadas na revisao juridica.
+A abordagem proposta esta correta. Concordo integralmente com a estrategia:
+
+- **Reverter para Rascunho**: Logica pura de frontend, um `update` de `status` para `draft`. Preserva o ID/link, zero impacto na maquina de estados financeira.
+- **Excluir Contrato**: Um `delete` com guard estrito (`draft` ou `pending_signature` apenas). Seguro porque RLS ja permite delete para workspace members, e a restricao visual/logica no frontend impede exclusao de contratos assinados.
+
+**Uma sugestao adicional**: Ao reverter para rascunho, limpar tambem `signed_by_name`, `signed_by_email` e `signed_at` (caso existam residuos de testes), garantindo um estado limpo.
 
 ## Alteracoes
 
-### 1. Shield — Clausula 1 (Afastar CDC)
-Adicionar paragrafo 1.2 apos os entregaveis na secao "Clausula 1 — Do Objeto e Escopo" do ShieldClauses.
+### `src/pages/ContratoDetalhe.tsx`
 
-### 2. Shield + Dynamic — Clausula 4 (Aceite Tacito)
-Adicionar paragrafo 4.3 sobre aprovacao automatica apos 5 dias uteis sem feedback, na secao de Revisoes de ambos os templates.
+1. **Botao "Reverter para Rascunho"**: Visivel apenas quando `status === 'pending_signature'`. Executa `update({ status: 'draft' })` e atualiza o estado local.
 
-### 3. Friendly — Exclusoes de Escopo
-Adicionar nova secao "O que fica de fora" entre "O que vamos fazer juntos" e "Como funciona o pagamento". Requer receber a prop `exclusions` no FriendlyClauses (atualmente nao recebe).
+2. **Botao "Excluir Contrato"**: Icone de lixeira, visivel apenas quando `status === 'draft' || status === 'pending_signature'`. Abre um `AlertDialog` de confirmacao com texto claro sobre a acao irreversivel. Ao confirmar, executa `delete().eq('id', id)` e redireciona para `/contratos`.
 
-### 4. TODOS os Templates — Licencas de Terceiros
-Adicionar paragrafo sobre licencas de terceiros (fontes, imagens, plugins) serem responsabilidade do contratante:
-- Shield: na Clausula 6 (apos 6.3)
-- Dynamic: na Clausula 6 (apos 6.3)
-- Friendly: na secao "Combinados importantes"
+3. **Posicionamento na UI**: Ambos os botoes ficam na barra superior (ao lado dos badges de status), seguindo o padrao visual existente. O botao de excluir usa `variant="destructive"` ou `variant="ghost"` com cor vermelha.
 
-## Sobre o ContratoPDF.tsx
-
-O `ContratoPDF.tsx` atual e um componente de PDF de **propostas** (nao contratos). Ele renderiza o escopo da proposta via `ai_generated_scope` e nao utiliza o sistema de templates. Nao necessita destas alteracoes — os ajustes aplicam-se apenas ao `ContratoDocumento.tsx`, que e o motor de documentos dos contratos.
-
-## Arquivos modificados
+## Resumo de arquivos
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/components/contratos/ContratoDocumento.tsx` | Todos os 4 ajustes de texto + prop `exclusions` no FriendlyClauses |
+| `src/pages/ContratoDetalhe.tsx` | Adicionar handlers `handleRevertToDraft` e `handleDelete` + AlertDialog de confirmacao + botoes condicionais |
+
+Zero alteracoes no banco de dados — RLS de delete ja existe para workspace members.
 
