@@ -24,7 +24,8 @@ type ContractDocProps = {
   signedByName?: string | null;
   signedByEmail?: string | null;
   signedAt?: string | null;
-  template?: "shield" | "dynamic" | "friendly";
+  template?: "shield" | "dynamic" | "friendly" | "custom";
+  customContractText?: string | null;
 };
 
 function formatBRL(value: number) {
@@ -291,6 +292,46 @@ function FriendlyClauses({
   );
 }
 
+/* ──────────────────────────── TEMPLATE: CUSTOM ──────────────────────────────── */
+function CustomClauses({
+  customContractText, paymentValue, downPayment, deadline, paymentTerms,
+}: Pick<ContractDocProps, "customContractText" | "paymentValue" | "downPayment" | "deadline" | "paymentTerms">) {
+  return (
+    <>
+      {customContractText ? (
+        <section className="mb-6">
+          <div className="text-sm leading-relaxed"><ReactMarkdown>{customContractText}</ReactMarkdown></div>
+        </section>
+      ) : (
+        <section className="mb-6">
+          <p className="text-sm text-muted-foreground italic">Nenhum texto de contrato foi inserido.</p>
+        </section>
+      )}
+
+      {(paymentValue != null || downPayment != null || deadline || paymentTerms) && (
+        <section className="mb-6">
+          <h2 className="text-base font-bold uppercase tracking-wide mb-2">Dados Financeiros</h2>
+          <p className="text-sm leading-relaxed">
+            Valor total: <strong>{paymentValue != null ? formatBRL(paymentValue) : "a definir"}</strong>
+            {downPayment != null && downPayment > 0 && <>, entrada de <strong>{formatBRL(downPayment)}</strong></>}.
+            {deadline && <> Prazo: <strong>{deadline}</strong>.</>}
+            {paymentTerms && <> Condições: <strong>{formatPaymentTermsLabel(paymentTerms)}</strong>.</>}
+          </p>
+        </section>
+      )}
+
+      <Separator className="my-6 bg-white/10" />
+
+      <section className="mb-6">
+        <h2 className="text-base font-bold uppercase tracking-wide mb-2">Cláusula de Tecnologia e Handoff</h2>
+        <p className="text-sm leading-relaxed">
+          {GOLDEN_RULE_FORMAL}
+        </p>
+      </section>
+    </>
+  );
+}
+
 /* ────────────────────────── MAIN COMPONENT ──────────────────────────────────── */
 export default function ContratoDocumento({
   workspace,
@@ -306,6 +347,7 @@ export default function ContratoDocumento({
   signedByEmail,
   signedAt,
   template = "dynamic",
+  customContractText,
 }: ContractDocProps) {
   return (
     <article className="prose prose-sm prose-invert max-w-none">
@@ -349,6 +391,12 @@ export default function ContratoDocumento({
       {template === "friendly" && (
         <FriendlyClauses
           deliverables={deliverables} exclusions={exclusions}
+          paymentValue={paymentValue} downPayment={downPayment} deadline={deadline} paymentTerms={paymentTerms}
+        />
+      )}
+      {template === "custom" && (
+        <CustomClauses
+          customContractText={customContractText}
           paymentValue={paymentValue} downPayment={downPayment} deadline={deadline} paymentTerms={paymentTerms}
         />
       )}
