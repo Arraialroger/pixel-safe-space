@@ -18,6 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import RichTextEditor from "@/components/contratos/RichTextEditor";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
 import { contractStatusConfig, execStatusConfig, templateConfig } from "@/lib/contract-utils";
 
@@ -389,14 +390,11 @@ export default function ContratoDetalhe() {
               {contractTemplate === "custom" ? (
                 <div className="space-y-2">
                   <Label htmlFor="custom_contract_text">Texto do Contrato</Label>
-                  <Textarea
-                    id="custom_contract_text"
-                    value={customContractText}
-                    onChange={(e) => setCustomContractText(e.target.value)}
-                    rows={16}
-                    placeholder="Cole aqui o texto do contrato exigido pelo cliente. A cláusula de proteção do Cofre Digital será adicionada automaticamente no final do documento."
+                  <RichTextEditor
+                    content={customContractText}
+                    onChange={setCustomContractText}
                     disabled={!isDraft}
-                    className="font-mono text-xs leading-relaxed"
+                    placeholder="Cole aqui o texto do contrato exigido pelo cliente."
                   />
                   <p className="text-xs text-muted-foreground">
                     💡 A Regra de Ouro (cláusula de retenção do Cofre Digital) será injetada automaticamente no final do documento.

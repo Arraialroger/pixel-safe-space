@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import DOMPurify from "dompurify";
 import { Separator } from "@/components/ui/separator";
 
 type ContractDocProps = {
@@ -300,7 +301,7 @@ function CustomClauses({
     <>
       {customContractText ? (
         <section className="mb-6">
-          <div className="text-sm leading-relaxed"><ReactMarkdown>{customContractText}</ReactMarkdown></div>
+          <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(customContractText) }} />
         </section>
       ) : (
         <section className="mb-6">
