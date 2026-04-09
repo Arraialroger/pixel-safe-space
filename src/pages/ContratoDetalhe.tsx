@@ -61,7 +61,8 @@ export default function ContratoDetalhe() {
   const [finalDeliverableUrl, setFinalDeliverableUrl] = useState<string | null>(null);
   const [isFullyPaid, setIsFullyPaid] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [contractTemplate, setContractTemplate] = useState<"shield" | "dynamic" | "friendly">("dynamic");
+  const [contractTemplate, setContractTemplate] = useState<"shield" | "dynamic" | "friendly" | "custom">("dynamic");
+  const [customContractText, setCustomContractText] = useState("");
 
   const contractLink = `${window.location.origin}/c/${id}`;
   const isDraft = status === "draft";
@@ -101,6 +102,7 @@ export default function ContratoDetalhe() {
       setFinalDeliverableUrl(data.final_deliverable_url);
       setIsFullyPaid(data.is_fully_paid ?? false);
       setContractTemplate((data as any).contract_template ?? "dynamic");
+      setCustomContractText((data as any).custom_contract_text ?? "");
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: workspaceId });
       if (wsData && wsData.length > 0) {
         const w = wsData[0];
@@ -126,6 +128,7 @@ export default function ContratoDetalhe() {
         deadline: deadline || null,
         payment_terms: paymentTerms || null,
         contract_template: contractTemplate,
+        custom_contract_text: contractTemplate === "custom" ? (customContractText || null) : null,
       })
       .eq("id", id);
     setSaving(false);
@@ -363,7 +366,7 @@ export default function ContratoDetalhe() {
               {isDraft && (
                 <div className="space-y-2">
                   <Label>Nível de Proteção</Label>
-                  <Select value={contractTemplate} onValueChange={(val) => setContractTemplate(val as "shield" | "dynamic" | "friendly")}>
+                  <Select value={contractTemplate} onValueChange={(val) => setContractTemplate(val as "shield" | "dynamic" | "friendly" | "custom")}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {Object.entries(templateConfig).map(([key, cfg]) => (
@@ -383,18 +386,38 @@ export default function ContratoDetalhe() {
                   )}
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="deliverables">Entregáveis (Cláusula 1)</Label>
-                <Textarea id="deliverables" value={deliverables} onChange={(e) => setDeliverables(e.target.value)} rows={6} placeholder="Descreva os entregáveis..." disabled={!isDraft} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="exclusions">Exclusões</Label>
-                <Textarea id="exclusions" value={exclusions} onChange={(e) => setExclusions(e.target.value)} rows={4} placeholder="O que está fora do escopo..." disabled={!isDraft} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="revisions">Regras de Revisão</Label>
-                <Textarea id="revisions" value={revisions} onChange={(e) => setRevisions(e.target.value)} rows={4} placeholder="Limites e regras de revisões..." disabled={!isDraft} />
-              </div>
+              {contractTemplate === "custom" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="custom_contract_text">Texto do Contrato</Label>
+                  <Textarea
+                    id="custom_contract_text"
+                    value={customContractText}
+                    onChange={(e) => setCustomContractText(e.target.value)}
+                    rows={16}
+                    placeholder="Cole aqui o texto do contrato exigido pelo cliente. A cláusula de proteção do Cofre Digital será adicionada automaticamente no final do documento."
+                    disabled={!isDraft}
+                    className="font-mono text-xs leading-relaxed"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    💡 A Regra de Ouro (cláusula de retenção do Cofre Digital) será injetada automaticamente no final do documento.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="deliverables">Entregáveis (Cláusula 1)</Label>
+                    <Textarea id="deliverables" value={deliverables} onChange={(e) => setDeliverables(e.target.value)} rows={6} placeholder="Descreva os entregáveis..." disabled={!isDraft} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exclusions">Exclusões</Label>
+                    <Textarea id="exclusions" value={exclusions} onChange={(e) => setExclusions(e.target.value)} rows={4} placeholder="O que está fora do escopo..." disabled={!isDraft} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="revisions">Regras de Revisão</Label>
+                    <Textarea id="revisions" value={revisions} onChange={(e) => setRevisions(e.target.value)} rows={4} placeholder="Limites e regras de revisões..." disabled={!isDraft} />
+                  </div>
+                </>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
@@ -469,6 +492,7 @@ export default function ContratoDetalhe() {
                 signedByEmail={signedByEmail}
                 signedAt={signedAt}
                 template={contractTemplate}
+                customContractText={customContractText || null}
               />
             </CardContent>
           </Card>

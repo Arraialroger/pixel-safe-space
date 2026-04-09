@@ -28,6 +28,12 @@ export const templateConfig: Record<string, { label: string; icon: string; descr
     description: "Termo rápido e acessível. Menos fricção, mais conversão.",
     useCase: "Arte avulsa, banner ou post. Valor até R$ 1.000. Cliente pessoa física.",
   },
+  custom: {
+    label: "Personalizado (Texto Livre)",
+    icon: "📄",
+    description: "Cole o contrato exigido pelo seu cliente. A nossa trava de segurança será adicionada no final.",
+    useCase: "Cliente corporativo com contrato próprio. Departamento jurídico exige modelo da empresa.",
+  },
 };
 
 export const execStatusConfig: Record<string, { label: string; className: string }> = {
