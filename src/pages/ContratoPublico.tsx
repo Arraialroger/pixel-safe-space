@@ -186,7 +186,7 @@ export default function ContratoPublico() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, down_payment, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, final_deliverable_url, is_fully_paid, contract_template, clients(name, document, company, address)")
+        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, down_payment, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, final_deliverable_url, is_fully_paid, contract_template, custom_contract_text, clients(name, document, company, address)")
         .eq("id", id)
         .maybeSingle();
 
@@ -346,6 +346,7 @@ export default function ContratoPublico() {
             signedByEmail={contract.signed_by_email}
             signedAt={contract.signed_at}
             template={contract.contract_template}
+            customContractText={contract.custom_contract_text}
           />
         </div>
 
