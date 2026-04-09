@@ -47,7 +47,8 @@ type ContractData = {
   signed_at: string | null;
   final_deliverable_url: string | null;
   is_fully_paid: boolean;
-  contract_template: "shield" | "dynamic" | "friendly";
+  contract_template: "shield" | "dynamic" | "friendly" | "custom";
+  custom_contract_text: string | null;
   client: {
     name: string;
     document: string | null;
