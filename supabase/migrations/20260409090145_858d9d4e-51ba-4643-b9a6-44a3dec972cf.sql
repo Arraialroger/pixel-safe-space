@@ -1,0 +1,1 @@
+ALTER TABLE public.contracts ADD COLUMN custom_contract_text TEXT;

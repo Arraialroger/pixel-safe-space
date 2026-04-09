@@ -66,6 +66,7 @@ export type Database = {
           content_revisions: string | null
           contract_template: string
           created_at: string
+          custom_contract_text: string | null
           deadline: string | null
           down_payment: number | null
           execution_status: string
@@ -89,6 +90,7 @@ export type Database = {
           content_revisions?: string | null
           contract_template?: string
           created_at?: string
+          custom_contract_text?: string | null
           deadline?: string | null
           down_payment?: number | null
           execution_status?: string
@@ -112,6 +114,7 @@ export type Database = {
           content_revisions?: string | null
           contract_template?: string
           created_at?: string
+          custom_contract_text?: string | null
           deadline?: string | null
           down_payment?: number | null
           execution_status?: string
