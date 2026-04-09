@@ -1,31 +1,66 @@
 
 
-# Gestao de Contratos Pre-Assinatura — Reverter e Excluir
+# Rich Text Editor para Template Personalizado
 
-## Analise
+## Resumo
 
-A abordagem proposta esta correta. Concordo integralmente com a estrategia:
+Substituir a `<Textarea>` simples por um editor WYSIWYG usando **TipTap** (baseado em ProseMirror, leve, headless, perfeito para React/Vite). O conteudo sera armazenado como HTML na mesma coluna `custom_contract_text`.
 
-- **Reverter para Rascunho**: Logica pura de frontend, um `update` de `status` para `draft`. Preserva o ID/link, zero impacto na maquina de estados financeira.
-- **Excluir Contrato**: Um `delete` com guard estrito (`draft` ou `pending_signature` apenas). Seguro porque RLS ja permite delete para workspace members, e a restricao visual/logica no frontend impede exclusao de contratos assinados.
+## Porque TipTap
 
-**Uma sugestao adicional**: Ao reverter para rascunho, limpar tambem `signed_by_name`, `signed_by_email` e `signed_at` (caso existam residuos de testes), garantindo um estado limpo.
+- Headless e composavel — integra-se naturalmente com Tailwind/Shadcn
+- Preserva formatacao ao colar do Word/Google Docs (extensao `@tiptap/extension-paste`)
+- Sem dependencias pesadas (React Quill depende do Quill legacy)
+- Gera HTML limpo que pode ser sanitizado com DOMPurify
 
 ## Alteracoes
 
-### `src/pages/ContratoDetalhe.tsx`
+### 1. Instalar dependencias
 
-1. **Botao "Reverter para Rascunho"**: Visivel apenas quando `status === 'pending_signature'`. Executa `update({ status: 'draft' })` e atualiza o estado local.
+```
+@tiptap/react @tiptap/starter-kit @tiptap/extension-underline dompurify
+@types/dompurify (dev)
+```
 
-2. **Botao "Excluir Contrato"**: Icone de lixeira, visivel apenas quando `status === 'draft' || status === 'pending_signature'`. Abre um `AlertDialog` de confirmacao com texto claro sobre a acao irreversivel. Ao confirmar, executa `delete().eq('id', id)` e redireciona para `/contratos`.
+O `starter-kit` inclui Bold, Italic, Headings, Lists, History (undo/redo).
 
-3. **Posicionamento na UI**: Ambos os botoes ficam na barra superior (ao lado dos badges de status), seguindo o padrao visual existente. O botao de excluir usa `variant="destructive"` ou `variant="ghost"` com cor vermelha.
+### 2. Criar componente `src/components/contratos/RichTextEditor.tsx`
 
-## Resumo de arquivos
+- Editor TipTap com barra de ferramentas: **Negrito**, **Italico**, **Sublinhado**, **H1/H2/H3**, **Lista ordenada/nao-ordenada**
+- Estilizado com Tailwind para combinar com o tema escuro existente
+- Props: `content: string`, `onChange: (html: string) => void`, `disabled?: boolean`
+- O editor recebe HTML e emite HTML via `onUpdate`
+
+### 3. Atualizar `src/pages/ContratoDetalhe.tsx`
+
+- Substituir a `<Textarea>` (linhas 392-399) pelo novo `<RichTextEditor>`
+- `customContractText` continua como string (agora HTML em vez de markdown)
+- O `handleSave` ja grava na coluna `custom_contract_text` sem alteracoes
+
+### 4. Atualizar `src/components/contratos/ContratoDocumento.tsx`
+
+- No `CustomClauses`, substituir `<ReactMarkdown>{customContractText}</ReactMarkdown>` por renderizacao HTML sanitizada com DOMPurify:
+  ```tsx
+  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(customContractText) }} />
+  ```
+- A Regra de Ouro permanece inalterada no final
+
+### 5. Atualizar `src/pages/ContratoPublico.tsx`
+
+- Mesma logica: o `ContratoDocumento` ja recebe `customContractText` e a alteracao no renderizador (passo 4) cobre ambos os contextos
+
+## Retrocompatibilidade
+
+Contratos existentes com texto em markdown puro continuarao a renderizar — o DOMPurify passa texto simples sem alteracoes, e tags markdown serao exibidas como texto. Para contratos futuros, o conteudo sera HTML rico.
+
+## Arquivos
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/pages/ContratoDetalhe.tsx` | Adicionar handlers `handleRevertToDraft` e `handleDelete` + AlertDialog de confirmacao + botoes condicionais |
+| `package.json` | Adicionar tiptap + dompurify |
+| `src/components/contratos/RichTextEditor.tsx` | Novo componente |
+| `src/pages/ContratoDetalhe.tsx` | Substituir Textarea pelo RichTextEditor |
+| `src/components/contratos/ContratoDocumento.tsx` | Renderizar HTML sanitizado em vez de ReactMarkdown |
 
-Zero alteracoes no banco de dados — RLS de delete ja existe para workspace members.
+Zero alteracoes no banco de dados.
 
