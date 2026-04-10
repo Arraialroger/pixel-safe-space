@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Copy, Download, Loader2, MessageCircle, RotateCcw, Save, Send, Trash2, Upload } from "lucide-react";
 import {
@@ -20,7 +20,9 @@ import {
 import { Label } from "@/components/ui/label";
 import RichTextEditor from "@/components/contratos/RichTextEditor";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
+import ContratoPDFView from "@/components/contratos/ContratoPDFView";
 import { contractStatusConfig, execStatusConfig, templateConfig } from "@/lib/contract-utils";
+import { exportContractPdf } from "@/lib/pdf-export";
 
 type WorkspaceDoc = {
   name: string;
@@ -65,8 +67,22 @@ export default function ContratoDetalhe() {
   const [contractTemplate, setContractTemplate] = useState<"shield" | "dynamic" | "friendly" | "custom">("dynamic");
   const [customContractText, setCustomContractText] = useState("");
 
+  const pdfRef = useRef<HTMLDivElement>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
   const contractLink = `${window.location.origin}/c/${id}`;
   const isDraft = status === "draft";
+
+  const handleExportPdf = async () => {
+    if (!pdfRef.current) return;
+    setExportingPdf(true);
+    try {
+      await exportContractPdf(pdfRef.current, clientName);
+    } catch {
+      toast({ title: "Erro ao gerar PDF", variant: "destructive" });
+    }
+    setExportingPdf(false);
+  };
 
   useEffect(() => {
     if (!workspaceId || !id) return;
@@ -322,6 +338,9 @@ export default function ContratoDetalhe() {
               </Button>
             </a>
           )}
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleExportPdf} disabled={exportingPdf} title="Baixar PDF">
+            {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          </Button>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink} title="Copiar link">
             <Copy className="h-4 w-4" />
           </Button>
@@ -566,6 +585,27 @@ export default function ContratoDetalhe() {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Off-screen PDF renderer */}
+      <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+        <ContratoPDFView
+          ref={pdfRef}
+          workspace={wsDoc}
+          client={clientData}
+          deliverables={deliverables || null}
+          exclusions={exclusions || null}
+          revisions={revisions || null}
+          paymentValue={paymentValue ? Number(paymentValue) : null}
+          downPayment={downPayment ? Number(downPayment) : null}
+          deadline={deadline || null}
+          paymentTerms={paymentTerms || null}
+          signedByName={signedByName}
+          signedByEmail={signedByEmail}
+          signedAt={signedAt}
+          template={contractTemplate}
+          customContractText={customContractText || null}
+        />
+      </div>
     </div>
   );
 }

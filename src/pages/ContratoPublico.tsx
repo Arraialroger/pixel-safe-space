@@ -21,7 +21,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
+import ContratoPDFView from "@/components/contratos/ContratoPDFView";
 import { formatCurrency } from "@/lib/contract-utils";
+import { exportContractPdf } from "@/lib/pdf-export";
 
 const signSchema = z.object({
   name: z.string().trim().min(3, "Nome deve ter pelo menos 3 caracteres").max(200),
@@ -82,7 +84,9 @@ export default function ContratoPublico() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [pollProgress, setPollProgress] = useState(0);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const pollingRef = useRef(false);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<SignForm>({
     resolver: zodResolver(signSchema),
@@ -300,6 +304,17 @@ export default function ContratoPublico() {
     return data.publicUrl;
   };
 
+  const handleExportPdf = async () => {
+    if (!pdfRef.current || !contract) return;
+    setExportingPdf(true);
+    try {
+      await exportContractPdf(pdfRef.current, contract.client.name);
+    } catch {
+      toast({ title: "Erro ao gerar PDF", variant: "destructive" });
+    }
+    setExportingPdf(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -350,6 +365,14 @@ export default function ContratoPublico() {
             template={contract.contract_template}
             customContractText={contract.custom_contract_text}
           />
+        </div>
+
+        {/* Download PDF button */}
+        <div className="flex justify-center my-6">
+          <Button variant="outline" size="lg" className="gap-2" onClick={handleExportPdf} disabled={exportingPdf}>
+            {exportingPdf ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+            Baixar Contrato (PDF)
+          </Button>
         </div>
 
         <Separator className="my-8 bg-white/10" />
@@ -590,6 +613,27 @@ export default function ContratoPublico() {
             Gerado digitalmente e protegido por PixelSafe
           </p>
         )}
+      </div>
+
+      {/* Off-screen PDF renderer */}
+      <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+        <ContratoPDFView
+          ref={pdfRef}
+          workspace={workspace ? { name: workspace.name, logo_url: workspace.logo_url, company_document: workspace.company_document, company_address: workspace.company_address } : null}
+          client={contract.client}
+          deliverables={contract.content_deliverables}
+          exclusions={contract.content_exclusions}
+          revisions={contract.content_revisions}
+          paymentValue={contract.payment_value}
+          downPayment={contract.down_payment}
+          deadline={contract.deadline}
+          paymentTerms={contract.payment_terms}
+          signedByName={contract.signed_by_name}
+          signedByEmail={contract.signed_by_email}
+          signedAt={contract.signed_at}
+          template={contract.contract_template}
+          customContractText={contract.custom_contract_text}
+        />
       </div>
     </div>
   );
