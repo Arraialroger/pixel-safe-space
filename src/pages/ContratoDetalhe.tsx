@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Copy, Download, Loader2, MessageCircle, RotateCcw, Save, Send, Trash2, Upload } from "lucide-react";
 import {
@@ -20,7 +20,9 @@ import {
 import { Label } from "@/components/ui/label";
 import RichTextEditor from "@/components/contratos/RichTextEditor";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
+import ContratoPDFView from "@/components/contratos/ContratoPDFView";
 import { contractStatusConfig, execStatusConfig, templateConfig } from "@/lib/contract-utils";
+import { exportContractPdf } from "@/lib/pdf-export";
 
 type WorkspaceDoc = {
   name: string;
@@ -65,8 +67,22 @@ export default function ContratoDetalhe() {
   const [contractTemplate, setContractTemplate] = useState<"shield" | "dynamic" | "friendly" | "custom">("dynamic");
   const [customContractText, setCustomContractText] = useState("");
 
+  const pdfRef = useRef<HTMLDivElement>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
   const contractLink = `${window.location.origin}/c/${id}`;
   const isDraft = status === "draft";
+
+  const handleExportPdf = async () => {
+    if (!pdfRef.current) return;
+    setExportingPdf(true);
+    try {
+      await exportContractPdf(pdfRef.current, clientName);
+    } catch {
+      toast({ title: "Erro ao gerar PDF", variant: "destructive" });
+    }
+    setExportingPdf(false);
+  };
 
   useEffect(() => {
     if (!workspaceId || !id) return;
