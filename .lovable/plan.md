@@ -1,37 +1,52 @@
 
 
-# Fix: custom_contract_text not loaded in ContratoDetalhe
+# Exportacao em PDF dos Contratos
 
-## Root Cause
+## Resumo
 
-In `src/pages/ContratoDetalhe.tsx` line 76, the Supabase SELECT query lists every column explicitly but **omits `custom_contract_text`**:
+Criar um componente `ContratoPDFView` (print-friendly, fundo branco) que espelha o `ContratoDocumento` e usar `html2pdf.js` (ja instalado) para gerar o PDF no lado do cliente. Adicionar botoes de download em ambas as paginas.
 
-```
-.select("id, status, execution_status, content_deliverables, ... contract_template, clients(...)")
-```
+## Abordagem
 
-This means:
-1. On page load, `customContractText` is always set to `""` (the fallback on line 106)
-2. When the user saves, the empty string overwrites the real data in the database
-3. When `ContratoPublico.tsx` renders, the text is gone — only the Golden Rule clause appears
+Seguir o padrao existente em `ContratoPDF.tsx` (propostas): um componente com `forwardRef` renderizado off-screen com estilos de impressao (fundo branco, texto preto), capturado por `html2pdf.js`.
 
-`ContratoPublico.tsx` already fetches this column correctly (line 190). The renderer (`ContratoDocumento.tsx`) is also correct.
+## Alteracoes
 
-## Fix
+### 1. Criar `src/components/contratos/ContratoPDFView.tsx`
 
-### `src/pages/ContratoDetalhe.tsx` — Line 76
+Componente com `forwardRef` que replica a estrutura do `ContratoDocumento` mas com estilos de impressao:
+- Fundo branco, texto preto/cinza escuro
+- Tipografia `font-sans`, tamanho `13px`
+- Bordas e separadores em cinza claro
+- Suporta todos os 4 templates (shield, dynamic, friendly, custom)
+- Renderiza a assinatura digital quando presente
+- Recebe as mesmas props que `ContratoDocumento`
 
-Add `custom_contract_text` to the SELECT string:
+### 2. Criar `src/lib/pdf-export.ts`
 
-```
-.select("id, status, execution_status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, down_payment, signed_by_name, signed_by_email, signed_at, final_deliverable_url, is_fully_paid, contract_template, custom_contract_text, clients(name, phone, document, company, address)")
-```
+Funcao utilitaria `exportContractPdf(element: HTMLElement, clientName: string)` que:
+- Importa `html2pdf.js` dinamicamente
+- Configura: A4, margens, qualidade de imagem, quebras de pagina
+- Gera o download com nome `contrato-{clientName}.pdf`
 
-That's it — a single comma-separated field addition. No other files need changes.
+### 3. Atualizar `src/pages/ContratoDetalhe.tsx`
 
-## Files
+- Adicionar `useRef` para o componente PDF off-screen
+- Renderizar `<ContratoPDFView ref={pdfRef} ... />` com `position: absolute; left: -9999px` (invisivel mas no DOM)
+- Adicionar botao "Baixar PDF" (icone Download) no header, ao lado dos botoes existentes (linha ~325)
 
-| File | Change |
-|------|--------|
-| `src/pages/ContratoDetalhe.tsx` | Add `custom_contract_text` to the SELECT query on line 76 |
+### 4. Atualizar `src/pages/ContratoPublico.tsx`
+
+- Mesmo padrao: ref + componente off-screen + botao "Baixar Contrato (PDF)" proeminente apos o documento
+
+## Arquivos
+
+| Arquivo | Tipo |
+|---------|------|
+| `src/components/contratos/ContratoPDFView.tsx` | Novo |
+| `src/lib/pdf-export.ts` | Novo |
+| `src/pages/ContratoDetalhe.tsx` | Editar — botao + ref + componente off-screen |
+| `src/pages/ContratoPublico.tsx` | Editar — botao + ref + componente off-screen |
+
+Zero alteracoes no banco de dados. Zero dependencias novas (`html2pdf.js` ja esta instalado).
 
