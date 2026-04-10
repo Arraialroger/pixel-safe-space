@@ -586,5 +586,27 @@ export default function ContratoDetalhe() {
         )}
       </Tabs>
     </div>
+
+      {/* Off-screen PDF renderer */}
+      <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+        <ContratoPDFView
+          ref={pdfRef}
+          workspace={wsDoc}
+          client={clientData}
+          deliverables={deliverables || null}
+          exclusions={exclusions || null}
+          revisions={revisions || null}
+          paymentValue={paymentValue ? Number(paymentValue) : null}
+          downPayment={downPayment ? Number(downPayment) : null}
+          deadline={deadline || null}
+          paymentTerms={paymentTerms || null}
+          signedByName={signedByName}
+          signedByEmail={signedByEmail}
+          signedAt={signedAt}
+          template={contractTemplate}
+          customContractText={customContractText || null}
+        />
+      </div>
+    </div>
   );
 }
