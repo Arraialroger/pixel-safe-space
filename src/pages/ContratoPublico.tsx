@@ -21,7 +21,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
+import ContratoPDFView from "@/components/contratos/ContratoPDFView";
 import { formatCurrency } from "@/lib/contract-utils";
+import { exportContractPdf } from "@/lib/pdf-export";
 
 const signSchema = z.object({
   name: z.string().trim().min(3, "Nome deve ter pelo menos 3 caracteres").max(200),
