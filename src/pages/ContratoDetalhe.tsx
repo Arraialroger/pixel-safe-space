@@ -585,7 +585,6 @@ export default function ContratoDetalhe() {
           </TabsContent>
         )}
       </Tabs>
-    </div>
 
       {/* Off-screen PDF renderer */}
       <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
