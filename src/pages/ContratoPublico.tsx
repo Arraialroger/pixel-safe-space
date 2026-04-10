@@ -84,7 +84,9 @@ export default function ContratoPublico() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [pollProgress, setPollProgress] = useState(0);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const pollingRef = useRef(false);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<SignForm>({
     resolver: zodResolver(signSchema),
@@ -300,6 +302,17 @@ export default function ContratoPublico() {
   const getPublicUrl = (path: string) => {
     const { data } = supabase.storage.from("vault").getPublicUrl(path);
     return data.publicUrl;
+  };
+
+  const handleExportPdf = async () => {
+    if (!pdfRef.current || !contract) return;
+    setExportingPdf(true);
+    try {
+      await exportContractPdf(pdfRef.current, contract.client.name);
+    } catch {
+      toast({ title: "Erro ao gerar PDF", variant: "destructive" });
+    }
+    setExportingPdf(false);
   };
 
   if (loading) {
