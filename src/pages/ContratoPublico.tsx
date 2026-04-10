@@ -614,7 +614,6 @@ export default function ContratoPublico() {
           </p>
         )}
       </div>
-    </div>
 
       {/* Off-screen PDF renderer */}
       <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
