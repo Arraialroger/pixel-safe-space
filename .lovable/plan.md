@@ -1,66 +1,37 @@
 
 
-# Rich Text Editor para Template Personalizado
+# Fix: custom_contract_text not loaded in ContratoDetalhe
 
-## Resumo
+## Root Cause
 
-Substituir a `<Textarea>` simples por um editor WYSIWYG usando **TipTap** (baseado em ProseMirror, leve, headless, perfeito para React/Vite). O conteudo sera armazenado como HTML na mesma coluna `custom_contract_text`.
-
-## Porque TipTap
-
-- Headless e composavel — integra-se naturalmente com Tailwind/Shadcn
-- Preserva formatacao ao colar do Word/Google Docs (extensao `@tiptap/extension-paste`)
-- Sem dependencias pesadas (React Quill depende do Quill legacy)
-- Gera HTML limpo que pode ser sanitizado com DOMPurify
-
-## Alteracoes
-
-### 1. Instalar dependencias
+In `src/pages/ContratoDetalhe.tsx` line 76, the Supabase SELECT query lists every column explicitly but **omits `custom_contract_text`**:
 
 ```
-@tiptap/react @tiptap/starter-kit @tiptap/extension-underline dompurify
-@types/dompurify (dev)
+.select("id, status, execution_status, content_deliverables, ... contract_template, clients(...)")
 ```
 
-O `starter-kit` inclui Bold, Italic, Headings, Lists, History (undo/redo).
+This means:
+1. On page load, `customContractText` is always set to `""` (the fallback on line 106)
+2. When the user saves, the empty string overwrites the real data in the database
+3. When `ContratoPublico.tsx` renders, the text is gone — only the Golden Rule clause appears
 
-### 2. Criar componente `src/components/contratos/RichTextEditor.tsx`
+`ContratoPublico.tsx` already fetches this column correctly (line 190). The renderer (`ContratoDocumento.tsx`) is also correct.
 
-- Editor TipTap com barra de ferramentas: **Negrito**, **Italico**, **Sublinhado**, **H1/H2/H3**, **Lista ordenada/nao-ordenada**
-- Estilizado com Tailwind para combinar com o tema escuro existente
-- Props: `content: string`, `onChange: (html: string) => void`, `disabled?: boolean`
-- O editor recebe HTML e emite HTML via `onUpdate`
+## Fix
 
-### 3. Atualizar `src/pages/ContratoDetalhe.tsx`
+### `src/pages/ContratoDetalhe.tsx` — Line 76
 
-- Substituir a `<Textarea>` (linhas 392-399) pelo novo `<RichTextEditor>`
-- `customContractText` continua como string (agora HTML em vez de markdown)
-- O `handleSave` ja grava na coluna `custom_contract_text` sem alteracoes
+Add `custom_contract_text` to the SELECT string:
 
-### 4. Atualizar `src/components/contratos/ContratoDocumento.tsx`
+```
+.select("id, status, execution_status, content_deliverables, content_exclusions, content_revisions, payment_value, payment_link, deadline, payment_terms, down_payment, signed_by_name, signed_by_email, signed_at, final_deliverable_url, is_fully_paid, contract_template, custom_contract_text, clients(name, phone, document, company, address)")
+```
 
-- No `CustomClauses`, substituir `<ReactMarkdown>{customContractText}</ReactMarkdown>` por renderizacao HTML sanitizada com DOMPurify:
-  ```tsx
-  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(customContractText) }} />
-  ```
-- A Regra de Ouro permanece inalterada no final
+That's it — a single comma-separated field addition. No other files need changes.
 
-### 5. Atualizar `src/pages/ContratoPublico.tsx`
+## Files
 
-- Mesma logica: o `ContratoDocumento` ja recebe `customContractText` e a alteracao no renderizador (passo 4) cobre ambos os contextos
-
-## Retrocompatibilidade
-
-Contratos existentes com texto em markdown puro continuarao a renderizar — o DOMPurify passa texto simples sem alteracoes, e tags markdown serao exibidas como texto. Para contratos futuros, o conteudo sera HTML rico.
-
-## Arquivos
-
-| Arquivo | Alteracao |
-|---------|-----------|
-| `package.json` | Adicionar tiptap + dompurify |
-| `src/components/contratos/RichTextEditor.tsx` | Novo componente |
-| `src/pages/ContratoDetalhe.tsx` | Substituir Textarea pelo RichTextEditor |
-| `src/components/contratos/ContratoDocumento.tsx` | Renderizar HTML sanitizado em vez de ReactMarkdown |
-
-Zero alteracoes no banco de dados.
+| File | Change |
+|------|--------|
+| `src/pages/ContratoDetalhe.tsx` | Add `custom_contract_text` to the SELECT query on line 76 |
 
