@@ -367,6 +367,14 @@ export default function ContratoPublico() {
           />
         </div>
 
+        {/* Download PDF button */}
+        <div className="flex justify-center my-6">
+          <Button variant="outline" size="lg" className="gap-2" onClick={handleExportPdf} disabled={exportingPdf}>
+            {exportingPdf ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+            Baixar Contrato (PDF)
+          </Button>
+        </div>
+
         <Separator className="my-8 bg-white/10" />
 
         {/* Payment Verification Polling UI */}
