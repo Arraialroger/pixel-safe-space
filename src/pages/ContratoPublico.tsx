@@ -615,5 +615,27 @@ export default function ContratoPublico() {
         )}
       </div>
     </div>
+
+      {/* Off-screen PDF renderer */}
+      <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+        <ContratoPDFView
+          ref={pdfRef}
+          workspace={workspace ? { name: workspace.name, logo_url: workspace.logo_url, company_document: workspace.company_document, company_address: workspace.company_address } : null}
+          client={contract.client}
+          deliverables={contract.content_deliverables}
+          exclusions={contract.content_exclusions}
+          revisions={contract.content_revisions}
+          paymentValue={contract.payment_value}
+          downPayment={contract.down_payment}
+          deadline={contract.deadline}
+          paymentTerms={contract.payment_terms}
+          signedByName={contract.signed_by_name}
+          signedByEmail={contract.signed_by_email}
+          signedAt={contract.signed_at}
+          template={contract.contract_template}
+          customContractText={contract.custom_contract_text}
+        />
+      </div>
+    </div>
   );
 }
