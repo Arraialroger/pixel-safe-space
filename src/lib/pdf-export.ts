@@ -11,15 +11,17 @@ export async function exportContractPdf(element: HTMLElement, clientName: string
 
   const filename = `contrato-${sanitized || "documento"}.pdf`;
 
+  const opts: Record<string, unknown> = {
+    margin: [12, 14, 12, 14],
+    filename,
+    image: { type: "jpeg", quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+  };
+
   return html2pdf()
-    .set({
-      margin: [12, 14, 12, 14],
-      filename,
-      image: { type: "jpeg", quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-    })
+    .set(opts)
     .from(element)
     .save();
 }
