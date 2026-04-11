@@ -1,52 +1,70 @@
 
 
-# Exportacao em PDF dos Contratos
+# Fix: Normalizar estilos do Template Personalizado no PDF
 
-## Resumo
+## Problema
 
-Criar um componente `ContratoPDFView` (print-friendly, fundo branco) que espelha o `ContratoDocumento` e usar `html2pdf.js` (ja instalado) para gerar o PDF no lado do cliente. Adicionar botoes de download em ambas as paginas.
+O `CustomClausesPDF` injeta o HTML do TipTap via `dangerouslySetInnerHTML` com apenas `markdownStyle` no wrapper — mas os elementos internos (`h1`, `h2`, `h3`, `p`, `ul`, `ol`, `li`, `strong`, `em`, `u`) herdam os estilos default do browser, resultando em fontes inconsistentes, casing errado e espaço em branco no topo.
 
-## Abordagem
+## Solução
 
-Seguir o padrao existente em `ContratoPDF.tsx` (propostas): um componente com `forwardRef` renderizado off-screen com estilos de impressao (fundo branco, texto preto), capturado por `html2pdf.js`.
+Adicionar um objeto de estilo CSS normalizado (inline style sheet) ao wrapper do conteúdo custom que force todos os elementos HTML gerados pelo TipTap a seguirem o mesmo padrão visual dos templates fixos.
 
-## Alteracoes
+## Alterações
 
-### 1. Criar `src/components/contratos/ContratoPDFView.tsx`
+### `src/components/contratos/ContratoPDFView.tsx`
 
-Componente com `forwardRef` que replica a estrutura do `ContratoDocumento` mas com estilos de impressao:
-- Fundo branco, texto preto/cinza escuro
-- Tipografia `font-sans`, tamanho `13px`
-- Bordas e separadores em cinza claro
-- Suporta todos os 4 templates (shield, dynamic, friendly, custom)
-- Renderiza a assinatura digital quando presente
-- Recebe as mesmas props que `ContratoDocumento`
+1. **Criar um style tag inline** dentro do wrapper do custom content que normalize:
+   - `h1` → mesmo estilo de `h2Style` (14px, bold, uppercase, letter-spacing)
+   - `h2`, `h3` → 14px bold uppercase
+   - `p` → 13px, line-height 1.65, color #333
+   - `ul`, `ol` → margin/padding consistente, 13px
+   - `li` → 13px, line-height 1.65
+   - `strong`, `em`, `u` → herdam font-size
+   - Margin-top do primeiro elemento filho → 0 (elimina espaço em branco no topo)
 
-### 2. Criar `src/lib/pdf-export.ts`
+2. **Técnica**: Usar um `<style>` tag scoped via uma classe CSS única (e.g., `.pdf-custom-content`) dentro do div, já que inline styles não conseguem atingir elementos filhos gerados por `dangerouslySetInnerHTML`.
 
-Funcao utilitaria `exportContractPdf(element: HTMLElement, clientName: string)` que:
-- Importa `html2pdf.js` dinamicamente
-- Configura: A4, margens, qualidade de imagem, quebras de pagina
-- Gera o download com nome `contrato-{clientName}.pdf`
+Alternativamente, como `html2pdf.js` renderiza via `html2canvas` que lê computed styles, podemos envolver o HTML sanitizado num wrapper que aplica estilos via uma folha de estilo injetada no próprio componente.
 
-### 3. Atualizar `src/pages/ContratoDetalhe.tsx`
+```tsx
+const customContentNormalize = `
+  .pdf-custom-content * { font-family: 'DM Sans', 'Helvetica Neue', Arial, sans-serif; }
+  .pdf-custom-content h1, .pdf-custom-content h2, .pdf-custom-content h3 {
+    font-size: 14px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; margin: 0 0 8px 0; color: #111;
+  }
+  .pdf-custom-content p { font-size: 13px; line-height: 1.65; color: #333; margin: 0 0 8px 0; }
+  .pdf-custom-content ul, .pdf-custom-content ol { font-size: 13px; padding-left: 20px; margin: 0 0 8px 0; }
+  .pdf-custom-content li { font-size: 13px; line-height: 1.65; color: #333; }
+  .pdf-custom-content > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
+`;
+```
 
-- Adicionar `useRef` para o componente PDF off-screen
-- Renderizar `<ContratoPDFView ref={pdfRef} ... />` com `position: absolute; left: -9999px` (invisivel mas no DOM)
-- Adicionar botao "Baixar PDF" (icone Download) no header, ao lado dos botoes existentes (linha ~325)
+3. **Atualizar `CustomClausesPDF`** para injetar `<style>` + classe wrapper:
 
-### 4. Atualizar `src/pages/ContratoPublico.tsx`
-
-- Mesmo padrao: ref + componente off-screen + botao "Baixar Contrato (PDF)" proeminente apos o documento
+```tsx
+function CustomClausesPDF(...) {
+  return (
+    <>
+      {p.customContractText ? (
+        <div style={sectionStyle}>
+          <style>{customContentNormalize}</style>
+          <div className="pdf-custom-content" 
+               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(p.customContractText) }} />
+        </div>
+      ) : ...}
+      ...
+    </>
+  );
+}
+```
 
 ## Arquivos
 
-| Arquivo | Tipo |
-|---------|------|
-| `src/components/contratos/ContratoPDFView.tsx` | Novo |
-| `src/lib/pdf-export.ts` | Novo |
-| `src/pages/ContratoDetalhe.tsx` | Editar — botao + ref + componente off-screen |
-| `src/pages/ContratoPublico.tsx` | Editar — botao + ref + componente off-screen |
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/contratos/ContratoPDFView.tsx` | Adicionar estilos de normalização ao `CustomClausesPDF` |
 
-Zero alteracoes no banco de dados. Zero dependencias novas (`html2pdf.js` ja esta instalado).
+Zero dependências novas. Zero alterações no banco de dados.
 
