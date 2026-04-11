@@ -221,12 +221,25 @@ function FriendlyClausesPDF(p: Pick<ContratoPDFViewProps, "deliverables" | "excl
   );
 }
 
+const customContentNormalize = `
+  .pdf-custom-content * { font-family: 'DM Sans', 'Helvetica Neue', Arial, sans-serif; }
+  .pdf-custom-content h1, .pdf-custom-content h2, .pdf-custom-content h3 {
+    font-size: 14px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; margin: 0 0 8px 0; color: #111;
+  }
+  .pdf-custom-content p { font-size: 13px; line-height: 1.65; color: #333; margin: 0 0 8px 0; }
+  .pdf-custom-content ul, .pdf-custom-content ol { font-size: 13px; padding-left: 20px; margin: 0 0 8px 0; }
+  .pdf-custom-content li { font-size: 13px; line-height: 1.65; color: #333; }
+  .pdf-custom-content > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
+`;
+
 function CustomClausesPDF(p: Pick<ContratoPDFViewProps, "customContractText" | "paymentValue" | "downPayment" | "deadline" | "paymentTerms">) {
   return (
     <>
       {p.customContractText ? (
         <div style={sectionStyle}>
-          <div style={markdownStyle} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(p.customContractText) }} />
+          <style>{customContentNormalize}</style>
+          <div className="pdf-custom-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(p.customContractText) }} />
         </div>
       ) : (
         <div style={sectionStyle}><p style={italicMuted}>Nenhum texto de contrato foi inserido.</p></div>
