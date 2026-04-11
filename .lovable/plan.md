@@ -1,70 +1,33 @@
 
 
-# Fix: Normalizar estilos do Template Personalizado no PDF
+# Gerar Tech Spec V1.2 — Documentacao de Arquitetura
 
-## Problema
+## Resumo
 
-O `CustomClausesPDF` injeta o HTML do TipTap via `dangerouslySetInnerHTML` com apenas `markdownStyle` no wrapper — mas os elementos internos (`h1`, `h2`, `h3`, `p`, `ul`, `ol`, `li`, `strong`, `em`, `u`) herdam os estilos default do browser, resultando em fontes inconsistentes, casing errado e espaço em branco no topo.
+Criar o ficheiro `TECH_SPEC.md` na raiz do projeto com a especificacao tecnica completa V1.2, documentando todas as evolucoes do modulo de contratos: schema, dependencias, arquitetura de componentes, maquina de estados e a Regra de Ouro inviolavel.
 
-## Solução
+## Conteudo do Documento
 
-Adicionar um objeto de estilo CSS normalizado (inline style sheet) ao wrapper do conteúdo custom que force todos os elementos HTML gerados pelo TipTap a seguirem o mesmo padrão visual dos templates fixos.
+O Tech Spec V1.2 incluira:
 
-## Alterações
+1. **Visao Geral da Plataforma** — Stack tecnologico (React 18, Vite 5, Tailwind, Supabase, TanStack Query)
+2. **Schema do Banco de Dados** — Todas as 7 tabelas com colunas, incluindo as novas `contract_template` e `custom_contract_text`
+3. **Dependencias e Bibliotecas** — TipTap, DOMPurify, html2pdf.js, react-markdown, zod, react-hook-form
+4. **Arquitetura de Componentes do Contrato** — Separacao entre `ContratoDocumento` (tela) e `ContratoPDFView` (impressao), RichTextEditor, contract-utils
+5. **Templates Juridicos** — Os 4 niveis (Shield, Dynamic, Friendly, Custom) com descricao de cada um
+6. **Maquina de Estados** — Ciclo comercial (draft → paid) e ciclo de execucao (not_started → completed), regras de rollback e exclusao
+7. **Regra de Ouro (Inviolavel)** — Clausula de retencao do Cofre Digital documentada como requisito de engenharia permanente
+8. **Modulo de Pagamentos** — Integracao Asaas/Mercado Pago, payment_sessions, payment_events
+9. **SaaS Billing** — Paywall, planos, trial, white-label
+10. **Rotas e Navegacao** — Mapa completo de rotas protegidas e publicas
 
-### `src/components/contratos/ContratoPDFView.tsx`
+## Entrega
 
-1. **Criar um style tag inline** dentro do wrapper do custom content que normalize:
-   - `h1` → mesmo estilo de `h2Style` (14px, bold, uppercase, letter-spacing)
-   - `h2`, `h3` → 14px bold uppercase
-   - `p` → 13px, line-height 1.65, color #333
-   - `ul`, `ol` → margin/padding consistente, 13px
-   - `li` → 13px, line-height 1.65
-   - `strong`, `em`, `u` → herdam font-size
-   - Margin-top do primeiro elemento filho → 0 (elimina espaço em branco no topo)
-
-2. **Técnica**: Usar um `<style>` tag scoped via uma classe CSS única (e.g., `.pdf-custom-content`) dentro do div, já que inline styles não conseguem atingir elementos filhos gerados por `dangerouslySetInnerHTML`.
-
-Alternativamente, como `html2pdf.js` renderiza via `html2canvas` que lê computed styles, podemos envolver o HTML sanitizado num wrapper que aplica estilos via uma folha de estilo injetada no próprio componente.
-
-```tsx
-const customContentNormalize = `
-  .pdf-custom-content * { font-family: 'DM Sans', 'Helvetica Neue', Arial, sans-serif; }
-  .pdf-custom-content h1, .pdf-custom-content h2, .pdf-custom-content h3 {
-    font-size: 14px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.03em; margin: 0 0 8px 0; color: #111;
-  }
-  .pdf-custom-content p { font-size: 13px; line-height: 1.65; color: #333; margin: 0 0 8px 0; }
-  .pdf-custom-content ul, .pdf-custom-content ol { font-size: 13px; padding-left: 20px; margin: 0 0 8px 0; }
-  .pdf-custom-content li { font-size: 13px; line-height: 1.65; color: #333; }
-  .pdf-custom-content > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
-`;
-```
-
-3. **Atualizar `CustomClausesPDF`** para injetar `<style>` + classe wrapper:
-
-```tsx
-function CustomClausesPDF(...) {
-  return (
-    <>
-      {p.customContractText ? (
-        <div style={sectionStyle}>
-          <style>{customContentNormalize}</style>
-          <div className="pdf-custom-content" 
-               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(p.customContractText) }} />
-        </div>
-      ) : ...}
-      ...
-    </>
-  );
-}
-```
+Ficheiro unico `TECH_SPEC.md` gerado via script e guardado em `/mnt/documents/` para download + commit na raiz do projeto.
 
 ## Arquivos
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/contratos/ContratoPDFView.tsx` | Adicionar estilos de normalização ao `CustomClausesPDF` |
-
-Zero dependências novas. Zero alterações no banco de dados.
+| Arquivo | Tipo |
+|---------|------|
+| `TECH_SPEC.md` | Novo — raiz do projeto |
 
