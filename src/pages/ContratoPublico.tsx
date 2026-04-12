@@ -47,7 +47,7 @@ type ContractData = {
   signed_by_name: string | null;
   signed_by_email: string | null;
   signed_at: string | null;
-  final_deliverable_url: string | null;
+  has_deliverable: boolean;
   is_fully_paid: boolean;
   contract_template: "shield" | "dynamic" | "friendly" | "custom";
   custom_contract_text: string | null;
@@ -85,6 +85,8 @@ export default function ContratoPublico() {
   const [polling, setPolling] = useState(false);
   const [pollProgress, setPollProgress] = useState(0);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [deliverableUrl, setDeliverableUrl] = useState<string | null>(null);
+  const [loadingDeliverable, setLoadingDeliverable] = useState(false);
   const pollingRef = useRef(false);
   const pdfRef = useRef<HTMLDivElement>(null);
 
@@ -191,7 +193,7 @@ export default function ContratoPublico() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, down_payment, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, final_deliverable_url, is_fully_paid, contract_template, custom_contract_text, clients(name, document, company, address)")
+        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, down_payment, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, is_fully_paid, contract_template, custom_contract_text, final_deliverable_url, clients(name, document, company, address)")
         .eq("id", id)
         .maybeSingle();
 
@@ -215,7 +217,7 @@ export default function ContratoPublico() {
         signed_by_name: data.signed_by_name,
         signed_by_email: data.signed_by_email,
         signed_at: data.signed_at,
-        final_deliverable_url: data.final_deliverable_url,
+        has_deliverable: !!data.final_deliverable_url,
         is_fully_paid: data.is_fully_paid ?? false,
         contract_template: ((data as any).contract_template ?? "dynamic") as ContractData["contract_template"],
         custom_contract_text: (data as any).custom_contract_text ?? null,
@@ -234,7 +236,7 @@ export default function ContratoPublico() {
       if (contractData.status === "signed" && hasEntrance) {
         generatePaymentLink(contractData.id, "entrance");
       }
-      if ((contractData.status === "partially_paid" || (contractData.status === "signed" && !hasEntrance)) && contractData.final_deliverable_url && !contractData.is_fully_paid) {
+      if ((contractData.status === "partially_paid" || (contractData.status === "signed" && !hasEntrance)) && contractData.has_deliverable && !contractData.is_fully_paid) {
         generatePaymentLink(contractData.id, "balance");
       }
 
@@ -299,9 +301,29 @@ export default function ContratoPublico() {
     }
   };
 
-  const getPublicUrl = (path: string) => {
-    const { data } = supabase.storage.from("vault").getPublicUrl(path);
-    return data.publicUrl;
+  const fetchDeliverableUrl = async () => {
+    if (!contract?.id) return;
+    setLoadingDeliverable(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/get-deliverable-url`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contract_id: contract.id }),
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          setDeliverableUrl(data.url);
+        }
+      }
+    } catch {
+      // silently fail
+    }
+    setLoadingDeliverable(false);
   };
 
   const handleExportPdf = async () => {
@@ -406,7 +428,7 @@ export default function ContratoPublico() {
         )}
 
         {/* Manual check for balance after redirect */}
-        {showPollingFromRedirect && !polling && ['partially_paid', 'signed'].includes(contract.status) && !contract.is_fully_paid && contract.final_deliverable_url && (
+        {showPollingFromRedirect && !polling && ['partially_paid', 'signed'].includes(contract.status) && !contract.is_fully_paid && contract.has_deliverable && (
           <div className="mb-6">
             <Button
               variant="outline"
@@ -489,7 +511,7 @@ export default function ContratoPublico() {
                   </div>
                 ) : null}
               </>
-            ) : contract.final_deliverable_url && !contract.is_fully_paid ? (
+            ) : contract.has_deliverable && !contract.is_fully_paid ? (
               /* No entrance, deliverable ready — show balance payment */
               <div className="space-y-4">
                 <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 text-center space-y-4">
@@ -528,7 +550,7 @@ export default function ContratoPublico() {
         {/* Partially paid — Entrance received, project in progress */}
         {contract.status === "partially_paid" && (
           <div className="space-y-4">
-            {contract.final_deliverable_url && !contract.is_fully_paid ? (
+            {contract.has_deliverable && !contract.is_fully_paid ? (
               /* Deliverable uploaded, awaiting balance */
               <div className="space-y-4">
                 <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
@@ -577,18 +599,25 @@ export default function ContratoPublico() {
         {/* Paid / Fully paid scenarios */}
         {contract.status === "paid" && (
           <div className="space-y-4">
-            {contract.is_fully_paid && contract.final_deliverable_url ? (
+            {contract.is_fully_paid && contract.has_deliverable ? (
               <div className="space-y-4">
                 <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
                   <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-5 w-5" /> ✅ Projeto Quitado e Liberado!
                   </p>
                 </div>
-                <a href={getPublicUrl(contract.final_deliverable_url)} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
-                    <Download className="h-5 w-5" /> Baixar Arquivos Finais
+                {deliverableUrl ? (
+                  <a href={deliverableUrl} target="_blank" rel="noopener noreferrer" className="block">
+                    <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                      <Download className="h-5 w-5" /> Baixar Arquivos Finais
+                    </Button>
+                  </a>
+                ) : (
+                  <Button size="lg" className="w-full text-lg py-6 gap-3" onClick={fetchDeliverableUrl} disabled={loadingDeliverable}>
+                    {loadingDeliverable ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+                    {loadingDeliverable ? "Gerando link seguro..." : "Gerar Link de Download"}
                   </Button>
-                </a>
+                )}
               </div>
             ) : (
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">

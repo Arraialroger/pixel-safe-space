@@ -269,9 +269,40 @@ export default function ContratoDetalhe() {
     setUploading(false);
   };
 
-  const getPublicUrl = (path: string) => {
-    const { data } = supabase.storage.from("vault").getPublicUrl(path);
-    return data.publicUrl;
+  const fetchSignedUrl = async (contractId: string): Promise<string | null> => {
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/get-deliverable-url`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ contract_id: contractId }),
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        return data.url || null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleDownloadDeliverable = async () => {
+    if (!id) return;
+    const url = await fetchSignedUrl(id);
+    if (url) {
+      window.open(url, "_blank");
+    } else {
+      toast({ title: "Erro ao gerar link de download", variant: "destructive" });
+    }
   };
 
   if (loading) {
@@ -537,11 +568,9 @@ export default function ContratoDetalhe() {
                         </p>
                         <p className="text-xs text-muted-foreground truncate max-w-md">{finalDeliverableUrl.split("/").pop()}</p>
                       </div>
-                      <a href={getPublicUrl(finalDeliverableUrl)} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" variant="outline" className="gap-1">
+                      <Button size="sm" variant="outline" className="gap-1" onClick={handleDownloadDeliverable}>
                           <Download className="h-4 w-4" /> Baixar
-                        </Button>
-                      </a>
+                      </Button>
                     </div>
 
                     <div className="rounded-lg border border-white/10 bg-card/50 p-4 text-center space-y-2">
