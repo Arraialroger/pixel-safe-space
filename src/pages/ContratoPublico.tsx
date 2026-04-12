@@ -428,7 +428,7 @@ export default function ContratoPublico() {
         )}
 
         {/* Manual check for balance after redirect */}
-        {showPollingFromRedirect && !polling && ['partially_paid', 'signed'].includes(contract.status) && !contract.is_fully_paid && contract.final_deliverable_url && (
+        {showPollingFromRedirect && !polling && ['partially_paid', 'signed'].includes(contract.status) && !contract.is_fully_paid && contract.has_deliverable && (
           <div className="mb-6">
             <Button
               variant="outline"
@@ -511,7 +511,7 @@ export default function ContratoPublico() {
                   </div>
                 ) : null}
               </>
-            ) : contract.final_deliverable_url && !contract.is_fully_paid ? (
+            ) : contract.has_deliverable && !contract.is_fully_paid ? (
               /* No entrance, deliverable ready — show balance payment */
               <div className="space-y-4">
                 <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 text-center space-y-4">
@@ -550,7 +550,7 @@ export default function ContratoPublico() {
         {/* Partially paid — Entrance received, project in progress */}
         {contract.status === "partially_paid" && (
           <div className="space-y-4">
-            {contract.final_deliverable_url && !contract.is_fully_paid ? (
+            {contract.has_deliverable && !contract.is_fully_paid ? (
               /* Deliverable uploaded, awaiting balance */
               <div className="space-y-4">
                 <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
@@ -599,18 +599,25 @@ export default function ContratoPublico() {
         {/* Paid / Fully paid scenarios */}
         {contract.status === "paid" && (
           <div className="space-y-4">
-            {contract.is_fully_paid && contract.final_deliverable_url ? (
+            {contract.is_fully_paid && contract.has_deliverable ? (
               <div className="space-y-4">
                 <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
                   <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-5 w-5" /> ✅ Projeto Quitado e Liberado!
                   </p>
                 </div>
-                <a href={getPublicUrl(contract.final_deliverable_url)} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
-                    <Download className="h-5 w-5" /> Baixar Arquivos Finais
+                {deliverableUrl ? (
+                  <a href={deliverableUrl} target="_blank" rel="noopener noreferrer" className="block">
+                    <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                      <Download className="h-5 w-5" /> Baixar Arquivos Finais
+                    </Button>
+                  </a>
+                ) : (
+                  <Button size="lg" className="w-full text-lg py-6 gap-3" onClick={fetchDeliverableUrl} disabled={loadingDeliverable}>
+                    {loadingDeliverable ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+                    {loadingDeliverable ? "Gerando link seguro..." : "Gerar Link de Download"}
                   </Button>
-                </a>
+                )}
               </div>
             ) : (
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">
