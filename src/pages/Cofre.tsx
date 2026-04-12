@@ -210,12 +210,10 @@ export default function Cofre() {
                     <TableCell>{getFinancialBadge(item)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" asChild>
-                          <a href={getPublicUrl(item.final_deliverable_url)} target="_blank" rel="noopener noreferrer" title="Abrir">
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
+                        <Button variant="ghost" size="icon" onClick={() => handleOpen(item)} title="Abrir">
+                          <ExternalLink className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleCopy(item.final_deliverable_url)} title="Copiar link">
+                        <Button variant="ghost" size="icon" onClick={() => handleCopy(item)} title="Copiar link">
                           <Copy className="h-4 w-4" />
                         </Button>
                       </div>
