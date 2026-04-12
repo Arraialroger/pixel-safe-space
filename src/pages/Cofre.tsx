@@ -24,8 +24,30 @@ type VaultItem = {
   project_title: string | null;
 };
 
-function getPublicUrl(path: string) {
-  return supabase.storage.from("vault").getPublicUrl(path).data.publicUrl;
+async function fetchSignedUrl(contractId: string): Promise<string | null> {
+  try {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    const res = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/get-deliverable-url`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ contract_id: contractId }),
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      return data.url || null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function getFinancialKey(item: VaultItem): string {
@@ -101,9 +123,23 @@ export default function Cofre() {
     return <Badge variant="secondary">{item.status}</Badge>;
   }
 
-  function handleCopy(url: string) {
-    navigator.clipboard.writeText(getPublicUrl(url));
-    toast.success("Link copiado!");
+  async function handleOpen(item: VaultItem) {
+    const url = await fetchSignedUrl(item.id);
+    if (url) {
+      window.open(url, "_blank");
+    } else {
+      toast.error("Erro ao gerar link de download.");
+    }
+  }
+
+  async function handleCopy(item: VaultItem) {
+    const url = await fetchSignedUrl(item.id);
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copiado!");
+    } else {
+      toast.error("Erro ao gerar link.");
+    }
   }
 
   return (
