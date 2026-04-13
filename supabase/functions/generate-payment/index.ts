@@ -1,4 +1,4 @@
-// generate-payment v2.0 — with validation, session persistence and audit
+// generate-payment v3.0 — session-first architecture with session.id as external_reference
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
 
   try {
     const { contract_id, payment_type = "entrance" } = await req.json();
-    console.log(">>> generate-payment v2.0 called. contract_id:", contract_id, "payment_type:", payment_type);
+    console.log(">>> generate-payment v3.0 called. contract_id:", contract_id, "payment_type:", payment_type);
 
     if (!contract_id) {
       return error("contract_id is required", 400);
@@ -35,7 +35,6 @@ Deno.serve(async (req) => {
       return error("Contract not found", 404);
     }
 
-    // Already fully paid — no more links
     if (contract.is_fully_paid || contract.status === "paid") {
       console.log(">>> Contract already fully paid.");
       return error("Contract already fully paid", 400);
@@ -45,9 +44,7 @@ Deno.serve(async (req) => {
     const totalValue = Number(contract.payment_value) || 0;
     const hasEntrance = downPayment > 0;
 
-    // =====================================================
-    // VALIDATION: block incompatible payment types
-    // =====================================================
+    // Validation
     if (payment_type === "entrance" && !hasEntrance) {
       console.error(">>> Cannot generate entrance for contract without down_payment");
       return error("This contract has no entrance payment", 400);
@@ -64,12 +61,10 @@ Deno.serve(async (req) => {
     let itemTitle: string;
 
     if (payment_type === "balance" || !hasEntrance) {
-      // Balance payment OR full payment (no entrance)
       amount = hasEntrance ? totalValue - downPayment : totalValue;
       phase = "balance";
       itemTitle = hasEntrance ? "Saldo Final" : "Pagamento Total";
     } else {
-      // Entrance payment
       amount = downPayment;
       phase = "entrance";
       itemTitle = "Entrada";
@@ -95,12 +90,40 @@ Deno.serve(async (req) => {
       });
     }
 
-    const clientName = (contract as any).clients?.name ?? "Cliente";
+    // =====================================================
+    // CREATE PAYMENT SESSION FIRST (before MP preference)
+    // =====================================================
+    const { data: session, error: sessionError } = await supabase
+      .from("payment_sessions")
+      .insert({
+        contract_id,
+        provider: "mercado_pago",
+        phase,
+        expected_amount: amount,
+        external_reference: null, // will be self-referencing after insert
+        status: "pending",
+      })
+      .select("id")
+      .single();
 
-    // Build URLs
+    if (sessionError || !session) {
+      console.error(">>> Failed to create payment session:", sessionError);
+      return error("Failed to create payment session", 500);
+    }
+
+    // Update external_reference to the session's own ID
+    await supabase
+      .from("payment_sessions")
+      .update({ external_reference: session.id })
+      .eq("id", session.id);
+
+    console.log(">>> Payment session created. session.id:", session.id, "phase:", phase);
+
+    const clientName = (contract as any).clients?.name ?? "Cliente";
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/+$/, "") || "https://pixel-safe-space.lovable.app";
     const contractUrl = `${origin}/c/${contract_id}`;
-    const notificationUrl = `${supabaseUrl}/functions/v1/mp-webhook?contract_id=${contract_id}&type=${phase}`;
+    // notification_url now carries session_id for direct lookup
+    const notificationUrl = `${supabaseUrl}/functions/v1/mp-webhook?session_id=${session.id}`;
 
     const mpPayload = {
       items: [
@@ -112,7 +135,8 @@ Deno.serve(async (req) => {
         },
       ],
       payer: { name: clientName },
-      external_reference: contract_id,
+      // KEY CHANGE: external_reference is now the session UUID
+      external_reference: session.id,
       notification_url: notificationUrl,
       back_urls: {
         success: contractUrl,
@@ -124,7 +148,6 @@ Deno.serve(async (req) => {
 
     console.log(">>> PAYLOAD MP:", JSON.stringify(mpPayload));
 
-    // Create Mercado Pago preference
     const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
@@ -140,6 +163,8 @@ Deno.serve(async (req) => {
 
     if (!mpResponse.ok) {
       console.error(">>> MP API error:", mpResponse.status, mpResponseText);
+      // Mark session as failed
+      await supabase.from("payment_sessions").update({ status: "failed" }).eq("id", session.id);
       return new Response(JSON.stringify({ error: "mp_api_error", details: `Status ${mpResponse.status}` }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -149,25 +174,11 @@ Deno.serve(async (req) => {
     const mpData = JSON.parse(mpResponseText);
     console.log(">>> checkout_url:", mpData.init_point);
 
-    // =====================================================
-    // PERSIST PAYMENT SESSION
-    // =====================================================
-    const { error: sessionError } = await supabase.from("payment_sessions").insert({
-      contract_id,
-      provider: "mercado_pago",
-      phase,
-      expected_amount: amount,
-      preference_id: mpData.id || null,
-      external_reference: contract_id,
-      status: "pending",
-    });
-
-    if (sessionError) {
-      console.error(">>> Failed to create payment session:", sessionError);
-      // Non-blocking: still return checkout URL
-    } else {
-      console.log(">>> Payment session created for phase:", phase);
-    }
+    // Store preference_id on the session
+    await supabase
+      .from("payment_sessions")
+      .update({ preference_id: mpData.id || null })
+      .eq("id", session.id);
 
     return new Response(JSON.stringify({ checkout_url: mpData.init_point }), {
       status: 200,
