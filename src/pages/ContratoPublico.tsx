@@ -159,16 +159,13 @@ export default function ContratoPublico() {
     if (!id) return;
     setPolling(true);
     try {
-      const { data } = await supabase
-        .from("contracts")
-        .select("status, is_fully_paid")
-        .eq("id", id)
-        .maybeSingle();
+      const { data } = await supabase.rpc("get_public_contract_status", { _contract_id: id });
 
-      if (data) {
+      if (data && data.length > 0) {
+        const row = data[0];
         const statusChanged =
-          (data.status !== contract?.status) ||
-          (data.is_fully_paid === true && contract?.is_fully_paid === false);
+          (row.status !== contract?.status) ||
+          (row.is_fully_paid === true && contract?.is_fully_paid === false);
 
         if (statusChanged) {
           window.location.reload();
