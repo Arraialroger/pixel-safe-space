@@ -223,7 +223,7 @@ export default function ContratoPublico() {
       setContract(contractData);
 
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", {
-        _workspace_id: data.workspace_id,
+        _workspace_id: contractData.workspace_id,
       });
       if (wsData && wsData.length > 0) {
         setWorkspace(wsData[0] as WorkspaceInfo);
