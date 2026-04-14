@@ -119,16 +119,13 @@ export default function ContratoPublico() {
       }
 
       try {
-        const { data } = await supabase
-          .from("contracts")
-          .select("status, is_fully_paid")
-          .eq("id", contractId)
-          .maybeSingle();
+        const { data } = await supabase.rpc("get_public_contract_status", { _contract_id: contractId });
 
-        if (data) {
+        if (data && data.length > 0) {
+          const row = data[0];
           const statusChanged =
-            (data.status !== contract?.status) ||
-            (data.is_fully_paid === true && contract?.is_fully_paid === false);
+            (row.status !== contract?.status) ||
+            (row.is_fully_paid === true && contract?.is_fully_paid === false);
 
           if (statusChanged) {
             clearInterval(interval);
@@ -162,16 +159,13 @@ export default function ContratoPublico() {
     if (!id) return;
     setPolling(true);
     try {
-      const { data } = await supabase
-        .from("contracts")
-        .select("status, is_fully_paid")
-        .eq("id", id)
-        .maybeSingle();
+      const { data } = await supabase.rpc("get_public_contract_status", { _contract_id: id });
 
-      if (data) {
+      if (data && data.length > 0) {
+        const row = data[0];
         const statusChanged =
-          (data.status !== contract?.status) ||
-          (data.is_fully_paid === true && contract?.is_fully_paid === false);
+          (row.status !== contract?.status) ||
+          (row.is_fully_paid === true && contract?.is_fully_paid === false);
 
         if (statusChanged) {
           window.location.reload();
@@ -191,42 +185,39 @@ export default function ContratoPublico() {
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("contracts")
-        .select("id, status, content_deliverables, content_exclusions, content_revisions, payment_value, down_payment, payment_link, deadline, payment_terms, workspace_id, signed_by_name, signed_by_email, signed_at, is_fully_paid, contract_template, custom_contract_text, final_deliverable_url, clients(name, document, company, address)")
-        .eq("id", id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_public_contract", { _contract_id: id });
 
-      if (error || !data) {
+      if (error || !data || data.length === 0) {
         setLoading(false);
         return;
       }
 
+      const row = data[0];
       const contractData: ContractData = {
-        id: data.id,
-        status: data.status,
-        content_deliverables: data.content_deliverables,
-        content_exclusions: data.content_exclusions,
-        content_revisions: data.content_revisions,
-        payment_value: data.payment_value,
-        down_payment: data.down_payment,
-        payment_link: data.payment_link,
-        deadline: data.deadline,
-        payment_terms: data.payment_terms,
-        workspace_id: data.workspace_id,
-        signed_by_name: data.signed_by_name,
-        signed_by_email: data.signed_by_email,
-        signed_at: data.signed_at,
-        has_deliverable: !!data.final_deliverable_url,
-        is_fully_paid: data.is_fully_paid ?? false,
-        contract_template: ((data as any).contract_template ?? "dynamic") as ContractData["contract_template"],
-        custom_contract_text: (data as any).custom_contract_text ?? null,
-        client: data.clients ?? { name: "—", document: null, company: null, address: null },
+        id: row.id,
+        status: row.status,
+        content_deliverables: row.content_deliverables,
+        content_exclusions: row.content_exclusions,
+        content_revisions: row.content_revisions,
+        payment_value: row.payment_value,
+        down_payment: row.down_payment,
+        payment_link: row.payment_link,
+        deadline: row.deadline,
+        payment_terms: row.payment_terms,
+        workspace_id: row.workspace_id,
+        signed_by_name: row.signed_by_name,
+        signed_by_email: row.signed_by_email,
+        signed_at: row.signed_at ? String(row.signed_at) : null,
+        has_deliverable: row.has_deliverable ?? false,
+        is_fully_paid: row.is_fully_paid ?? false,
+        contract_template: (row.contract_template ?? "dynamic") as ContractData["contract_template"],
+        custom_contract_text: row.custom_contract_text ?? null,
+        client: { name: row.client_name ?? "—", document: row.client_document ?? null, company: row.client_company ?? null, address: row.client_address ?? null },
       };
       setContract(contractData);
 
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", {
-        _workspace_id: data.workspace_id,
+        _workspace_id: contractData.workspace_id,
       });
       if (wsData && wsData.length > 0) {
         setWorkspace(wsData[0] as WorkspaceInfo);
