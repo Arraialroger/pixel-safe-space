@@ -439,6 +439,51 @@ export type Database = {
         Returns: undefined
       }
       get_dashboard_metrics: { Args: { _workspace_id: string }; Returns: Json }
+      get_public_contract: {
+        Args: { _contract_id: string }
+        Returns: {
+          client_address: string
+          client_company: string
+          client_document: string
+          client_name: string
+          content_deliverables: string
+          content_exclusions: string
+          content_revisions: string
+          contract_template: string
+          custom_contract_text: string
+          deadline: string
+          down_payment: number
+          has_deliverable: boolean
+          id: string
+          is_fully_paid: boolean
+          payment_link: string
+          payment_terms: string
+          payment_value: number
+          signed_at: string
+          signed_by_email: string
+          signed_by_name: string
+          status: string
+          workspace_id: string
+        }[]
+      }
+      get_public_contract_status: {
+        Args: { _contract_id: string }
+        Returns: {
+          is_fully_paid: boolean
+          status: string
+        }[]
+      }
+      get_public_proposal: {
+        Args: { _proposal_id: string }
+        Returns: {
+          ai_generated_scope: string
+          client_name: string
+          id: string
+          status: string
+          title: string
+          workspace_id: string
+        }[]
+      }
       get_workspace_contract_info: {
         Args: { _workspace_id: string }
         Returns: {
