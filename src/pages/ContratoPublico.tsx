@@ -124,8 +124,8 @@ export default function ContratoPublico() {
         if (data && data.length > 0) {
           const row = data[0];
           const statusChanged =
-            (data.status !== contract?.status) ||
-            (data.is_fully_paid === true && contract?.is_fully_paid === false);
+            (row.status !== contract?.status) ||
+            (row.is_fully_paid === true && contract?.is_fully_paid === false);
 
           if (statusChanged) {
             clearInterval(interval);
