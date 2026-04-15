@@ -375,6 +375,32 @@ export type Database = {
           },
         ]
       }
+      workspace_payment_tokens: {
+        Row: {
+          mercado_pago_token: string | null
+          stripe_token: string | null
+          workspace_id: string
+        }
+        Insert: {
+          mercado_pago_token?: string | null
+          stripe_token?: string | null
+          workspace_id: string
+        }
+        Update: {
+          mercado_pago_token?: string | null
+          stripe_token?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_payment_tokens_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           asaas_customer_id: string | null
@@ -384,10 +410,8 @@ export type Database = {
           created_at: string
           id: string
           logo_url: string | null
-          mercado_pago_token: string | null
           name: string
           owner_id: string
-          stripe_token: string | null
           subscription_plan: string | null
           subscription_status: string
           trial_ends_at: string | null
@@ -401,10 +425,8 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
-          mercado_pago_token?: string | null
           name: string
           owner_id: string
-          stripe_token?: string | null
           subscription_plan?: string | null
           subscription_status?: string
           trial_ends_at?: string | null
@@ -418,10 +440,8 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
-          mercado_pago_token?: string | null
           name?: string
           owner_id?: string
-          stripe_token?: string | null
           subscription_plan?: string | null
           subscription_status?: string
           trial_ends_at?: string | null
