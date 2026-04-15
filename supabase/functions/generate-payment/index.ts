@@ -75,12 +75,21 @@ Deno.serve(async (req) => {
       return error("No valid amount", 400);
     }
 
-    // Fetch workspace token
-    const { data: workspace, error: wsError } = await supabase
+    // Fetch workspace name
+    const { data: wsInfo } = await supabase
       .from("workspaces")
-      .select("mercado_pago_token, name")
+      .select("name")
       .eq("id", contract.workspace_id)
       .single();
+
+    // Fetch payment token from secure table
+    const { data: tokenRow, error: wsError } = await supabase
+      .from("workspace_payment_tokens")
+      .select("mercado_pago_token")
+      .eq("workspace_id", contract.workspace_id)
+      .single();
+
+    const workspace = { name: wsInfo?.name, mercado_pago_token: tokenRow?.mercado_pago_token };
 
     if (wsError || !workspace?.mercado_pago_token) {
       console.error(">>> No MP token for workspace:", contract.workspace_id);
