@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     // Load contract
     const { data: contract, error: contractError } = await supabase
       .from("contracts")
-      .select("id, status, down_payment, payment_value, is_fully_paid, execution_status, workspace_id, workspaces(mercado_pago_token)")
+      .select("id, status, down_payment, payment_value, is_fully_paid, execution_status, workspace_id")
       .eq("id", contract_id!)
       .single();
 
@@ -121,7 +121,13 @@ Deno.serve(async (req) => {
       return ok();
     }
 
-    const token = (contract as any).workspaces?.mercado_pago_token;
+    // Fetch token from secure table
+    const { data: tokenRow } = await supabase
+      .from("workspace_payment_tokens")
+      .select("mercado_pago_token")
+      .eq("workspace_id", contract.workspace_id)
+      .single();
+    const token = tokenRow?.mercado_pago_token;
     if (!token) {
       console.error(">>> No MP token for workspace:", contract.workspace_id);
       await logEvent(supabase, { contract_id, payment_id, event_type: "no_token", processing_result: "skipped", raw_payload: body });

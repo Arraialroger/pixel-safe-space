@@ -110,8 +110,15 @@ export default function ConfiguracoesWorkspace() {
 
       const { data: ws } = await supabase.
       from("workspaces").
-      select("name, company_document, company_address, whatsapp, mercado_pago_token, owner_id, logo_url").
+      select("name, company_document, company_address, whatsapp, owner_id, logo_url").
       eq("id", workspaceId).
+      single();
+
+      // Fetch token from secure table (only owner can read)
+      const { data: tokenRow } = await supabase.
+      from("workspace_payment_tokens").
+      select("mercado_pago_token").
+      eq("workspace_id", workspaceId).
       single();
 
       if (ws) {
@@ -120,7 +127,7 @@ export default function ConfiguracoesWorkspace() {
           company_document: ws.company_document ? maskDocument(ws.company_document) : "",
           company_address: ws.company_address ?? "",
           whatsapp: ws.whatsapp ? maskWhatsApp(ws.whatsapp) : "",
-          mercado_pago_token: ws.mercado_pago_token ?? ""
+          mercado_pago_token: tokenRow?.mercado_pago_token ?? ""
         });
         setOwnerId(ws.owner_id);
         if (ws.logo_url) {
@@ -209,10 +216,17 @@ export default function ConfiguracoesWorkspace() {
       name: values.name,
       company_document: values.company_document?.replace(/\D/g, "") || null,
       company_address: values.company_address || null,
-      whatsapp: values.whatsapp?.replace(/\D/g, "") || null,
-      mercado_pago_token: values.mercado_pago_token || null
+      whatsapp: values.whatsapp?.replace(/\D/g, "") || null
     }).
     eq("id", workspaceId);
+
+    // Save token to secure table (upsert)
+    if (!error) {
+      await supabase.from("workspace_payment_tokens").upsert({
+        workspace_id: workspaceId,
+        mercado_pago_token: values.mercado_pago_token || null
+      }, { onConflict: "workspace_id" });
+    }
 
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
