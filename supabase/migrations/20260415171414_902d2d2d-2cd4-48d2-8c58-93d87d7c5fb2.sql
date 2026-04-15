@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anon can view payment sessions via contract" ON public.payment_sessions;
