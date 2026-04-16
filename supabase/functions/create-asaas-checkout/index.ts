@@ -7,16 +7,8 @@ const corsHeaders = {
 };
 
 const ASAAS_BASE = "https://sandbox.asaas.com/api/v3";
-
-const PLAN_PRICES: Record<string, number> = {
-  freelancer: 49,
-  studio: 99,
-};
-
-const PLAN_NAMES: Record<string, string> = {
-  freelancer: "PixelSafe Freelancer",
-  studio: "PixelSafe Estúdio",
-};
+const PLAN_VALUE = 49;
+const PLAN_DESCRIPTION = "PixelSafe Acesso Total";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -32,7 +24,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -49,7 +40,6 @@ Deno.serve(async (req) => {
 
     const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !userData?.user) {
-      console.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -57,22 +47,20 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const { workspace_id, plan_tier } = await req.json();
+    const { workspace_id } = await req.json();
 
-    if (!workspace_id || !plan_tier || !PLAN_PRICES[plan_tier]) {
+    if (!workspace_id) {
       return new Response(
-        JSON.stringify({ error: "workspace_id and valid plan_tier (freelancer|studio) required" }),
+        JSON.stringify({ error: "workspace_id required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Service role client for DB operations
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify user is admin of workspace
     const { data: member } = await supabase
       .from("workspace_members")
       .select("role")
@@ -87,7 +75,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch workspace + owner info
     const { data: workspace } = await supabase
       .from("workspaces")
       .select("id, name, owner_id, asaas_customer_id, company_document")
@@ -101,7 +88,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get owner email from auth
     const { data: authUser } = await supabase.auth.admin.getUserById(workspace.owner_id);
     const ownerEmail = authUser?.user?.email ?? "";
 
@@ -118,7 +104,7 @@ Deno.serve(async (req) => {
       access_token: ASAAS_API_KEY,
     };
 
-    // Step 1: Create or reuse Asaas customer
+    // Create or reuse Asaas customer
     let customerId = workspace.asaas_customer_id;
 
     if (!customerId) {
@@ -141,7 +127,6 @@ Deno.serve(async (req) => {
       console.log("Asaas customer response:", customerRes.status, customerText);
 
       if (!customerRes.ok) {
-        console.error("Asaas customer creation failed:", customerRes.status, customerText);
         return new Response(
           JSON.stringify({ error: "asaas_customer_error", details: customerText }),
           { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -152,7 +137,6 @@ Deno.serve(async (req) => {
       try {
         customerData = JSON.parse(customerText);
       } catch {
-        console.error("Failed to parse Asaas customer response:", customerText);
         return new Response(
           JSON.stringify({ error: "asaas_parse_error", details: customerText }),
           { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -167,13 +151,13 @@ Deno.serve(async (req) => {
         .eq("id", workspace_id);
     }
 
-    // Step 2: Create subscription
+    // Create subscription with fixed value
     const subscriptionPayload = {
       customer: customerId,
       billingType: "UNDEFINED",
-      value: PLAN_PRICES[plan_tier],
+      value: PLAN_VALUE,
       cycle: "MONTHLY",
-      description: PLAN_NAMES[plan_tier],
+      description: PLAN_DESCRIPTION,
       externalReference: workspace_id,
     };
 
@@ -188,7 +172,6 @@ Deno.serve(async (req) => {
     console.log("Asaas subscription response:", subRes.status, subText);
 
     if (!subRes.ok) {
-      console.error("Asaas subscription creation failed:", subRes.status, subText);
       return new Response(
         JSON.stringify({ error: "asaas_subscription_error", details: subText }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -199,30 +182,27 @@ Deno.serve(async (req) => {
     try {
       subData = JSON.parse(subText);
     } catch {
-      console.error("Failed to parse Asaas subscription response:", subText);
       return new Response(
         JSON.stringify({ error: "asaas_parse_error", details: subText }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Save subscription info
     await supabase
       .from("workspaces")
       .update({
         asaas_subscription_id: subData.id,
-        subscription_plan: plan_tier,
+        subscription_plan: "full_access",
         subscription_status: "pending",
       })
       .eq("id", workspace_id);
 
-    // Step 3: Fetch the first payment to get invoiceUrl
+    // Fetch first payment invoiceUrl
     const paymentsRes = await fetch(
       `${ASAAS_BASE}/payments?subscription=${subData.id}`,
       { headers: asaasHeaders, signal: AbortSignal.timeout(15000) }
     );
     const paymentsText = await paymentsRes.text();
-    console.log("Asaas payments response:", paymentsRes.status, paymentsText);
 
     let checkout_url = null;
     if (paymentsRes.ok) {
@@ -230,7 +210,6 @@ Deno.serve(async (req) => {
         const paymentsData = JSON.parse(paymentsText);
         if (paymentsData.data?.length > 0) {
           checkout_url = paymentsData.data[0].invoiceUrl;
-          console.log("Found invoiceUrl:", checkout_url);
         }
       } catch {
         console.error("Failed to parse payments response:", paymentsText);
