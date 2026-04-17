@@ -174,6 +174,24 @@ export default function Assinatura() {
         </Card>
       )}
 
+      {/* Next billing date — Asaas */}
+      {isActive && nextDueDateFormatted && (
+        <Card>
+          <CardContent className="flex items-center gap-4 py-5">
+            <div className="rounded-full bg-primary/15 p-2.5">
+              <CalendarDays className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium">Próxima Cobrança</p>
+              <p className="text-sm text-muted-foreground">
+                Você será cobrado <span className="font-medium text-foreground">R$ 49,00</span> em{" "}
+                <span className="font-medium text-foreground">{nextDueDateFormatted}</span>.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Plan Card */}
       <Card className="border-primary/50 relative overflow-hidden">
         <div className="absolute top-0 right-0">
