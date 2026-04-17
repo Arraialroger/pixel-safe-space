@@ -1,34 +1,62 @@
 
 
-## Diagnóstico
+## Plano: Alerta de Cobrança Próxima + Histórico de Faturas Asaas
 
-**`use-paywall.ts` e `WorkspaceContext` — OK, sem ajustes.**
-O paywall usa `hasAccess`, derivado de `subscription_status` (`active`/`trialing`), nunca de `subscription_plan`. A migração para plano único não afeta nada aqui.
+Duas funcionalidades complementares à página de Assinatura.
 
-**White-label e badges — PRECISAM de atualização.**
-Três locais ainda comparam `subscription_plan === "studio"`, valor que deixou de ser gravado (agora grava-se `"full_access"`). Resultado atual: a marca d'água "Protegido por PixelSafe" aparece sempre, mesmo para assinantes pagos, e o badge na sidebar mostra "Free" para workspaces ativos.
+---
 
-## Alterações
+### 1. Alerta de cobrança próxima (≤ 3 dias)
 
-### 1. `src/pages/PropostaPublica.tsx` (linha 97)
-```ts
-const showWatermark = proposal.workspace_plan !== "full_access";
-```
+Em `src/pages/Assinatura.tsx`, no card "Próxima Cobrança" já existente:
 
-### 2. `src/pages/ContratoPublico.tsx` (linha 626)
-```ts
-{workspace?.subscription_plan === "full_access" ? (
-```
+- Calcular `daysUntilNextBilling = differenceInDays(parseISO(next_due_date), new Date())`
+- Quando `0 ≤ daysUntilNextBilling ≤ 3` e `isActive`, trocar o estilo do card para variante amarela (mesmo padrão visual já usado no banner de Trial: `bg-yellow-500/15`, ícone `AlertTriangle` amarelo, texto reforçado)
+- Mensagem: "Sua próxima cobrança de R$ 49,00 será em X dia(s) (DD de MMMM)" — singular/plural e "amanhã"/"hoje" tratados
+- Acima de 3 dias: mantém o card neutro atual
 
-### 3. `src/components/AppSidebar.tsx` (linhas 91-95)
-Substituir comparação `=== "studio"` por `=== "full_access"` e trocar o label do badge de **"Studio"** para **"Acesso Total"** (o label "Free" mantém-se para workspaces sem plano ativo / em trial).
+---
 
-### 4. Atualizar memória
-`mem://recursos/white-label-marca-dagua` — refletir que a marca d'água é ocultada quando `subscription_plan === "full_access"` (já não "studio").
+### 2. Histórico de Faturas
 
-## Não precisam de alteração
-- `src/hooks/use-paywall.ts` — usa apenas `hasAccess`.
-- `src/contexts/WorkspaceContext.tsx` — lógica `calcAccess` baseada em `subscription_status`.
-- `supabase/functions/asaas-webhook/index.ts` — só atualiza `subscription_status`.
-- RPCs `get_workspace_public` / `get_workspace_contract_info` — devolvem o campo bruto, sem comparações.
+**Nova edge function** `supabase/functions/list-asaas-payments/index.ts`:
+- Mesma estrutura de auth/validação que `get-asaas-subscription-info` (JWT + workspace member check)
+- Lê `asaas_subscription_id` do workspace
+- Chama `GET ${ASAAS_BASE}/payments?subscription={id}&limit=50&offset={offset}` com paginação
+- Retorna array normalizado: `{ id, value, status, due_date, payment_date, billing_type, invoice_url, bank_slip_url, transaction_receipt_url, description }` + `hasMore`
+- Status traduzido no frontend (PENDING, CONFIRMED, RECEIVED, OVERDUE, REFUNDED)
+
+**Nova rota** `/assinatura/faturas` → `src/pages/AssinaturaFaturas.tsx`:
+- Registrada em `App.tsx` dentro de `ProtectedRoute`/`AppLayout`
+- Cabeçalho com título "Histórico de Faturas" + botão "Voltar" para `/assinatura`
+- `Table` (shadcn) com colunas: Data de vencimento · Valor · Método (Pix/Boleto/Cartão) · Status (Badge colorido) · Ações
+- Coluna **Ações** com `DropdownMenu` (padrão Core das tabelas):
+  - "Ver fatura" → abre `invoice_url` (sempre disponível)
+  - "Baixar boleto" → `bank_slip_url` (apenas se billingType = BOLETO)
+  - "Comprovante" → `transaction_receipt_url` (apenas pagos)
+- Paginação client-side de 10 itens (padrão do projeto)
+- Estados: loading (skeleton), vazio ("Nenhuma fatura emitida ainda"), erro (toast)
+
+**Link de entrada** em `src/pages/Assinatura.tsx`:
+- Quando `isActive`, adicionar botão `variant="outline"` "Ver Histórico de Faturas" abaixo do card de próxima cobrança (ou dentro dele como link secundário)
+
+---
+
+### Detalhes técnicos
+
+**Ficheiros a criar:**
+- `supabase/functions/list-asaas-payments/index.ts`
+- `src/pages/AssinaturaFaturas.tsx`
+
+**Ficheiros a modificar:**
+- `src/pages/Assinatura.tsx` — alerta amarelo condicional + link para histórico
+- `src/App.tsx` — nova rota `/assinatura/faturas`
+
+**Sem migrações SQL** — toda a informação vem da API Asaas em tempo real.
+
+**Status mapping (Asaas → UI):**
+- `CONFIRMED`/`RECEIVED` → "Pago" (verde)
+- `PENDING` → "Pendente" (amarelo)
+- `OVERDUE` → "Atrasado" (vermelho)
+- `REFUNDED` → "Reembolsado" (cinza)
 
