@@ -11,10 +11,11 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Clock, CheckCircle2, AlertTriangle, Loader2,
-  CreditCard, Check, Users, Shield, Zap, Sparkles, Crown,
+  CreditCard, Check, Users, Shield, Zap, Sparkles, Crown, CalendarDays,
 } from "lucide-react";
 
 const FEATURES = [
@@ -50,6 +51,23 @@ export default function Assinatura() {
   const trialEnds = workspace?.trial_ends_at;
   const daysLeft = trialEnds ? Math.max(0, differenceInDays(new Date(trialEnds), new Date())) : 0;
   const isActive = status === "active";
+
+  const { data: asaasInfo } = useQuery({
+    queryKey: ["asaas-subscription-info", workspaceId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("get-asaas-subscription-info", {
+        body: { workspace_id: workspaceId },
+      });
+      if (error) throw error;
+      return data as { next_due_date: string | null; status: string | null };
+    },
+    enabled: !!workspaceId && isActive,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const nextDueDateFormatted = asaasInfo?.next_due_date
+    ? format(parseISO(asaasInfo.next_due_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+    : null;
 
   const handleSubscribe = async () => {
     setSubscribing(true);
