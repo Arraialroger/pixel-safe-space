@@ -94,7 +94,7 @@ export default function PropostaPublica() {
     ? `https://wa.me/${proposal.workspace_whatsapp}?text=${whatsappMessage}`
     : null;
 
-  const showWatermark = proposal.workspace_plan !== "studio";
+  const showWatermark = proposal.workspace_plan !== "full_access";
 
   return (
     <div className="min-h-screen bg-background">

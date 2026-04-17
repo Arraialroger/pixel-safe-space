@@ -88,8 +88,8 @@ export function AppSidebar() {
                 
                     <span className="truncate">{ws.name}</span>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {ws.subscriptionPlan === "studio" ?
-                  <Badge variant="default" className="text-[10px] px-1.5 py-0">Studio</Badge> :
+                      {ws.subscriptionPlan === "full_access" ?
+                  <Badge variant="default" className="text-[10px] px-1.5 py-0">Acesso Total</Badge> :
 
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Free</Badge>
                   }

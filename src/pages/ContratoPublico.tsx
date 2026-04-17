@@ -623,7 +623,7 @@ export default function ContratoPublico() {
           </div>
         )}
 
-        {workspace?.subscription_plan === "studio" ? (
+        {workspace?.subscription_plan === "full_access" ? (
           <p className="text-center text-xs text-muted-foreground mt-12">
             Documento gerado digitalmente • {workspace.name}
           </p>
