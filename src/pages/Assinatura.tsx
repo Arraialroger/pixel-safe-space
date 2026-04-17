@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import { differenceInDays, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Clock, CheckCircle2, AlertTriangle, Loader2,
-  CreditCard, Check, Users, Shield, Zap, Sparkles, Crown, CalendarDays,
+  CreditCard, Check, Users, Shield, Zap, Sparkles, Crown, CalendarDays, Receipt,
 } from "lucide-react";
 
 const FEATURES = [
@@ -65,9 +66,22 @@ export default function Assinatura() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const nextDueDateFormatted = asaasInfo?.next_due_date
-    ? format(parseISO(asaasInfo.next_due_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+  const nextDueDate = asaasInfo?.next_due_date ? parseISO(asaasInfo.next_due_date) : null;
+  const nextDueDateFormatted = nextDueDate
+    ? format(nextDueDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : null;
+  const daysUntilNextBilling = nextDueDate
+    ? differenceInDays(nextDueDate, new Date())
+    : null;
+  const isBillingSoon =
+    isActive && daysUntilNextBilling !== null && daysUntilNextBilling >= 0 && daysUntilNextBilling <= 3;
+
+  const billingSoonMessage = (() => {
+    if (daysUntilNextBilling === null) return "";
+    if (daysUntilNextBilling === 0) return "hoje";
+    if (daysUntilNextBilling === 1) return "amanhã";
+    return `em ${daysUntilNextBilling} dias`;
+  })();
 
   const handleSubscribe = async () => {
     setSubscribing(true);
@@ -176,20 +190,48 @@ export default function Assinatura() {
 
       {/* Next billing date — Asaas */}
       {isActive && nextDueDateFormatted && (
-        <Card>
+        <Card className={isBillingSoon ? "border-yellow-500/40 bg-yellow-500/5" : ""}>
           <CardContent className="flex items-center gap-4 py-5">
-            <div className="rounded-full bg-primary/15 p-2.5">
-              <CalendarDays className="h-5 w-5 text-primary" />
+            <div className={`rounded-full p-2.5 ${isBillingSoon ? "bg-yellow-500/15" : "bg-primary/15"}`}>
+              {isBillingSoon ? (
+                <AlertTriangle className="h-5 w-5 text-yellow-400" />
+              ) : (
+                <CalendarDays className="h-5 w-5 text-primary" />
+              )}
             </div>
             <div className="flex-1">
-              <p className="font-medium">Próxima Cobrança</p>
+              <p className="font-medium">
+                {isBillingSoon ? "Cobrança Próxima" : "Próxima Cobrança"}
+              </p>
               <p className="text-sm text-muted-foreground">
-                Você será cobrado <span className="font-medium text-foreground">R$ 49,00</span> em{" "}
-                <span className="font-medium text-foreground">{nextDueDateFormatted}</span>.
+                {isBillingSoon ? (
+                  <>
+                    Sua próxima cobrança de{" "}
+                    <span className="font-medium text-foreground">R$ 49,00</span> será{" "}
+                    <span className="font-medium text-yellow-300">{billingSoonMessage}</span>{" "}
+                    (<span className="font-medium text-foreground">{nextDueDateFormatted}</span>).
+                  </>
+                ) : (
+                  <>
+                    Você será cobrado{" "}
+                    <span className="font-medium text-foreground">R$ 49,00</span> em{" "}
+                    <span className="font-medium text-foreground">{nextDueDateFormatted}</span>.
+                  </>
+                )}
               </p>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Histórico de Faturas link */}
+      {isActive && (
+        <Button asChild variant="outline" className="w-full sm:w-auto">
+          <Link to="/assinatura/faturas">
+            <Receipt className="h-4 w-4" />
+            Ver Histórico de Faturas
+          </Link>
+        </Button>
       )}
 
       {/* Plan Card */}

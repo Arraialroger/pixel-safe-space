@@ -24,6 +24,7 @@ import Clientes from "./pages/Clientes";
 import Configuracoes from "./pages/Configuracoes";
 import ConfiguracoesWorkspace from "./pages/ConfiguracoesWorkspace";
 import Assinatura from "./pages/Assinatura";
+import AssinaturaFaturas from "./pages/AssinaturaFaturas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -126,6 +127,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AppLayout><Assinatura /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/assinatura/faturas"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><AssinaturaFaturas /></AppLayout>
                   </ProtectedRoute>
                 }
               />
