@@ -21,6 +21,8 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ContratoMobileCard } from "@/components/contratos/ContratoMobileCard";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -31,11 +33,13 @@ type ContractWithClient = {
   payment_value: number | null;
   created_at: string;
   client_name: string;
+  client_phone: string | null;
 };
 
 export default function Contratos() {
   const { workspaceId } = useWorkspace();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [contracts, setContracts] = useState<ContractWithClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -52,7 +56,7 @@ export default function Contratos() {
     (async () => {
       const { data, error } = await supabase
         .from("contracts")
-        .select("id, status, execution_status, payment_value, created_at, client_id, clients(name)")
+        .select("id, status, execution_status, payment_value, created_at, client_id, clients(name, phone)")
         .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: false });
 
@@ -65,6 +69,7 @@ export default function Contratos() {
             payment_value: c.payment_value,
             created_at: c.created_at,
             client_name: c.clients?.name ?? "—",
+            client_phone: c.clients?.phone ?? null,
           }))
         );
       }
@@ -163,6 +168,14 @@ export default function Contratos() {
               <Search className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-muted-foreground">Nenhum contrato encontrado com esses filtros.</p>
             </div>
+          ) : isMobile ? (
+            <>
+              <div className="space-y-3">
+                {paginated.map((c) => (
+                  <ContratoMobileCard key={c.id} contract={c} />
+                ))}
+              </div>
+            </>
           ) : (
             <>
               <div className="rounded-md border overflow-x-auto">

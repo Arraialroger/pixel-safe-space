@@ -22,6 +22,9 @@ import {
 "@/components/ui/pagination";
 import { statusConfig } from "@/lib/proposal-utils";
 import { usePaywall } from "@/hooks/use-paywall";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
+import { PropostaMobileCard } from "@/components/propostas/PropostaMobileCard";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -38,6 +41,15 @@ export default function Propostas() {
   const { workspaceId } = useWorkspace();
   const { guard } = usePaywall();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+
+  useMobileHeaderAction(
+    isMobile ? (
+      <Button size="sm" onClick={() => guard(() => navigate("/propostas/nova"))} className="h-8 px-3 text-xs">
+        <Plus className="mr-1 h-3.5 w-3.5" /> Nova
+      </Button>
+    ) : null
+  );
   const [proposals, setProposals] = useState<ProposalWithClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -106,12 +118,14 @@ export default function Propostas() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Propostas</h1>
-        <Button onClick={() => guard(() => navigate("/propostas/nova"))} className="text-muted">
-          <Plus className="mr-2 h-4 w-4" /> Nova Proposta
-        </Button>
-      </div>
+      {!isMobile && (
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight">Propostas</h1>
+          <Button onClick={() => guard(() => navigate("/propostas/nova"))} className="text-muted">
+            <Plus className="mr-2 h-4 w-4" /> Nova Proposta
+          </Button>
+        </div>
+      )}
 
       {proposals.length === 0 ?
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -154,6 +168,13 @@ export default function Propostas() {
             </div> :
 
         <>
+              {isMobile ? (
+                <div className="space-y-3">
+                  {paginated.map((p) => (
+                    <PropostaMobileCard key={p.id} proposal={p} />
+                  ))}
+                </div>
+              ) : (
               <div className="rounded-md border overflow-x-auto">
                 <Table className="min-w-[600px]">
                   <TableHeader>
@@ -215,6 +236,7 @@ export default function Propostas() {
                   </TableBody>
                 </Table>
               </div>
+              )}
 
               {totalPages > 1 &&
           <Pagination>
