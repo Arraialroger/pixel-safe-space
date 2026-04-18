@@ -234,64 +234,30 @@ export default function Assinatura() {
         </Button>
       )}
 
-      {/* Plan Card */}
-      <Card className="border-primary/50 relative overflow-hidden">
-        <div className="absolute top-0 right-0">
-          <Badge className="rounded-none rounded-bl-lg bg-primary text-xs px-3 py-1 text-muted">
-            Acesso Total
-          </Badge>
-        </div>
-        <CardHeader>
-          <CardTitle className="text-lg">Plano Acesso Total</CardTitle>
-          <div className="flex items-baseline gap-1 mt-2">
-            <span className="text-3xl font-bold">R$ 49,00</span>
-            <span className="text-muted-foreground text-sm">/ mês</span>
+      {/* Plan Card — apenas para não-assinantes */}
+      {!isActive && (
+        <Card className="border-primary/50 relative overflow-hidden">
+          <div className="absolute top-0 right-0">
+            <Badge className="rounded-none rounded-bl-lg bg-primary text-xs px-3 py-1 text-muted">
+              Acesso Total
+            </Badge>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <ul className="space-y-3">
-            {FEATURES.map((f) => (
-              <li key={f.text} className="flex items-center gap-3 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0" />
-                <span>{f.text}</span>
-              </li>
-            ))}
-          </ul>
-
-          {isActive ? (
-            <div className="space-y-3">
-              <Button className="w-full" disabled>
-                Plano Atual
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10">
-                    Cancelar Assinatura
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Cancelar Assinatura?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Tem a certeza que deseja cancelar a sua assinatura? O seu Cofre e automações
-                      deixarão de funcionar após o fim do período atual.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Manter Plano</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleCancel}
-                      disabled={canceling}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {canceling && <Loader2 className="h-4 w-4 animate-spin" />}
-                      Confirmar Cancelamento
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+          <CardHeader>
+            <CardTitle className="text-lg">Plano Acesso Total</CardTitle>
+            <div className="flex items-baseline gap-1 mt-2">
+              <span className="text-3xl font-bold">R$ 49,00</span>
+              <span className="text-muted-foreground text-sm">/ mês</span>
             </div>
-          ) : (
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ul className="space-y-3">
+              {FEATURES.map((f) => (
+                <li key={f.text} className="flex items-center gap-3 text-sm">
+                  <Check className="h-4 w-4 text-primary shrink-0" />
+                  <span>{f.text}</span>
+                </li>
+              ))}
+            </ul>
             <Button
               className="w-full text-muted shadow-none border-primary bg-sidebar-primary"
               disabled={subscribing}
@@ -300,9 +266,40 @@ export default function Assinatura() {
               {subscribing && <Loader2 className="h-4 w-4 animate-spin" />}
               Assinar Agora — R$ 49,00/mês
             </Button>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Cancelar assinatura — apenas para assinantes ativos */}
+      {isActive && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+              Cancelar Assinatura
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancelar Assinatura?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem a certeza que deseja cancelar a sua assinatura? O seu Cofre e automações
+                deixarão de funcionar após o fim do período atual.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Manter Plano</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleCancel}
+                disabled={canceling}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {canceling && <Loader2 className="h-4 w-4 animate-spin" />}
+                Confirmar Cancelamento
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
