@@ -11,6 +11,8 @@ import { ExternalLink, Copy, Search, FolderLock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { CofreMobileCard } from "@/components/cofre/CofreMobileCard";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -59,6 +61,7 @@ function getFinancialKey(item: VaultItem): string {
 
 export default function Cofre() {
   const { workspaceId } = useWorkspace();
+  const isMobile = useIsMobile();
   const [items, setItems] = useState<VaultItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -186,6 +189,13 @@ export default function Cofre() {
         </div>
       ) : (
         <>
+          {isMobile ? (
+            <div className="space-y-3">
+              {paginated.map((item) => (
+                <CofreMobileCard key={item.id} item={item} onOpen={handleOpen} onCopy={handleCopy} />
+              ))}
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <Table className="min-w-[600px]">
               <TableHeader>
@@ -223,6 +233,7 @@ export default function Cofre() {
               </TableBody>
             </Table>
           </div>
+          )}
 
           {totalPages > 1 && (
             <Pagination>

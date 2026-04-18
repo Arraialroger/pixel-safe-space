@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Users, Plus, Loader2 } from "lucide-react";
 import { usePaywall } from "@/hooks/use-paywall";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
 import ClientTable from "@/components/clientes/ClientTable";
 import ClientFormDialog from "@/components/clientes/ClientFormDialog";
 import ClientDeleteDialog from "@/components/clientes/ClientDeleteDialog";
@@ -24,11 +26,20 @@ export default function Clientes() {
   const { workspaceId } = useWorkspace();
   const { guard } = usePaywall();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
+
+  useMobileHeaderAction(
+    isMobile ? (
+      <Button size="sm" onClick={() => guard(() => setFormOpen(true))} className="h-8 px-3 text-xs">
+        <Plus className="mr-1 h-3.5 w-3.5" /> Novo
+      </Button>
+    ) : null
+  );
 
   const fetchClients = async () => {
     if (!workspaceId) return;
@@ -80,13 +91,15 @@ export default function Clientes() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
-        <Button onClick={() => guard(() => setFormOpen(true))} className="text-muted">
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Cliente
-        </Button>
-      </div>
+      {!isMobile && (
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
+          <Button onClick={() => guard(() => setFormOpen(true))} className="text-muted">
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Cliente
+          </Button>
+        </div>
+      )}
 
       {clients.length === 0 ?
       <div className="flex flex-col items-center justify-center py-20 text-center">
