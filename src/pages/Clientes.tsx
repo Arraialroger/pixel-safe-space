@@ -84,6 +84,19 @@ export default function Clientes() {
     fetchClients();
   };
 
+  const normalizedSearch = search.trim().toLowerCase();
+  const searchDigits = normalizedSearch.replace(/\D/g, "");
+  const filteredClients = normalizedSearch
+    ? clients.filter((c) => {
+        const nameMatch = c.name.toLowerCase().includes(normalizedSearch);
+        const emailMatch = c.email?.toLowerCase().includes(normalizedSearch) ?? false;
+        const docMatch =
+          searchDigits.length > 0 &&
+          (c.document?.replace(/\D/g, "").includes(searchDigits) ?? false);
+        return nameMatch || emailMatch || docMatch;
+      })
+    : clients;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
