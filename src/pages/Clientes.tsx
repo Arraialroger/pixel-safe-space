@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, Loader2, Search } from "lucide-react";
+import { Users, Plus, Loader2, Search, Download } from "lucide-react";
 import { usePaywall } from "@/hooks/use-paywall";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,6 +133,31 @@ export default function Clientes() {
     currentPage * ITEMS_PER_PAGE,
   );
 
+  const handleExportCSV = () => {
+    if (sortedClients.length === 0) return;
+    const headers = ["Nome", "CPF/CNPJ", "E-mail", "Telefone", "Criado em"];
+    const escape = (v: string | null | undefined) => {
+      const s = (v ?? "").toString();
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = sortedClients.map((c) => [
+      escape(c.name),
+      escape(c.document),
+      escape(c.email),
+      escape(c.phone),
+      escape(new Date(c.created_at).toISOString()),
+    ].join(","));
+    const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clientes-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -146,10 +171,20 @@ export default function Clientes() {
       {!isMobile && (
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
-          <Button onClick={() => guard(() => setFormOpen(true))} className="text-muted">
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Cliente
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              disabled={sortedClients.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exportar CSV
+            </Button>
+            <Button onClick={() => guard(() => setFormOpen(true))} className="text-muted">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Cliente
+            </Button>
+          </div>
         </div>
       )}
 
