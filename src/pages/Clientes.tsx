@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
-import ClientTable from "@/components/clientes/ClientTable";
+import ClientTable, { type ClientSortKey, type SortDirection } from "@/components/clientes/ClientTable";
 import ClientFormDialog from "@/components/clientes/ClientFormDialog";
 import ClientDeleteDialog from "@/components/clientes/ClientDeleteDialog";
 import ClienteMobileCard from "@/components/clientes/ClienteMobileCard";
