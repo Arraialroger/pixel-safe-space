@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
-import ClientTable from "@/components/clientes/ClientTable";
+import ClientTable, { type ClientSortKey, type SortDirection } from "@/components/clientes/ClientTable";
 import ClientFormDialog from "@/components/clientes/ClientFormDialog";
 import ClientDeleteDialog from "@/components/clientes/ClientDeleteDialog";
 import ClienteMobileCard from "@/components/clientes/ClienteMobileCard";
@@ -41,6 +41,18 @@ export default function Clientes() {
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<ClientSortKey>("created_at");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const handleSortChange = (key: ClientSortKey) => {
+    if (key === sortKey) {
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDirection(key === "name" ? "asc" : "desc");
+    }
+    setCurrentPage(1);
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -107,8 +119,16 @@ export default function Clientes() {
       })
     : clients;
 
-  const totalPages = Math.ceil(filteredClients.length / ITEMS_PER_PAGE);
-  const paginatedClients = filteredClients.slice(
+  const sortedClients = [...filteredClients].sort((a, b) => {
+    const dir = sortDirection === "asc" ? 1 : -1;
+    if (sortKey === "name") {
+      return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }) * dir;
+    }
+    return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
+  });
+
+  const totalPages = Math.ceil(sortedClients.length / ITEMS_PER_PAGE);
+  const paginatedClients = sortedClients.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
@@ -164,7 +184,14 @@ export default function Clientes() {
           ))}
         </div>
       ) : (
-        <ClientTable clients={paginatedClients} onEdit={handleEdit} onDelete={setDeletingClient} />
+        <ClientTable
+          clients={paginatedClients}
+          onEdit={handleEdit}
+          onDelete={setDeletingClient}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSortChange={handleSortChange}
+        />
       )}
 
       {totalPages > 1 && (
