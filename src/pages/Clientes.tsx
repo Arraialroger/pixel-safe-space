@@ -171,10 +171,20 @@ export default function Clientes() {
       {!isMobile && (
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
-          <Button onClick={() => guard(() => setFormOpen(true))} className="text-muted">
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Cliente
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              disabled={sortedClients.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exportar CSV
+            </Button>
+            <Button onClick={() => guard(() => setFormOpen(true))} className="text-muted">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Cliente
+            </Button>
+          </div>
         </div>
       )}
 
