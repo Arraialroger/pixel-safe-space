@@ -159,12 +159,42 @@ export default function Clientes() {
         </div>
       ) : isMobile ? (
         <div className="space-y-3">
-          {filteredClients.map((c) => (
+          {paginatedClients.map((c) => (
             <ClienteMobileCard key={c.id} client={c} onEdit={handleEdit} onDelete={setDeletingClient} />
           ))}
         </div>
       ) : (
-        <ClientTable clients={filteredClients} onEdit={handleEdit} onDelete={setDeletingClient} />
+        <ClientTable clients={paginatedClients} onEdit={handleEdit} onDelete={setDeletingClient} />
+      )}
+
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <PaginationItem key={page}>
+                <PaginationLink
+                  isActive={page === currentPage}
+                  onClick={() => setCurrentPage(page)}
+                  className="cursor-pointer"
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       )}
 
       <ClientFormDialog
