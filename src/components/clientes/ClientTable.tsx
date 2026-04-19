@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MoreHorizontal, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, MessageCircle, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import type { Client } from "@/pages/Clientes";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -9,24 +9,58 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export type ClientSortKey = "name" | "created_at";
+export type SortDirection = "asc" | "desc";
 
 interface Props {
   clients: Client[];
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
+  sortKey: ClientSortKey;
+  sortDirection: SortDirection;
+  onSortChange: (key: ClientSortKey) => void;
 }
 
-export default function ClientTable({ clients, onEdit, onDelete }: Props) {
+function SortIcon({ active, direction }: { active: boolean; direction: SortDirection }) {
+  if (!active) return <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />;
+  return direction === "asc"
+    ? <ArrowUp className="h-3.5 w-3.5" />
+    : <ArrowDown className="h-3.5 w-3.5" />;
+}
+
+export default function ClientTable({
+  clients, onEdit, onDelete, sortKey, sortDirection, onSortChange,
+}: Props) {
+  const renderSortable = (key: ClientSortKey, label: string) => {
+    const active = sortKey === key;
+    return (
+      <button
+        type="button"
+        onClick={() => onSortChange(key)}
+        className={cn(
+          "inline-flex items-center gap-1.5 transition-colors hover:text-foreground",
+          active ? "text-foreground" : "text-muted-foreground",
+        )}
+        aria-sort={active ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+      >
+        {label}
+        <SortIcon active={active} direction={sortDirection} />
+      </button>
+    );
+  };
+
   return (
     <div className="rounded-md border overflow-x-auto">
       <Table className="min-w-[600px]">
         <TableHeader>
           <TableRow>
-            <TableHead>Nome</TableHead>
+            <TableHead>{renderSortable("name", "Nome")}</TableHead>
             <TableHead>CPF/CNPJ</TableHead>
             <TableHead>E-mail</TableHead>
             <TableHead>Telefone</TableHead>
-            <TableHead>Criado em</TableHead>
+            <TableHead>{renderSortable("created_at", "Criado em")}</TableHead>
             <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
