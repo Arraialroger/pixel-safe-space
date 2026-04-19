@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, Loader2 } from "lucide-react";
+import { Users, Plus, Loader2, Search } from "lucide-react";
 import { usePaywall } from "@/hooks/use-paywall";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
 import ClientTable from "@/components/clientes/ClientTable";
@@ -33,6 +34,7 @@ export default function Clientes() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
+  const [search, setSearch] = useState("");
 
   useMobileHeaderAction(
     isMobile ? (
@@ -82,6 +84,19 @@ export default function Clientes() {
     fetchClients();
   };
 
+  const normalizedSearch = search.trim().toLowerCase();
+  const searchDigits = normalizedSearch.replace(/\D/g, "");
+  const filteredClients = normalizedSearch
+    ? clients.filter((c) => {
+        const nameMatch = c.name.toLowerCase().includes(normalizedSearch);
+        const emailMatch = c.email?.toLowerCase().includes(normalizedSearch) ?? false;
+        const docMatch =
+          searchDigits.length > 0 &&
+          (c.document?.replace(/\D/g, "").includes(searchDigits) ?? false);
+        return nameMatch || emailMatch || docMatch;
+      })
+    : clients;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -102,25 +117,39 @@ export default function Clientes() {
         </div>
       )}
 
-      {clients.length === 0 ?
-      <div className="flex flex-col items-center justify-center py-20 text-center">
+      {clients.length > 0 && (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nome, e-mail ou CPF/CNPJ"
+            className="pl-9"
+          />
+        </div>
+      )}
+
+      {clients.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
           <Users className="h-12 w-12 text-muted-foreground/40 mb-4" />
           <p className="text-muted-foreground">Nenhum cliente cadastrado.</p>
           <p className="text-sm text-muted-foreground/60 mt-1">
             Clique em &quot;Novo Cliente&quot; para começar.
           </p>
-        </div> :
-
-      isMobile ? (
+        </div>
+      ) : filteredClients.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-sm text-muted-foreground">Nenhum cliente encontrado para &quot;{search}&quot;.</p>
+        </div>
+      ) : isMobile ? (
         <div className="space-y-3">
-          {clients.map((c) => (
+          {filteredClients.map((c) => (
             <ClienteMobileCard key={c.id} client={c} onEdit={handleEdit} onDelete={setDeletingClient} />
           ))}
         </div>
       ) : (
-        <ClientTable clients={clients} onEdit={handleEdit} onDelete={setDeletingClient} />
-      )
-      }
+        <ClientTable clients={filteredClients} onEdit={handleEdit} onDelete={setDeletingClient} />
+      )}
 
       <ClientFormDialog
         open={formOpen}
