@@ -107,6 +107,12 @@ export default function Clientes() {
       })
     : clients;
 
+  const totalPages = Math.ceil(filteredClients.length / ITEMS_PER_PAGE);
+  const paginatedClients = filteredClients.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
