@@ -34,6 +34,7 @@ export default function Clientes() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
+  const [search, setSearch] = useState("");
 
   useMobileHeaderAction(
     isMobile ? (
