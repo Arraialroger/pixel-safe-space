@@ -119,8 +119,16 @@ export default function Clientes() {
       })
     : clients;
 
-  const totalPages = Math.ceil(filteredClients.length / ITEMS_PER_PAGE);
-  const paginatedClients = filteredClients.slice(
+  const sortedClients = [...filteredClients].sort((a, b) => {
+    const dir = sortDirection === "asc" ? 1 : -1;
+    if (sortKey === "name") {
+      return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }) * dir;
+    }
+    return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
+  });
+
+  const totalPages = Math.ceil(sortedClients.length / ITEMS_PER_PAGE);
+  const paginatedClients = sortedClients.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
