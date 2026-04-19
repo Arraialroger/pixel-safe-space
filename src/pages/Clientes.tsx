@@ -10,6 +10,7 @@ import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
 import ClientTable from "@/components/clientes/ClientTable";
 import ClientFormDialog from "@/components/clientes/ClientFormDialog";
 import ClientDeleteDialog from "@/components/clientes/ClientDeleteDialog";
+import ClienteMobileCard from "@/components/clientes/ClienteMobileCard";
 
 export interface Client {
   id: string;
@@ -110,7 +111,15 @@ export default function Clientes() {
           </p>
         </div> :
 
-      <ClientTable clients={clients} onEdit={handleEdit} onDelete={setDeletingClient} />
+      isMobile ? (
+        <div className="space-y-3">
+          {clients.map((c) => (
+            <ClienteMobileCard key={c.id} client={c} onEdit={handleEdit} onDelete={setDeletingClient} />
+          ))}
+        </div>
+      ) : (
+        <ClientTable clients={clients} onEdit={handleEdit} onDelete={setDeletingClient} />
+      )
       }
 
       <ClientFormDialog
