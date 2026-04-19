@@ -41,6 +41,18 @@ export default function Clientes() {
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<ClientSortKey>("created_at");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const handleSortChange = (key: ClientSortKey) => {
+    if (key === sortKey) {
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDirection(key === "name" ? "asc" : "desc");
+    }
+    setCurrentPage(1);
+  };
 
   useEffect(() => {
     setCurrentPage(1);
