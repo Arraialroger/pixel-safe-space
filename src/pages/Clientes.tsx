@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, Loader2, Search } from "lucide-react";
+import { Users, Plus, Loader2, Search, Download } from "lucide-react";
 import { usePaywall } from "@/hooks/use-paywall";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
