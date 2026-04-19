@@ -133,6 +133,31 @@ export default function Clientes() {
     currentPage * ITEMS_PER_PAGE,
   );
 
+  const handleExportCSV = () => {
+    if (sortedClients.length === 0) return;
+    const headers = ["Nome", "CPF/CNPJ", "E-mail", "Telefone", "Criado em"];
+    const escape = (v: string | null | undefined) => {
+      const s = (v ?? "").toString();
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = sortedClients.map((c) => [
+      escape(c.name),
+      escape(c.document),
+      escape(c.email),
+      escape(c.phone),
+      escape(new Date(c.created_at).toISOString()),
+    ].join(","));
+    const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clientes-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
