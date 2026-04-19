@@ -184,7 +184,14 @@ export default function Clientes() {
           ))}
         </div>
       ) : (
-        <ClientTable clients={paginatedClients} onEdit={handleEdit} onDelete={setDeletingClient} />
+        <ClientTable
+          clients={paginatedClients}
+          onEdit={handleEdit}
+          onDelete={setDeletingClient}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSortChange={handleSortChange}
+        />
       )}
 
       {totalPages > 1 && (
