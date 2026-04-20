@@ -176,6 +176,9 @@ export default function Configuracoes() {
         </form>
       </Form>
 
+      {/* Appearance */}
+      <AppearanceCard />
+
       {/* Change Password */}
       <form onSubmit={passwordForm.handleSubmit(onChangePassword)} className="space-y-4">
         <Card>
