@@ -49,7 +49,7 @@ export default function Clientes() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<ClientSortKey>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [viewMode, setViewMode] = useViewMode("clientes", "table");
+  const [viewMode, setViewMode] = useViewMode("clientes", "cards");
 
   const handleSortChange = (key: ClientSortKey) => {
     if (key === sortKey) {
