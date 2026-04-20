@@ -60,7 +60,7 @@ export default function Propostas() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("propostas", "cards");
-  const [cardSort, setCardSort] = useState<SortOption>("newest");
+  const [cardSort, setCardSort] = useSortPreference("propostas");
   const showSort = isMobile || viewMode === "cards";
 
   useEffect(() => {

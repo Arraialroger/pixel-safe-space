@@ -51,7 +51,7 @@ export default function Clientes() {
   const [sortKey, setSortKey] = useState<ClientSortKey>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [viewMode, setViewMode] = useViewMode("clientes", "cards");
-  const [cardSort, setCardSort] = useState<SortOption>("newest");
+  const [cardSort, setCardSort] = useSortPreference("clientes");
   const showSort = isMobile || viewMode === "cards";
 
   const handleSortChange = (key: ClientSortKey) => {

@@ -51,7 +51,7 @@ export default function Contratos() {
   const [execFilter, setExecFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("contratos", "cards");
-  const [cardSort, setCardSort] = useState<SortOption>("newest");
+  const [cardSort, setCardSort] = useSortPreference("contratos");
   const showSort = isMobile || viewMode === "cards";
 
   useEffect(() => {
