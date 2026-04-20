@@ -193,6 +193,7 @@ export default function Clientes() {
   }
 
   return (
+    <PullToRefresh onRefresh={fetchClients}>
     <div className="space-y-6">
       {!isMobile && (
         <div className="flex items-center justify-between">
@@ -301,6 +302,7 @@ export default function Clientes() {
         onOpenChange={() => setDeletingClient(null)}
         onDeleted={handleDeleted} />
       
-    </div>);
+    </div>
+    </PullToRefresh>);
 
 }
