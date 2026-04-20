@@ -13,6 +13,7 @@ import ClientFormDialog from "@/components/clientes/ClientFormDialog";
 import ClientDeleteDialog from "@/components/clientes/ClientDeleteDialog";
 import ClienteMobileCard from "@/components/clientes/ClienteMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -48,6 +49,7 @@ export default function Clientes() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<ClientSortKey>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [viewMode, setViewMode] = useViewMode("clientes", "table");
 
   const handleSortChange = (key: ClientSortKey) => {
     if (key === sortKey) {
@@ -200,6 +202,7 @@ export default function Clientes() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
           <div className="flex items-center gap-2">
+            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={sortedClients.length === 0}>
@@ -244,8 +247,8 @@ export default function Clientes() {
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-sm text-muted-foreground">Nenhum cliente encontrado para &quot;{search}&quot;.</p>
         </div>
-      ) : isMobile ? (
-        <div className="space-y-3">
+      ) : isMobile || viewMode === "cards" ? (
+        <div className={isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"}>
           {paginatedClients.map((c) => (
             <ClienteMobileCard key={c.id} client={c} onEdit={handleEdit} onDelete={setDeletingClient} />
           ))}
