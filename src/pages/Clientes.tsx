@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +54,17 @@ export default function Clientes() {
   const [viewMode, setViewMode] = useViewMode("clientes", "cards");
   const [cardSort, setCardSort] = useSortPreference("clientes");
   const showSort = isMobile || viewMode === "cards";
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("new") === "1" && workspaceId) {
+      guard(() => {
+        setEditingClient(null);
+        setFormOpen(true);
+      });
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, workspaceId, guard, setSearchParams]);
 
   const handleSortChange = (key: ClientSortKey) => {
     if (key === sortKey) {
