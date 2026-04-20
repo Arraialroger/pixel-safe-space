@@ -21,6 +21,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
+import { exportToXlsx } from "@/lib/xlsx-export";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ContratoMobileCard } from "@/components/contratos/ContratoMobileCard";
 
@@ -125,7 +126,29 @@ export default function Contratos() {
     URL.revokeObjectURL(url);
   };
 
-  if (loading) {
+  const handleExportXLSX = () => {
+    if (filtered.length === 0) return;
+    exportToXlsx({
+      filename: `contratos-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: "Contratos",
+      columns: [
+        { header: "Cliente", width: 30 },
+        { header: "Telefone", width: 18 },
+        { header: "Comercial", width: 22 },
+        { header: "Execução", width: 22 },
+        { header: "Valor", width: 16, numFmt: 'R$ #,##0.00;[Red](R$ #,##0.00);"-"' },
+        { header: "Criado em", width: 14, numFmt: "dd/mm/yyyy" },
+      ],
+      rows: filtered.map((c) => [
+        c.client_name ?? "",
+        c.client_phone ?? "",
+        contractStatusConfig[c.status]?.label ?? c.status,
+        execStatusConfig[c.execution_status]?.label ?? c.execution_status,
+        c.payment_value ?? 0,
+        new Date(c.created_at),
+      ]),
+    });
+  };
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight">Contratos</h1>
@@ -144,14 +167,18 @@ export default function Contratos() {
           </p>
         </div>
         {!isMobile && contracts.length > 0 && (
-          <Button
-            variant="outline"
-            onClick={handleExportCSV}
-            disabled={filtered.length === 0}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Exportar CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={filtered.length === 0}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV}>CSV (.csv)</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportXLSX}>Excel (.xlsx)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 

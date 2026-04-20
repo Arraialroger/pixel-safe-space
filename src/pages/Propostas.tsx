@@ -21,6 +21,7 @@ import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from
 "@/components/ui/pagination";
 import { statusConfig } from "@/lib/proposal-utils";
+import { exportToXlsx } from "@/lib/xlsx-export";
 import { usePaywall } from "@/hooks/use-paywall";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
@@ -133,6 +134,28 @@ export default function Propostas() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportXLSX = () => {
+    if (filtered.length === 0) return;
+    exportToXlsx({
+      filename: `propostas-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: "Propostas",
+      columns: [
+        { header: "Título", width: 32 },
+        { header: "Cliente", width: 28 },
+        { header: "Telefone", width: 18 },
+        { header: "Status", width: 18 },
+        { header: "Criado em", width: 14, numFmt: "dd/mm/yyyy" },
+      ],
+      rows: filtered.map((p) => [
+        p.title ?? "",
+        p.client_name ?? "",
+        p.client_phone ?? "",
+        statusConfig[p.status]?.label ?? p.status,
+        new Date(p.created_at),
+      ]),
+    });
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -148,14 +171,18 @@ export default function Propostas() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Propostas</h1>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={handleExportCSV}
-              disabled={filtered.length === 0}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Exportar CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={filtered.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>CSV (.csv)</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportXLSX}>Excel (.xlsx)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={() => guard(() => navigate("/propostas/nova"))} className="text-muted">
               <Plus className="mr-2 h-4 w-4" /> Nova Proposta
             </Button>

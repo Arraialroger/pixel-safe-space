@@ -15,6 +15,10 @@ import ClienteMobileCard from "@/components/clientes/ClienteMobileCard";
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { exportToXlsx } from "@/lib/xlsx-export";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -158,6 +162,28 @@ export default function Clientes() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  const handleExportXLSX = () => {
+    if (sortedClients.length === 0) return;
+    exportToXlsx({
+      filename: `clientes-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: "Clientes",
+      columns: [
+        { header: "Nome", width: 30 },
+        { header: "CPF/CNPJ", width: 20 },
+        { header: "E-mail", width: 30 },
+        { header: "Telefone", width: 18 },
+        { header: "Criado em", width: 14, numFmt: "dd/mm/yyyy" },
+      ],
+      rows: sortedClients.map((c) => [
+        c.name ?? "",
+        c.document ?? "",
+        c.email ?? "",
+        c.phone ?? "",
+        new Date(c.created_at),
+      ]),
+    });
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -172,14 +198,18 @@ export default function Clientes() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={handleExportCSV}
-              disabled={sortedClients.length === 0}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Exportar CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={sortedClients.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>CSV (.csv)</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportXLSX}>Excel (.xlsx)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={() => guard(() => setFormOpen(true))} className="text-muted">
               <Plus className="mr-2 h-4 w-4" />
               Novo Cliente
