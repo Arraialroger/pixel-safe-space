@@ -139,16 +139,16 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3">
         {!collapsed && user &&
-        <div className="flex items-center justify-between gap-2 px-2 mb-2">
+        <div className="flex flex-col gap-2 px-2 mb-2">
             <p className="text-xs text-muted-foreground truncate">
               {user.email}
             </p>
-            <ThemeToggle className="h-7 w-7 shrink-0" />
+            <ThemeToggle className="self-start" />
           </div>
         }
         {collapsed &&
           <div className="flex justify-center mb-2">
-            <ThemeToggle className="h-8 w-8" />
+            <ThemeToggle className="scale-90" />
           </div>
         }
         <SidebarMenu>
