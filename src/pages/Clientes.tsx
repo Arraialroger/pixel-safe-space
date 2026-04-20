@@ -12,6 +12,7 @@ import ClientTable, { type ClientSortKey, type SortDirection } from "@/component
 import ClientFormDialog from "@/components/clientes/ClientFormDialog";
 import ClientDeleteDialog from "@/components/clientes/ClientDeleteDialog";
 import ClienteMobileCard from "@/components/clientes/ClienteMobileCard";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
