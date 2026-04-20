@@ -1,20 +1,50 @@
-import { Moon, Sun } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useTheme } from "@/contexts/ThemeContext";
+import { Moon, Sun, Monitor } from "lucide-react";
+import { useTheme, type Theme } from "@/contexts/ThemeContext";
 import { haptic } from "@/lib/haptics";
+import { cn } from "@/lib/utils";
+
+const options: { value: Theme; label: string; Icon: typeof Sun }[] = [
+  { value: "light", label: "Tema claro", Icon: Sun },
+  { value: "dark", label: "Tema escuro", Icon: Moon },
+  { value: "system", label: "Tema do sistema", Icon: Monitor },
+];
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      onClick={() => { haptic(10); toggleTheme(); }}
-      aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
-      className={className}
+    <div
+      role="radiogroup"
+      aria-label="Tema da interface"
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-full border border-border bg-card/60 p-0.5",
+        className,
+      )}
     >
-      {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-    </Button>
+      {options.map(({ value, label, Icon }) => {
+        const active = theme === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={label}
+            onClick={() => {
+              if (active) return;
+              haptic(10);
+              setTheme(value);
+            }}
+            className={cn(
+              "inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors",
+              active
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" />
+          </button>
+        );
+      })}
+    </div>
   );
 }
