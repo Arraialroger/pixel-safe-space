@@ -28,7 +28,7 @@ import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
 import { PropostaMobileCard } from "@/components/propostas/PropostaMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
-import { SortSelector, sortItems, type SortOption } from "@/components/SortSelector";
+import { SortSelector, sortItems, useSortPreference } from "@/components/SortSelector";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -60,7 +60,7 @@ export default function Propostas() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("propostas", "cards");
-  const [cardSort, setCardSort] = useState<SortOption>("newest");
+  const [cardSort, setCardSort] = useSortPreference("propostas");
   const showSort = isMobile || viewMode === "cards";
 
   useEffect(() => {

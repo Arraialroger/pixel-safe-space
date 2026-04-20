@@ -15,7 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CofreMobileCard } from "@/components/cofre/CofreMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
-import { SortSelector, sortItems, type SortOption } from "@/components/SortSelector";
+import { SortSelector, sortItems, useSortPreference } from "@/components/SortSelector";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -71,7 +71,7 @@ export default function Cofre() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("cofre", "table");
-  const [cardSort, setCardSort] = useState<SortOption>("newest");
+  const [cardSort, setCardSort] = useSortPreference("cofre");
   const showSort = isMobile || viewMode === "cards";
 
   const fetchVault = useCallback(async () => {

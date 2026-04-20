@@ -1,7 +1,37 @@
+import { useEffect, useState } from "react";
 import { ArrowDownAZ, ArrowDownWideNarrow, ArrowUpWideNarrow } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type SortOption = "newest" | "oldest" | "az";
+
+const STORAGE_PREFIX = "pixelsafe-sort:";
+
+function isSortOption(v: unknown): v is SortOption {
+  return v === "newest" || v === "oldest" || v === "az";
+}
+
+export function useSortPreference(key: string, defaultOption: SortOption = "newest"): [SortOption, (v: SortOption) => void] {
+  const [option, setOption] = useState<SortOption>(() => {
+    if (typeof window === "undefined") return defaultOption;
+    try {
+      const saved = window.localStorage.getItem(`${STORAGE_PREFIX}${key}`);
+      return isSortOption(saved) ? saved : defaultOption;
+    } catch {
+      return defaultOption;
+    }
+  });
+
+  const update = (next: SortOption) => {
+    setOption(next);
+    try {
+      window.localStorage.setItem(`${STORAGE_PREFIX}${key}`, next);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return [option, update];
+}
 
 export function sortItems<T>(items: T[], option: SortOption, getName: (i: T) => string, getDate: (i: T) => string | Date): T[] {
   const arr = [...items];

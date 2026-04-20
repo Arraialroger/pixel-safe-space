@@ -26,7 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ContratoMobileCard } from "@/components/contratos/ContratoMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
-import { SortSelector, sortItems, type SortOption } from "@/components/SortSelector";
+import { SortSelector, sortItems, useSortPreference } from "@/components/SortSelector";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -51,7 +51,7 @@ export default function Contratos() {
   const [execFilter, setExecFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("contratos", "cards");
-  const [cardSort, setCardSort] = useState<SortOption>("newest");
+  const [cardSort, setCardSort] = useSortPreference("contratos");
   const showSort = isMobile || viewMode === "cards";
 
   useEffect(() => {
