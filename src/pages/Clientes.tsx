@@ -14,7 +14,7 @@ import ClientDeleteDialog from "@/components/clientes/ClientDeleteDialog";
 import ClienteMobileCard from "@/components/clientes/ClienteMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
-import { SortSelector, sortItems, type SortOption } from "@/components/SortSelector";
+import { SortSelector, sortItems, useSortPreference } from "@/components/SortSelector";
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";

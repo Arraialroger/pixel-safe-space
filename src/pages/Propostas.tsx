@@ -28,7 +28,7 @@ import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
 import { PropostaMobileCard } from "@/components/propostas/PropostaMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
-import { SortSelector, sortItems, type SortOption } from "@/components/SortSelector";
+import { SortSelector, sortItems, useSortPreference } from "@/components/SortSelector";
 
 const ITEMS_PER_PAGE = 10;
 
