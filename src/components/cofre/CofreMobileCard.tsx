@@ -29,13 +29,13 @@ function badge(item: VaultItem) {
     );
   if (item.status === "partially_paid")
     return (
-      <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20">
+      <Badge className="bg-warning/15 text-warning border-warning/20">
         Entrada Paga
       </Badge>
     );
   if (item.status === "signed")
     return (
-      <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20">
+      <Badge className="bg-success/15 text-success border-success/20">
         Assinado
       </Badge>
     );
