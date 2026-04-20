@@ -2,6 +2,7 @@ import { LayoutDashboard, FileText, FileCheck, FolderLock, Menu } from "lucide-r
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/haptics";
 import { MobileMoreSheet } from "./MobileMoreSheet";
 
 const slots = [
@@ -32,6 +33,7 @@ export function MobileBottomNav() {
               <Link
                 key={s.url}
                 to={s.url}
+                onClick={() => haptic(10)}
                 className={cn(
                   "relative flex flex-col items-center justify-center gap-1 transition-colors",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
@@ -44,7 +46,7 @@ export function MobileBottomNav() {
             );
           })}
           <button
-            onClick={() => setMoreOpen(true)}
+            onClick={() => { haptic(10); setMoreOpen(true); }}
             className="relative flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
           >
             <Menu className="h-5 w-5" />
