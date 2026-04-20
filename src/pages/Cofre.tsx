@@ -15,7 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CofreMobileCard } from "@/components/cofre/CofreMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
-import { SortSelector, sortItems, type SortOption } from "@/components/SortSelector";
+import { SortSelector, sortItems, useSortPreference } from "@/components/SortSelector";
 
 const ITEMS_PER_PAGE = 10;
 
