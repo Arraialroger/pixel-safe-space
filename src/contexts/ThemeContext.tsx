@@ -25,10 +25,14 @@ function getSystemTheme(): ResolvedTheme {
 
 function applyTheme(resolved: ResolvedTheme) {
   const root = document.documentElement;
+  // Enable smooth color transition for the theme swap
+  root.classList.add("theme-transition");
   root.classList.remove("light", "dark");
   if (resolved === "light") root.classList.add("light");
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", resolved === "light" ? "#ffffff" : "#111114");
+  // Remove the transition helper after it finishes so it doesn't affect normal interactions
+  window.setTimeout(() => root.classList.remove("theme-transition"), 250);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
