@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Plus, Eye, MessageCircle, MoreHorizontal, Search } from "lucide-react";
+import { FileText, Plus, Eye, MessageCircle, MoreHorizontal, Search, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,6 +107,32 @@ export default function Propostas() {
     currentPage * ITEMS_PER_PAGE
   );
 
+  const handleExportCSV = () => {
+    if (filtered.length === 0) return;
+    const headers = ["Título", "Cliente", "Telefone", "Status", "Criado em"];
+    const escape = (v: string | null | undefined) => {
+      const s = (v ?? "").toString();
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = filtered.map((p) => [
+      escape(p.title),
+      escape(p.client_name),
+      escape(p.client_phone),
+      escape(statusConfig[p.status]?.label ?? p.status),
+      escape(new Date(p.created_at).toISOString()),
+    ].join(","));
+    const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `propostas-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -121,9 +147,19 @@ export default function Propostas() {
       {!isMobile && (
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Propostas</h1>
-          <Button onClick={() => guard(() => navigate("/propostas/nova"))} className="text-muted">
-            <Plus className="mr-2 h-4 w-4" /> Nova Proposta
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              disabled={filtered.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exportar CSV
+            </Button>
+            <Button onClick={() => guard(() => navigate("/propostas/nova"))} className="text-muted">
+              <Plus className="mr-2 h-4 w-4" /> Nova Proposta
+            </Button>
+          </div>
         </div>
       )}
 

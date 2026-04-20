@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileCheck, MoreHorizontal, Eye, Search } from "lucide-react";
+import { FileCheck, MoreHorizontal, Eye, Search, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Button } from "@/components/ui/button";
@@ -98,6 +98,33 @@ export default function Contratos() {
     currentPage * ITEMS_PER_PAGE
   );
 
+  const handleExportCSV = () => {
+    if (filtered.length === 0) return;
+    const headers = ["Cliente", "Telefone", "Comercial", "Execução", "Valor", "Criado em"];
+    const escape = (v: string | number | null | undefined) => {
+      const s = (v ?? "").toString();
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = filtered.map((c) => [
+      escape(c.client_name),
+      escape(c.client_phone),
+      escape(contractStatusConfig[c.status]?.label ?? c.status),
+      escape(execStatusConfig[c.execution_status]?.label ?? c.execution_status),
+      escape(c.payment_value ?? ""),
+      escape(new Date(c.created_at).toISOString()),
+    ].join(","));
+    const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `contratos-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -109,11 +136,23 @@ export default function Contratos() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Contratos</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gerencie os contratos de prestação de serviço do seu estúdio.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Contratos</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Gerencie os contratos de prestação de serviço do seu estúdio.
+          </p>
+        </div>
+        {!isMobile && contracts.length > 0 && (
+          <Button
+            variant="outline"
+            onClick={handleExportCSV}
+            disabled={filtered.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
+        )}
       </div>
 
       {contracts.length === 0 ? (
