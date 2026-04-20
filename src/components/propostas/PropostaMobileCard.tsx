@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { statusConfig } from "@/lib/proposal-utils";
+import { haptic } from "@/lib/haptics";
 
 type Props = {
   proposal: {
@@ -29,6 +30,7 @@ export function PropostaMobileCard({ proposal }: Props) {
 
   const copyLink = async (e: React.MouseEvent) => {
     stop(e);
+    haptic(10);
     await navigator.clipboard.writeText(publicUrl);
     toast.success("Link copiado!");
   };
@@ -36,6 +38,7 @@ export function PropostaMobileCard({ proposal }: Props) {
   const openWhatsApp = (e: React.MouseEvent) => {
     stop(e);
     if (!proposal.client_phone) return;
+    haptic(10);
     const phone = proposal.client_phone.replace(/\D/g, "");
     const msg = encodeURIComponent(`Olá! Segue a proposta: ${publicUrl}`);
     window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
@@ -43,7 +46,7 @@ export function PropostaMobileCard({ proposal }: Props) {
 
   return (
     <Card
-      onClick={() => navigate(`/propostas/${proposal.id}`)}
+      onClick={() => { haptic(5); navigate(`/propostas/${proposal.id}`); }}
       className="p-4 space-y-3 cursor-pointer active:scale-[0.99] transition-transform"
     >
       <div className="flex items-start justify-between gap-2">

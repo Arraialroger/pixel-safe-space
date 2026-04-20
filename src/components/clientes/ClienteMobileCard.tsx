@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { haptic } from "@/lib/haptics";
 
 interface Props {
   client: Client;
@@ -33,13 +34,13 @@ export default function ClienteMobileCard({ client, onEdit, onDelete }: Props) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(client)}>
+            <DropdownMenuItem onClick={() => { haptic(10); onEdit(client); }}>
               <Pencil className="mr-2 h-4 w-4" />
               Editar
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
-              onClick={() => onDelete(client)}
+              onClick={() => { haptic(10); onDelete(client); }}
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Excluir
@@ -64,7 +65,7 @@ export default function ClienteMobileCard({ client, onEdit, onDelete }: Props) {
           asChild={!!phoneDigits}
         >
           {phoneDigits ? (
-            <a href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noopener noreferrer">
+            <a href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noopener noreferrer" onClick={() => haptic(10)}>
               <MessageCircle className="h-3.5 w-3.5" />
               WhatsApp
             </a>
@@ -80,7 +81,7 @@ export default function ClienteMobileCard({ client, onEdit, onDelete }: Props) {
           asChild={!!client.email}
         >
           {client.email ? (
-            <a href={`mailto:${client.email}`}>
+            <a href={`mailto:${client.email}`} onClick={() => haptic(10)}>
               <Mail className="h-3.5 w-3.5" />
               E-mail
             </a>

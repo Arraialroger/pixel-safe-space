@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
+import { haptic } from "@/lib/haptics";
 
 type Props = {
   contract: {
@@ -31,6 +32,7 @@ export function ContratoMobileCard({ contract }: Props) {
 
   const copyLink = async (e: React.MouseEvent) => {
     stop(e);
+    haptic(10);
     await navigator.clipboard.writeText(publicUrl);
     toast.success("Link copiado!");
   };
@@ -38,6 +40,7 @@ export function ContratoMobileCard({ contract }: Props) {
   const openWhatsApp = (e: React.MouseEvent) => {
     stop(e);
     if (!contract.client_phone) return;
+    haptic(10);
     const phone = contract.client_phone.replace(/\D/g, "");
     const msg = encodeURIComponent(`Olá! Segue o contrato: ${publicUrl}`);
     window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
@@ -45,7 +48,7 @@ export function ContratoMobileCard({ contract }: Props) {
 
   return (
     <Card
-      onClick={() => navigate(`/contratos/${contract.id}`)}
+      onClick={() => { haptic(5); navigate(`/contratos/${contract.id}`); }}
       className="p-4 space-y-3 cursor-pointer active:scale-[0.99] transition-transform"
     >
       <div className="flex items-start justify-between gap-2">
