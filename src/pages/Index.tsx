@@ -2,38 +2,50 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Shield, Lock, TrendingUp, FileCheck, Send, BarChart3 } from "lucide-react";
+import { Wallet, Lock, TrendingUp, FileCheck, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig } from
-"@/components/ui/chart";
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
+import { QuickActions } from "@/components/dashboard/QuickActions";
+import {
+  PendingSignaturesCard,
+  type PendingSignatureItem,
+} from "@/components/dashboard/PendingSignaturesCard";
+import {
+  ReadyForDeliveryCard,
+  type ReadyForDeliveryItem,
+} from "@/components/dashboard/ReadyForDeliveryCard";
 
 interface DashboardMetrics {
   protected_revenue: number;
   escrow_value: number;
   total_proposals: number;
   accepted_proposals: number;
-  monthly_revenue: {month: string;revenue: number;}[];
+  monthly_revenue: { month: string; revenue: number }[];
   active_contracts: number;
   pending_proposals: number;
+  // New optional fields (graceful fallbacks if RPC cache is stale)
+  current_month_revenue?: number;
+  pending_signatures?: PendingSignatureItem[];
+  pending_signatures_total?: number;
+  ready_for_delivery?: ReadyForDeliveryItem[];
+  ready_for_delivery_total?: number;
 }
 
 const chartConfig: ChartConfig = {
-  revenue: {
-    label: "Receita",
-    color: "hsl(217 91% 60%)"
-  }
+  revenue: { label: "Receita", color: "hsl(217 91% 60%)" },
 };
 
 const MONTH_LABELS: Record<string, string> = {
   "01": "Jan", "02": "Fev", "03": "Mar", "04": "Abr",
   "05": "Mai", "06": "Jun", "07": "Jul", "08": "Ago",
-  "09": "Set", "10": "Out", "11": "Nov", "12": "Dez"
+  "09": "Set", "10": "Out", "11": "Nov", "12": "Dez",
 };
 
 function formatMonth(ym: string) {
@@ -53,193 +65,173 @@ const Index = () => {
     queryKey: ["dashboard-metrics", workspaceId],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_dashboard_metrics", {
-        _workspace_id: workspaceId!
+        _workspace_id: workspaceId!,
       });
       if (error) throw error;
       return data as unknown as DashboardMetrics;
     },
-    enabled: !!workspaceId
+    enabled: !!workspaceId,
   });
 
   const conversionRate =
-  metrics && metrics.total_proposals > 0 ?
-  Math.round(metrics.accepted_proposals / metrics.total_proposals * 100) :
-  0;
+    metrics && metrics.total_proposals > 0
+      ? Math.round((metrics.accepted_proposals / metrics.total_proposals) * 100)
+      : 0;
 
   const cards = [
-  {
-    label: "Receita Protegida",
-    value: metrics ? formatCurrency(metrics.protected_revenue) : "R$ 0",
-    icon: Shield,
-    iconBg: "bg-emerald-500/10",
-    iconColor: "text-emerald-400"
-  },
-  {
-    label: "Valor no Cofre",
-    value: metrics ? formatCurrency(metrics.escrow_value) : "R$ 0",
-    icon: Lock,
-    iconBg: "bg-amber-500/10",
-    iconColor: "text-amber-400"
-  },
-  {
-    label: "Taxa de Conversão",
-    value: `${conversionRate}%`,
-    icon: TrendingUp,
-    iconBg: "bg-primary/10",
-    iconColor: "text-primary"
-  },
-  {
-    label: "Contratos Ativos",
-    value: metrics?.active_contracts?.toString() ?? "0",
-    icon: FileCheck,
-    iconBg: "bg-primary/10",
-    iconColor: "text-primary"
-  },
-  {
-    label: "Propostas Pendentes",
-    value: metrics?.pending_proposals?.toString() ?? "0",
-    icon: Send,
-    iconBg: "bg-violet-500/10",
-    iconColor: "text-violet-400"
-  }];
-
+    {
+      label: "Faturamento do Mês",
+      value: metrics ? formatCurrency(metrics.current_month_revenue ?? 0) : "R$ 0",
+      icon: Wallet,
+      iconBg: "bg-emerald-500/10",
+      iconColor: "text-emerald-400",
+    },
+    {
+      label: "No Cofre (a liberar)",
+      value: metrics ? formatCurrency(metrics.escrow_value) : "R$ 0",
+      icon: Lock,
+      iconBg: "bg-amber-500/10",
+      iconColor: "text-amber-400",
+    },
+    {
+      label: "Taxa de Conversão",
+      value: `${conversionRate}%`,
+      icon: TrendingUp,
+      iconBg: "bg-primary/10",
+      iconColor: "text-primary",
+    },
+    {
+      label: "Contratos Ativos",
+      value: metrics?.active_contracts?.toString() ?? "0",
+      icon: FileCheck,
+      iconBg: "bg-primary/10",
+      iconColor: "text-primary",
+    },
+  ];
 
   const chartData = (metrics?.monthly_revenue ?? []).map((m) => ({
     month: formatMonth(m.month),
-    revenue: Number(m.revenue)
+    revenue: Number(m.revenue),
   }));
 
   return (
     <div className="space-y-6">
-      <div className="space-y-6">
-        {/* Header */}
-        <div
-          className="animate-fade-in-up"
-          style={{ animationDelay: "0ms" }}>
-          
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Bem-vindo de volta
-            {user?.user_metadata?.full_name ?
-            `, ${user.user_metadata.full_name}` :
-            ""}
-            .
-          </p>
-        </div>
+      {/* Header */}
+      <div className="animate-fade-in-up" style={{ animationDelay: "0ms" }}>
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">
+          Bem-vindo de volta
+          {user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}.
+        </p>
+      </div>
 
-        {/* Metric cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {cards.map((card, i) =>
+      {/* KPI cards: 2x2 mobile, 4-col desktop */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        {cards.map((card, i) => (
           <Card
             key={card.label}
             className="group animate-fade-in-up transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-black/20"
-            style={{ animationDelay: `${(i + 1) * 80}ms` }}>
-            
-              <CardContent className="p-5">
-                {isLoading ?
-              <div className="space-y-3">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-8 w-28" />
-                  </div> :
-
-              <div className="flex items-start gap-3">
-                    <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${card.iconBg}`}>
-                  
-                      <card.icon className={`h-5 w-5 ${card.iconColor}`} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm text-muted-foreground truncate">
-                        {card.label}
-                      </p>
-                      <p
-                    className="tracking-tight mt-0.5 font-extrabold font-sans text-2xl"
-                    style={{ fontFamily: "'DM Serif Display', serif" }}>
-                    
-                        {card.value}
-                      </p>
-                    </div>
+            style={{ animationDelay: `${(i + 1) * 80}ms` }}
+          >
+            <CardContent className="p-5">
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-8 w-28" />
+                </div>
+              ) : (
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${card.iconBg}`}>
+                    <card.icon className={`h-5 w-5 ${card.iconColor}`} />
                   </div>
-              }
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                  <div className="min-w-0">
+                    <p className="text-sm text-muted-foreground truncate">{card.label}</p>
+                    <p
+                      className="tracking-tight mt-0.5 font-extrabold font-sans text-2xl"
+                      style={{ fontFamily: "'DM Serif Display', serif" }}
+                    >
+                      {card.value}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-        {/* Revenue chart */}
-        <Card
-          className="animate-fade-in-up"
-          style={{ animationDelay: "480ms" }}>
-          
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-base font-medium">
-                Receita Mensal
-              </CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">Últimos 6 meses</p>
-          </CardHeader>
-          <CardContent>
-            {isLoading ?
-            <Skeleton className="h-[260px] w-full rounded-lg" /> :
-            chartData.length === 0 ?
+      {/* Quick Actions */}
+      <QuickActions />
+
+      {/* Revenue chart */}
+      <Card className="animate-fade-in-up" style={{ animationDelay: "480ms" }}>
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-base font-medium">Receita Mensal</CardTitle>
+          </div>
+          <p className="text-sm text-muted-foreground">Últimos 6 meses</p>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-[260px] w-full rounded-lg" />
+          ) : chartData.length === 0 ? (
             <div className="flex h-[260px] items-center justify-center text-sm text-muted-foreground">
-                Nenhum dado de receita disponível ainda.
-              </div> :
-
+              Nenhum dado de receita disponível ainda.
+            </div>
+          ) : (
             <ChartContainer config={chartConfig} className="h-[260px] w-full">
-                <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/30" />
-                  <XAxis
-                  dataKey="month"
+              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/30" />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} className="text-xs" />
+                <YAxis
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  className="text-xs" />
-                
-                  <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(v) =>
-                  v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()
-                  }
+                  tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString())}
                   className="text-xs"
-                  width={48} />
-                
-                  <ChartTooltip
+                  width={48}
+                />
+                <ChartTooltip
                   content={
-                  <ChartTooltipContent
-                    labelFormatter={(label) => label}
-                    formatter={(value) => [
-                    formatCurrency(Number(value)),
-                    "Receita"]
-                    } />
-
-                  } />
-                
-                  <Area
+                    <ChartTooltipContent
+                      labelFormatter={(label) => label}
+                      formatter={(value) => [formatCurrency(Number(value)), "Receita"]}
+                    />
+                  }
+                />
+                <Area
                   dataKey="revenue"
                   type="monotone"
                   fill="url(#fillRevenue)"
                   stroke="hsl(217 91% 60%)"
-                  strokeWidth={2} />
-                
-                </AreaChart>
-              </ChartContainer>
-            }
-          </CardContent>
-        </Card>
-      </div>
-    </div>);
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ChartContainer>
+          )}
+        </CardContent>
+      </Card>
 
+      {/* Task Engine */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <PendingSignaturesCard
+          items={metrics?.pending_signatures ?? []}
+          total={metrics?.pending_signatures_total ?? 0}
+        />
+        <ReadyForDeliveryCard
+          items={metrics?.ready_for_delivery ?? []}
+          total={metrics?.ready_for_delivery_total ?? 0}
+        />
+      </div>
+    </div>
+  );
 };
 
 export default Index;
