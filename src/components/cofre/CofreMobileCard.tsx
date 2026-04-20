@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { haptic } from "@/lib/haptics";
 
 type VaultItem = {
   id: string;
@@ -63,10 +64,10 @@ export function CofreMobileCard({ item, onOpen, onCopy }: Props) {
         {format(new Date(item.created_at), "dd 'de' MMM yyyy", { locale: ptBR })}
       </p>
       <div className="flex gap-2 pt-1 border-t border-border/40">
-        <Button variant="outline" size="sm" onClick={() => onOpen(item)} className="flex-1">
+        <Button variant="outline" size="sm" onClick={() => { haptic(10); onOpen(item); }} className="flex-1">
           <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Abrir
         </Button>
-        <Button variant="outline" size="sm" onClick={() => onCopy(item)} className="flex-1">
+        <Button variant="outline" size="sm" onClick={() => { haptic(10); onCopy(item); }} className="flex-1">
           <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar link
         </Button>
       </div>

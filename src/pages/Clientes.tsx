@@ -12,6 +12,7 @@ import ClientTable, { type ClientSortKey, type SortDirection } from "@/component
 import ClientFormDialog from "@/components/clientes/ClientFormDialog";
 import ClientDeleteDialog from "@/components/clientes/ClientDeleteDialog";
 import ClienteMobileCard from "@/components/clientes/ClienteMobileCard";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -193,6 +194,7 @@ export default function Clientes() {
   }
 
   return (
+    <PullToRefresh onRefresh={fetchClients}>
     <div className="space-y-6">
       {!isMobile && (
         <div className="flex items-center justify-between">
@@ -301,6 +303,7 @@ export default function Clientes() {
         onOpenChange={() => setDeletingClient(null)}
         onDeleted={handleDeleted} />
       
-    </div>);
+    </div>
+    </PullToRefresh>);
 
 }

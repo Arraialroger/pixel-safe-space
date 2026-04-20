@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Plus, Eye, MessageCircle, MoreHorizontal, Search, Download } from "lucide-react";
 import { format } from "date-fns";
@@ -26,6 +26,7 @@ import { usePaywall } from "@/hooks/use-paywall";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
 import { PropostaMobileCard } from "@/components/propostas/PropostaMobileCard";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -61,30 +62,32 @@ export default function Propostas() {
     setCurrentPage(1);
   }, [search, statusFilter]);
 
-  useEffect(() => {
+  const fetchProposals = useCallback(async () => {
     if (!workspaceId) return;
-    (async () => {
-      const { data, error } = await supabase.
-      from("proposals").
-      select("id, title, status, created_at, client_id, clients(name, phone)").
-      eq("workspace_id", workspaceId).
-      order("created_at", { ascending: false });
+    const { data, error } = await supabase.
+    from("proposals").
+    select("id, title, status, created_at, client_id, clients(name, phone)").
+    eq("workspace_id", workspaceId).
+    order("created_at", { ascending: false });
 
-      if (!error && data) {
-        setProposals(
-          data.map((p) => ({
-            id: p.id,
-            title: p.title,
-            status: p.status,
-            created_at: p.created_at,
-            client_name: p.clients?.name ?? "—",
-            client_phone: p.clients?.phone ?? null
-          }))
-        );
-      }
-      setLoading(false);
-    })();
+    if (!error && data) {
+      setProposals(
+        data.map((p) => ({
+          id: p.id,
+          title: p.title,
+          status: p.status,
+          created_at: p.created_at,
+          client_name: p.clients?.name ?? "—",
+          client_phone: p.clients?.phone ?? null
+        }))
+      );
+    }
+    setLoading(false);
   }, [workspaceId]);
+
+  useEffect(() => {
+    fetchProposals();
+  }, [fetchProposals]);
 
   const filtered = useMemo(() => {
     let result = proposals;
@@ -166,6 +169,7 @@ export default function Propostas() {
   }
 
   return (
+    <PullToRefresh onRefresh={fetchProposals}>
     <div className="space-y-6">
       {!isMobile && (
         <div className="flex items-center justify-between">
@@ -334,6 +338,7 @@ export default function Propostas() {
         }
         </>
       }
-    </div>);
+    </div>
+    </PullToRefresh>);
 
 }

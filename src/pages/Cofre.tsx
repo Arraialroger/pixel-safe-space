@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CofreMobileCard } from "@/components/cofre/CofreMobileCard";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -68,35 +69,37 @@ export default function Cofre() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
+  const fetchVault = useCallback(async () => {
     if (!workspaceId) return;
     setLoading(true);
-    supabase
+    const { data, error } = await supabase
       .from("contracts")
       .select("id, final_deliverable_url, status, is_fully_paid, created_at, clients(name), proposals(title)")
       .eq("workspace_id", workspaceId)
       .not("final_deliverable_url", "is", null)
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error(error);
-          setItems([]);
-        } else {
-          setItems(
-            (data || []).map((c: any) => ({
-              id: c.id,
-              final_deliverable_url: c.final_deliverable_url,
-              status: c.status,
-              is_fully_paid: c.is_fully_paid,
-              created_at: c.created_at,
-              client_name: c.clients?.name ?? "—",
-              project_title: c.proposals?.title ?? null,
-            }))
-          );
-        }
-        setLoading(false);
-      });
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error(error);
+      setItems([]);
+    } else {
+      setItems(
+        (data || []).map((c: any) => ({
+          id: c.id,
+          final_deliverable_url: c.final_deliverable_url,
+          status: c.status,
+          is_fully_paid: c.is_fully_paid,
+          created_at: c.created_at,
+          client_name: c.clients?.name ?? "—",
+          project_title: c.proposals?.title ?? null,
+        }))
+      );
+    }
+    setLoading(false);
   }, [workspaceId]);
+
+  useEffect(() => {
+    fetchVault();
+  }, [fetchVault]);
 
   const filtered = useMemo(() => {
     let result = items;
@@ -146,6 +149,7 @@ export default function Cofre() {
   }
 
   return (
+    <PullToRefresh onRefresh={fetchVault}>
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -255,5 +259,6 @@ export default function Cofre() {
         </>
       )}
     </div>
+    </PullToRefresh>
   );
 }
