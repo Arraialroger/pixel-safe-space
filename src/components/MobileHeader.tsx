@@ -44,7 +44,7 @@ export function MobileHeader() {
   const title = resolveTitle(location.pathname);
 
   return (
-    <header className="sticky top-0 z-30 h-14 flex items-center justify-between gap-3 px-4 border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-30 h-14 flex items-center justify-between gap-3 px-4 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="flex items-center gap-2 min-w-0">
         {logoUrl ? (
           <img src={logoUrl} alt="Logo" className="h-6 max-w-[28px] object-contain shrink-0" />

@@ -22,7 +22,7 @@ export function MobileBottomNav() {
   return (
     <>
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="grid grid-cols-5 h-16">
@@ -40,7 +40,12 @@ export function MobileBottomNav() {
                 )}
               >
                 {active && <span className="absolute top-0 h-0.5 w-8 rounded-b bg-primary" />}
-                <Icon className="h-5 w-5" />
+                <span className={cn(
+                  "flex h-8 w-12 items-center justify-center rounded-full transition-colors",
+                  active && "bg-primary/10"
+                )}>
+                  <Icon className="h-5 w-5" />
+                </span>
                 <span className="text-[10px] font-medium leading-none">{s.label}</span>
               </Link>
             );
@@ -49,7 +54,9 @@ export function MobileBottomNav() {
             onClick={() => { haptic(10); setMoreOpen(true); }}
             className="relative flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Menu className="h-5 w-5" />
+            <span className="flex h-8 w-12 items-center justify-center rounded-full">
+              <Menu className="h-5 w-5" />
+            </span>
             <span className="text-[10px] font-medium leading-none">Mais</span>
           </button>
         </div>
