@@ -27,6 +27,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
 import { PropostaMobileCard } from "@/components/propostas/PropostaMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -57,6 +58,7 @@ export default function Propostas() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useViewMode("propostas", "table");
 
   useEffect(() => {
     setCurrentPage(1);
@@ -175,6 +177,7 @@ export default function Propostas() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Propostas</h1>
           <div className="flex items-center gap-2">
+            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={filtered.length === 0}>
@@ -235,8 +238,8 @@ export default function Propostas() {
             </div> :
 
         <>
-              {isMobile ? (
-                <div className="space-y-3">
+              {isMobile || viewMode === "cards" ? (
+                <div className={isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"}>
                   {paginated.map((p) => (
                     <PropostaMobileCard key={p.id} proposal={p} />
                   ))}

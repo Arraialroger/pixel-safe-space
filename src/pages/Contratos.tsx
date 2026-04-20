@@ -25,6 +25,7 @@ import { exportToXlsx } from "@/lib/xlsx-export";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ContratoMobileCard } from "@/components/contratos/ContratoMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -48,6 +49,7 @@ export default function Contratos() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [execFilter, setExecFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useViewMode("contratos", "table");
 
   useEffect(() => {
     setCurrentPage(1);
@@ -173,18 +175,21 @@ export default function Contratos() {
           </p>
         </div>
         {!isMobile && contracts.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={filtered.length === 0}>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportCSV}>CSV (.csv)</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportXLSX}>Excel (.xlsx)</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={filtered.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>CSV (.csv)</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportXLSX}>Excel (.xlsx)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
       </div>
 
@@ -240,9 +245,9 @@ export default function Contratos() {
               <Search className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-muted-foreground">Nenhum contrato encontrado com esses filtros.</p>
             </div>
-          ) : isMobile ? (
+          ) : isMobile || viewMode === "cards" ? (
             <>
-              <div className="space-y-3">
+              <div className={isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"}>
                 {paginated.map((c) => (
                   <ContratoMobileCard key={c.id} contract={c} />
                 ))}
