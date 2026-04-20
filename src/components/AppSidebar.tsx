@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Sidebar,
   SidebarContent,
@@ -138,9 +139,17 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3">
         {!collapsed && user &&
-        <p className="text-xs text-muted-foreground truncate px-2 mb-2">
-            {user.email}
-          </p>
+        <div className="flex items-center justify-between gap-2 px-2 mb-2">
+            <p className="text-xs text-muted-foreground truncate">
+              {user.email}
+            </p>
+            <ThemeToggle className="h-7 w-7 shrink-0" />
+          </div>
+        }
+        {collapsed &&
+          <div className="flex justify-center mb-2">
+            <ThemeToggle className="h-8 w-8" />
+          </div>
         }
         <SidebarMenu>
           <SidebarMenuItem>
