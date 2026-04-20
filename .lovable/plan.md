@@ -1,62 +1,67 @@
 
 
-## Plano: Corrigir contraste no tema claro + Vista de Cards no desktop
+## Plano: Header do contrato no mobile + cards como padrão no desktop
 
-### Parte 1 — Corrigir textos apagados no tema claro
+### Parte 1 — Reorganizar header de `/contratos/:id` no mobile
 
-**Causa raiz:** vários blocos usam `prose-invert` fixo, que força cores de texto pensadas para fundo escuro (cinza claro sobre branco = ilegível). O `RichTextEditor` (Cláusulas do Contrato) e o "Escopo do Projeto" são os principais afetados.
+**Problema:** em 390px, a barra superior empilha 7+ controles na mesma linha (`flex-wrap`), espremendo WhatsApp, PDF, copiar, badges "Assinado" e "Não Iniciado" todos em mini-larguras ilegíveis. A linha de "Execução" abaixo sofre o mesmo (Select + botão "Confirmar Quitação" na mesma linha que o label).
 
-**Correção:** trocar `prose-invert` (sempre ativo) por `dark:prose-invert` (só ativa no dark) em 4 locais:
+**Solução (apenas em `src/pages/ContratoDetalhe.tsx`):**
 
-| Arquivo | Linha | Antes | Depois |
-|---|---|---|---|
-| `src/components/contratos/RichTextEditor.tsx` | 35 | `prose prose-sm prose-invert` | `prose prose-sm dark:prose-invert` |
-| `src/components/contratos/ContratoDocumento.tsx` | 354 | `prose prose-sm prose-invert` | `prose prose-sm dark:prose-invert` |
-| `src/pages/PropostaDetalhe.tsx` | 301 | `prose prose-sm max-w-none prose-invert` | `prose prose-sm max-w-none dark:prose-invert` |
-| `src/pages/PropostaPublica.tsx` | 125 | mesmo padrão | mesmo padrão |
+Reestruturar o header em **3 camadas verticais no mobile**, mantendo layout horizontal no desktop (`sm:` breakpoint):
 
-Como o Tailwind Typography usa `--tw-prose-body` baseado no tema, isso restaura contraste correto em ambos os modos sem mexer em mais nada.
+```text
+┌─────────────────────────────────────────────┐
+│ ← Voltar                       [Status]      │  Linha 1: navegação + badges principais
+│                                [Execução]    │
+├─────────────────────────────────────────────┤
+│ Contrato — Maiza Ribeiro                    │  Linha 2: título (sem mudança)
+├─────────────────────────────────────────────┤
+│ [WhatsApp grande, full-width no mobile]     │  Linha 3: ação primária destacada
+│ [PDF] [Copiar] [Reverter] [Excluir]         │  Linha 4: ações secundárias (ícones compactos)
+├─────────────────────────────────────────────┤
+│ Execução: [Select         ▼]                │  Linha 5: select full-width no mobile
+│ [Confirmar Quitação — full-width mobile]    │  Linha 6: botão de confirmação separado
+└─────────────────────────────────────────────┘
+```
 
-**Bônus de varredura:** revisar rapidamente classes hardcoded `text-white`, `text-zinc-*`, `bg-white/10`, `border-white/10` em páginas principais e substituir por tokens semânticos (`text-foreground`, `bg-card`, `border-border`) quando estiverem causando baixo contraste no claro. Foco: `PropostaDetalhe`, `PropostaPublica`, `ContratoPublico`, `ContratoDetalhe`.
+**Mudanças concretas:**
+
+1. **Linhas ~328-381** (cabeçalho de ações): separar em dois blocos
+   - Bloco superior: `Voltar` à esquerda + badges (Status + Execução) à direita, `flex-wrap` mas badges sempre juntas via subgrupo
+   - Bloco de ações: `flex flex-col sm:flex-row gap-2`. WhatsApp ocupa `w-full sm:w-auto` no mobile; PDF/Copiar/Reverter/Excluir agrupados em `flex gap-1` lado a lado (já são icon buttons compactos, cabem)
+
+2. **Linhas ~385-402** (linha de Execução): trocar `flex items-center gap-3` por `flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3`
+   - Select: `w-full sm:w-52`
+   - Botão "Confirmar Quitação": `w-full sm:w-auto sm:ml-auto` (no mobile vira full-width abaixo do select; no desktop continua à direita)
+
+3. **Badges menores no mobile**: adicionar `text-[10px] sm:text-xs` ao `Badge` para não quebrar palavras como "Não Iniciado" em duas linhas. Também envolver os textos com `whitespace-nowrap`.
+
+Resultado: no mobile (390px) todos os controles ficam respiráveis, com WhatsApp em destaque (ação principal) e o resto distribuído em linhas separadas. No desktop o layout horizontal atual permanece praticamente igual.
 
 ---
 
-### Parte 2 — Vista em Cards no desktop (Propostas, Contratos, Clientes, Cofre)
+### Parte 2 — Cards como padrão no desktop em Clientes, Contratos e Propostas
 
-**UX:** adicionar um seletor de visualização (Tabela / Cards) no header de cada listagem desktop, ao lado dos filtros. Em mobile permanece sempre cards (sem mudança).
+**Mudança simples** no hook `useViewMode` (em `src/components/ViewModeToggle.tsx`):
 
-**Componente novo:** `src/components/ViewModeToggle.tsx` — toggle segmentado de 2 botões (ícones `Table` e `LayoutGrid`) seguindo o mesmo estilo visual do `ThemeToggle` (pill com bordas, estado ativo destacado).
+Atualmente `useViewMode(key, defaultMode = "table")` é chamado nas 4 páginas com default `"table"`. Vamos mudar o default em 3 páginas para `"cards"`:
 
-**Persistência:** preferência salva em `localStorage` por página (`pixelsafe-view:propostas`, `…:contratos`, etc.) — default `"table"`.
+| Arquivo | Antes | Depois |
+|---|---|---|
+| `src/pages/Clientes.tsx` | `useViewMode("clientes", "table")` | `useViewMode("clientes", "cards")` |
+| `src/pages/Contratos.tsx` | `useViewMode("contratos", "table")` | `useViewMode("contratos", "cards")` |
+| `src/pages/Propostas.tsx` | `useViewMode("propostas", "table")` | `useViewMode("propostas", "cards")` |
+| `src/pages/Cofre.tsx` | sem mudança (mantém `"table"`) | — |
 
-**Reaproveitamento:** os cards mobile já existem e funcionam bem (`PropostaMobileCard`, `ContratoMobileCard`, `ClienteMobileCard`, `CofreMobileCard`). No modo cards desktop, renderizar a mesma lista dentro de um grid responsivo:
-
-```text
-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3
-```
-
-**Páginas alteradas:**
-- `src/pages/Propostas.tsx`
-- `src/pages/Contratos.tsx`
-- `src/pages/Clientes.tsx`
-- `src/pages/Cofre.tsx`
-
-Lógica em cada uma (apenas no ramo desktop):
-```tsx
-{viewMode === "table" ? <Table>…</Table> : (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-    {paginated.map(item => <XxxMobileCard … />)}
-  </div>
-)}
-```
-
-A paginação continua igual (10 itens por página), funcionando para ambos os modos.
+**Importante:** o default só vale para usuários novos / quem nunca tocou no toggle. Quem já escolheu manualmente `"table"` no localStorage continuará em tabela (a preferência salva tem prioridade) — o que é o comportamento correto.
 
 ---
 
 ### Validação após implementar
-1. Trocar para tema claro em `/contratos/:id` e confirmar que o texto das cláusulas (RichTextEditor) e o escopo da proposta ficam totalmente legíveis.
-2. Em desktop, alternar Tabela ↔ Cards em `/propostas`, `/contratos`, `/clientes`, `/cofre`. Verificar que paginação e filtros funcionam em ambos.
-3. Recarregar a página e confirmar que a preferência de visualização persiste.
-4. Em mobile (390px), comportamento permanece inalterado (sempre cards, sem toggle visível).
+
+1. Abrir `/contratos/:id` em 390px e confirmar: WhatsApp full-width, ícones de ação alinhados, badges legíveis sem quebra, Select de execução full-width, botão "Confirmar Quitação" abaixo dele em linha própria.
+2. Abrir o mesmo contrato em desktop (≥1024px) e confirmar que o header continua em uma única linha, sem regressão visual.
+3. Limpar `localStorage` (`pixelsafe-view:*`) e abrir `/clientes`, `/contratos`, `/propostas` em desktop → devem aparecer em cards por padrão. `/cofre` continua em tabela.
+4. Alternar para tabela em uma das páginas, recarregar → preferência persiste.
 
