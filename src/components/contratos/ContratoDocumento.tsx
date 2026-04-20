@@ -351,7 +351,7 @@ export default function ContratoDocumento({
   customContractText,
 }: ContractDocProps) {
   return (
-    <article className="prose prose-sm prose-invert max-w-none">
+    <article className="prose prose-sm dark:prose-invert max-w-none">
       <h1 className="text-center text-xl font-bold tracking-wide uppercase mb-8">
         {template === "friendly" ? "Termo de Prestação de Serviços" : "Contrato de Prestação de Serviços"}
       </h1>
