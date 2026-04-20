@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CofreMobileCard } from "@/components/cofre/CofreMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
+import { SortSelector, sortItems, type SortOption } from "@/components/SortSelector";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -70,6 +71,8 @@ export default function Cofre() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("cofre", "table");
+  const [cardSort, setCardSort] = useState<SortOption>("newest");
+  const showSort = isMobile || viewMode === "cards";
 
   const fetchVault = useCallback(async () => {
     if (!workspaceId) return;
@@ -119,8 +122,12 @@ export default function Cofre() {
     return result;
   }, [items, search, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const sortedFiltered = useMemo(
+    () => (showSort ? sortItems(filtered, cardSort, (i) => i.project_title || i.client_name, (i) => i.created_at) : filtered),
+    [filtered, showSort, cardSort],
+  );
+  const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / ITEMS_PER_PAGE));
+  const paginated = sortedFiltered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   useEffect(() => { setPage(1); }, [search, statusFilter]);
 
@@ -186,6 +193,9 @@ export default function Cofre() {
             <SelectItem value="signed">Assinado</SelectItem>
           </SelectContent>
         </Select>
+        {showSort && (
+          <SortSelector value={cardSort} onChange={setCardSort} className="w-full sm:w-[180px]" />
+        )}
       </div>
 
       {loading ? (

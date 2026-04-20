@@ -14,6 +14,7 @@ import ClientDeleteDialog from "@/components/clientes/ClientDeleteDialog";
 import ClienteMobileCard from "@/components/clientes/ClienteMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
+import { SortSelector, sortItems, type SortOption } from "@/components/SortSelector";
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -50,6 +51,8 @@ export default function Clientes() {
   const [sortKey, setSortKey] = useState<ClientSortKey>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [viewMode, setViewMode] = useViewMode("clientes", "cards");
+  const [cardSort, setCardSort] = useState<SortOption>("newest");
+  const showSort = isMobile || viewMode === "cards";
 
   const handleSortChange = (key: ClientSortKey) => {
     if (key === sortKey) {
@@ -126,13 +129,15 @@ export default function Clientes() {
       })
     : clients;
 
-  const sortedClients = [...filteredClients].sort((a, b) => {
-    const dir = sortDirection === "asc" ? 1 : -1;
-    if (sortKey === "name") {
-      return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }) * dir;
-    }
-    return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
-  });
+  const sortedClients = showSort
+    ? sortItems(filteredClients, cardSort, (c) => c.name, (c) => c.created_at)
+    : [...filteredClients].sort((a, b) => {
+        const dir = sortDirection === "asc" ? 1 : -1;
+        if (sortKey === "name") {
+          return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }) * dir;
+        }
+        return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
+      });
 
   const totalPages = Math.ceil(sortedClients.length / ITEMS_PER_PAGE);
   const paginatedClients = sortedClients.slice(
@@ -224,14 +229,19 @@ export default function Clientes() {
       )}
 
       {clients.length > 0 && (
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome, e-mail ou CPF/CNPJ"
-            className="pl-9"
-          />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome, e-mail ou CPF/CNPJ"
+              className="pl-9"
+            />
+          </div>
+          {showSort && (
+            <SortSelector value={cardSort} onChange={setCardSort} className="w-full sm:w-[180px]" />
+          )}
         </div>
       )}
 

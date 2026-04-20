@@ -28,6 +28,7 @@ import { useMobileHeaderAction } from "@/components/MobileHeaderActionContext";
 import { PropostaMobileCard } from "@/components/propostas/PropostaMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
+import { SortSelector, sortItems, type SortOption } from "@/components/SortSelector";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -59,6 +60,8 @@ export default function Propostas() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("propostas", "cards");
+  const [cardSort, setCardSort] = useState<SortOption>("newest");
+  const showSort = isMobile || viewMode === "cards";
 
   useEffect(() => {
     setCurrentPage(1);
@@ -107,8 +110,12 @@ export default function Propostas() {
     return result;
   }, [proposals, search, statusFilter]);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = filtered.slice(
+  const sortedFiltered = useMemo(
+    () => (showSort ? sortItems(filtered, cardSort, (p) => p.title, (p) => p.created_at) : filtered),
+    [filtered, showSort, cardSort],
+  );
+  const totalPages = Math.ceil(sortedFiltered.length / ITEMS_PER_PAGE);
+  const paginated = sortedFiltered.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -229,6 +236,9 @@ export default function Propostas() {
                 <SelectItem value="completed">Concluído</SelectItem>
               </SelectContent>
             </Select>
+            {showSort && (
+              <SortSelector value={cardSort} onChange={setCardSort} className="w-full sm:w-[180px]" />
+            )}
           </div>
 
           {filtered.length === 0 ?
