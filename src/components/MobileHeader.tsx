@@ -55,7 +55,7 @@ export function MobileHeader() {
         <h1 className="text-base font-semibold truncate">{title}</h1>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        <ThemeToggle className="h-9 w-9" />
+        <ThemeToggle />
         {action}
       </div>
     </header>
