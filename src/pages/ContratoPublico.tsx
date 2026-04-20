@@ -567,16 +567,16 @@ export default function ContratoPublico() {
                       </Button>
                     </a>
                   ) : paymentError ? (
-                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-center">
-                      <p className="text-amber-400 text-sm">{paymentError}</p>
+                    <div className="rounded-lg border border-warning/20 bg-warning/10 p-4 text-center">
+                      <p className="text-warning text-sm">{paymentError}</p>
                     </div>
                   ) : null}
                 </div>
               </div>
             ) : (
               /* Entrance paid, no deliverable yet */
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">
-                <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+              <div className="rounded-lg border border-success/20 bg-success/10 p-5 text-center space-y-2">
+                <p className="text-success font-semibold text-lg flex items-center justify-center gap-2">
                   <CheckCircle2 className="h-5 w-5" /> ✅ Entrada Paga
                 </p>
                 <p className="text-muted-foreground text-sm">
@@ -592,14 +592,14 @@ export default function ContratoPublico() {
           <div className="space-y-4">
             {contract.is_fully_paid && contract.has_deliverable ? (
               <div className="space-y-4">
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center">
-                  <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+                <div className="rounded-lg border border-success/20 bg-success/10 p-5 text-center">
+                  <p className="text-success font-semibold text-lg flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-5 w-5" /> ✅ Projeto Quitado e Liberado!
                   </p>
                 </div>
                 {deliverableUrl ? (
                   <a href={deliverableUrl} target="_blank" rel="noopener noreferrer" className="block">
-                    <Button size="lg" className="w-full text-lg py-6 gap-3 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 animate-glow-pulse">
+                    <Button size="lg" className="w-full text-lg py-6 gap-3 bg-success hover:bg-success/80 text-primary-foreground shadow-lg shadow-success/25 animate-glow-pulse">
                       <Download className="h-5 w-5" /> Baixar Arquivos Finais
                     </Button>
                   </a>
@@ -611,8 +611,8 @@ export default function ContratoPublico() {
                 )}
               </div>
             ) : (
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-2">
-                <p className="text-emerald-400 font-semibold text-lg flex items-center justify-center gap-2">
+              <div className="rounded-lg border border-success/20 bg-success/10 p-5 text-center space-y-2">
+                <p className="text-success font-semibold text-lg flex items-center justify-center gap-2">
                   <CheckCircle2 className="h-5 w-5" /> ✅ Projeto Quitado
                 </p>
                 <p className="text-muted-foreground text-sm">
