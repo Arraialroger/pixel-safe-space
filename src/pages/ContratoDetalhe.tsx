@@ -23,6 +23,7 @@ import ContratoDocumento from "@/components/contratos/ContratoDocumento";
 import ContratoPDFView from "@/components/contratos/ContratoPDFView";
 import { contractStatusConfig, execStatusConfig, templateConfig } from "@/lib/contract-utils";
 import { exportContractPdf } from "@/lib/pdf-export";
+import { cn } from "@/lib/utils";
 
 type WorkspaceDoc = {
   name: string;
