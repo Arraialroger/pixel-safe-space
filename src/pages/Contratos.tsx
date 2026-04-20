@@ -49,7 +49,7 @@ export default function Contratos() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [execFilter, setExecFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useViewMode("contratos", "table");
+  const [viewMode, setViewMode] = useViewMode("contratos", "cards");
 
   useEffect(() => {
     setCurrentPage(1);

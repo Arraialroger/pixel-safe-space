@@ -327,15 +327,40 @@ export default function ContratoDetalhe() {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      {/* Linha 1: voltar + badges de status */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <Button variant="ghost" size="sm" onClick={() => navigate("/contratos")} className="gap-1 text-muted-foreground">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <Badge variant={sc.variant} className={cn(sc.className, "text-[10px] sm:text-xs whitespace-nowrap")}>{sc.label}</Badge>
+          <Badge variant="outline" className={cn(ec.className, "text-[10px] sm:text-xs whitespace-nowrap")}>{ec.label}</Badge>
+        </div>
+      </div>
+
+      <h1 className="text-2xl font-semibold tracking-tight">Contrato — {clientName}</h1>
+
+      {/* Ações: WhatsApp em destaque + grupo de ícones secundários */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        {whatsappUrl && (
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+            <Button size="sm" className="gap-1 bg-emerald-600 hover:bg-emerald-500 text-white w-full sm:w-auto">
+              <MessageCircle className="h-4 w-4" /> WhatsApp
+            </Button>
+          </a>
+        )}
+        <div className="flex items-center gap-1 sm:ml-auto">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleExportPdf} disabled={exportingPdf} title="Baixar PDF">
+            {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          </Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink} title="Copiar link">
+            <Copy className="h-4 w-4" />
+          </Button>
           {status === "pending_signature" && (
             <Button variant="outline" size="sm" onClick={handleRevertToDraft} disabled={reverting} className="gap-1">
               {reverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-              Reverter para Rascunho
+              <span className="hidden sm:inline">Reverter para Rascunho</span>
+              <span className="sm:hidden">Reverter</span>
             </Button>
           )}
           {(status === "draft" || status === "pending_signature") && (
@@ -362,30 +387,14 @@ export default function ContratoDetalhe() {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          {whatsappUrl && (
-            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="gap-1 bg-emerald-600 hover:bg-emerald-500 text-white">
-                <MessageCircle className="h-4 w-4" /> WhatsApp
-              </Button>
-            </a>
-          )}
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleExportPdf} disabled={exportingPdf} title="Baixar PDF">
-            {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink} title="Copiar link">
-            <Copy className="h-4 w-4" />
-          </Button>
-          <Badge variant={sc.variant} className={sc.className}>{sc.label}</Badge>
-          <Badge variant="outline" className={ec.className}>{ec.label}</Badge>
         </div>
       </div>
 
-      <h1 className="text-2xl font-semibold tracking-tight">Contrato — {clientName}</h1>
-
-      <div className="flex items-center gap-3">
+      {/* Execução: select + confirmar pagamento */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
         <Label className="text-sm whitespace-nowrap">Execução:</Label>
         <Select value={executionStatus} onValueChange={handleExecutionStatusChange}>
-          <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-52"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="not_started">Não Iniciado</SelectItem>
             <SelectItem value="in_progress">Em Desenvolvimento</SelectItem>
@@ -394,7 +403,7 @@ export default function ContratoDetalhe() {
           </SelectContent>
         </Select>
         {(status === "signed" || status === "partially_paid") && (
-          <Button size="sm" variant="outline" onClick={handleConfirmPayment} disabled={confirmingPayment} className="gap-1 ml-auto">
+          <Button size="sm" variant="outline" onClick={handleConfirmPayment} disabled={confirmingPayment} className="gap-1 w-full sm:w-auto sm:ml-auto">
             {confirmingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {status === "signed" && hasEntrance ? "Confirmar Entrada" : "Confirmar Quitação"}
           </Button>

@@ -58,7 +58,7 @@ export default function Propostas() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useViewMode("propostas", "table");
+  const [viewMode, setViewMode] = useViewMode("propostas", "cards");
 
   useEffect(() => {
     setCurrentPage(1);
