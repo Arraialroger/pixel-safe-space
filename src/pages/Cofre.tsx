@@ -133,8 +133,8 @@ export default function Cofre() {
 
   function getFinancialBadge(item: VaultItem) {
     if (item.is_fully_paid) return <Badge variant="default" className="bg-primary/15 text-primary border-primary/20">Quitado</Badge>;
-    if (item.status === "partially_paid") return <Badge variant="default" className="bg-amber-500/15 text-amber-400 border-amber-500/20">Entrada Paga</Badge>;
-    if (item.status === "signed") return <Badge variant="default" className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20">Assinado</Badge>;
+    if (item.status === "partially_paid") return <Badge variant="default" className="bg-warning/15 text-warning border-warning/20">Entrada Paga</Badge>;
+    if (item.status === "signed") return <Badge variant="default" className="bg-success/15 text-success border-success/20">Assinado</Badge>;
     return <Badge variant="secondary">{item.status}</Badge>;
   }
 

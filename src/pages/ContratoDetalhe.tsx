@@ -345,7 +345,7 @@ export default function ContratoDetalhe() {
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         {whatsappUrl && (
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-            <Button size="sm" className="gap-1 bg-emerald-600 hover:bg-emerald-500 text-white w-full sm:w-auto">
+            <Button size="sm" className="gap-1 bg-whatsapp hover:bg-whatsapp/80 text-primary-foreground w-full sm:w-auto">
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </Button>
           </a>
@@ -571,9 +571,9 @@ export default function ContratoDetalhe() {
 
                 {finalDeliverableUrl ? (
                   <div className="space-y-4">
-                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 flex items-center justify-between gap-4">
+                    <div className="rounded-xl border border-success/20 bg-success/10 p-4 flex items-center justify-between gap-4">
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-emerald-400 flex items-center gap-2">
+                        <p className="text-sm font-medium text-success flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4" /> Arquivo entregue
                         </p>
                         <p className="text-xs text-muted-foreground truncate max-w-md">{finalDeliverableUrl.split("/").pop()}</p>
@@ -583,7 +583,7 @@ export default function ContratoDetalhe() {
                       </Button>
                     </div>
 
-                    <div className="rounded-lg border border-white/10 bg-card/50 p-4 text-center space-y-2">
+                    <div className="rounded-lg border border-border bg-card/50 p-4 text-center space-y-2">
                       <p className="text-sm text-muted-foreground">Deseja substituir o arquivo?</p>
                       <label className="cursor-pointer">
                         <Button variant="outline" size="sm" className="gap-2" asChild>
@@ -597,15 +597,15 @@ export default function ContratoDetalhe() {
                     </div>
 
                     {isFullyPaid && (
-                      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-center">
-                        <p className="text-emerald-400 font-semibold flex items-center justify-center gap-2">
+                      <div className="rounded-lg border border-success/20 bg-success/10 p-4 text-center">
+                        <p className="text-success font-semibold flex items-center justify-center gap-2">
                           <CheckCircle2 className="h-4 w-4" /> Saldo quitado — Cliente tem acesso ao download
                         </p>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-white/20 bg-card/30 p-8 text-center space-y-4">
+                  <div className="rounded-xl border border-dashed border-border bg-card/30 p-8 text-center space-y-4">
                     <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
                     <p className="text-muted-foreground">Nenhum arquivo enviado ainda.</p>
                     <label className="cursor-pointer inline-block">

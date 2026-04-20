@@ -30,6 +30,12 @@
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
+    --success: 160 84% 39%;
+    --success-foreground: 160 84% 39%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 50%;
+    --whatsapp: 142 70% 35%;
+
     --border: 240 6% 22%;
     --input: 240 7% 10%;
     --ring: 187 95% 46%;
@@ -70,6 +76,12 @@
 
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
+
+    --success: 160 84% 30%;
+    --success-foreground: 160 84% 30%;
+    --warning: 38 92% 42%;
+    --warning-foreground: 38 92% 42%;
+    --whatsapp: 142 70% 30%;
 
     --border: 240 6% 88%;
     --input: 240 5% 96%;
