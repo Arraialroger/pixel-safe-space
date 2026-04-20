@@ -32,7 +32,7 @@ export default function RichTextEditor({ content, onChange, disabled, placeholde
     editorProps: {
       attributes: {
         class: cn(
-          "prose prose-sm prose-invert max-w-none min-h-[280px] px-4 py-3 focus:outline-none",
+          "prose prose-sm dark:prose-invert max-w-none min-h-[280px] px-4 py-3 focus:outline-none",
           "text-sm leading-relaxed",
         ),
       },

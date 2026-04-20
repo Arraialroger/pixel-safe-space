@@ -116,17 +116,17 @@ export default function PropostaPublica() {
           <p className="text-muted-foreground">Preparada para {proposal.client_name}</p>
         </div>
 
-        <Separator className="bg-white/10" />
+        <Separator />
 
         {proposal.ai_generated_scope && (
           <>
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-foreground">Escopo do Projeto</h3>
-              <div className="prose prose-sm max-w-none prose-invert rounded-xl border border-white/10 bg-card p-6">
+              <div className="prose prose-sm max-w-none dark:prose-invert rounded-xl border border-border bg-card p-6">
                 <ReactMarkdown>{proposal.ai_generated_scope}</ReactMarkdown>
               </div>
             </div>
-            <Separator className="bg-white/10" />
+            <Separator />
           </>
         )}
 

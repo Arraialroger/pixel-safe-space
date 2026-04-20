@@ -14,6 +14,7 @@ import { ptBR } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CofreMobileCard } from "@/components/cofre/CofreMobileCard";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -68,6 +69,7 @@ export default function Cofre() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useViewMode("cofre", "table");
 
   const fetchVault = useCallback(async () => {
     if (!workspaceId) return;
@@ -158,6 +160,9 @@ export default function Cofre() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Central de entregáveis do seu estúdio</p>
         </div>
+        {!isMobile && (
+          <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -193,8 +198,8 @@ export default function Cofre() {
         </div>
       ) : (
         <>
-          {isMobile ? (
-            <div className="space-y-3">
+          {isMobile || viewMode === "cards" ? (
+            <div className={isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"}>
               {paginated.map((item) => (
                 <CofreMobileCard key={item.id} item={item} onOpen={handleOpen} onCopy={handleCopy} />
               ))}
