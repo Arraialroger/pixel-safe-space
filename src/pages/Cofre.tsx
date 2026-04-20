@@ -70,7 +70,7 @@ export default function Cofre() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useViewMode("cofre", "table");
+  const [viewMode, setViewMode] = useViewMode("cofre", "cards");
   const [cardSort, setCardSort] = useSortPreference("cofre");
   const showSort = isMobile || viewMode === "cards";
 
