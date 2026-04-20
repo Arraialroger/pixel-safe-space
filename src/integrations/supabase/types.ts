@@ -270,6 +270,7 @@ export type Database = {
           id: string
           language_preference: string
           logo_url: string | null
+          theme_preference: string
           updated_at: string
         }
         Insert: {
@@ -279,6 +280,7 @@ export type Database = {
           id: string
           language_preference?: string
           logo_url?: string | null
+          theme_preference?: string
           updated_at?: string
         }
         Update: {
@@ -288,6 +290,7 @@ export type Database = {
           id?: string
           language_preference?: string
           logo_url?: string | null
+          theme_preference?: string
           updated_at?: string
         }
         Relationships: []
