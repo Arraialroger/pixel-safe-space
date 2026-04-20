@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileCheck, MoreHorizontal, Eye, Search, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,7 @@ import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/co
 import { exportToXlsx } from "@/lib/xlsx-export";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ContratoMobileCard } from "@/components/contratos/ContratoMobileCard";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -52,31 +53,33 @@ export default function Contratos() {
     setCurrentPage(1);
   }, [search, statusFilter, execFilter]);
 
-  useEffect(() => {
+  const fetchContracts = useCallback(async () => {
     if (!workspaceId) return;
-    (async () => {
-      const { data, error } = await supabase
-        .from("contracts")
-        .select("id, status, execution_status, payment_value, created_at, client_id, clients(name, phone)")
-        .eq("workspace_id", workspaceId)
-        .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("contracts")
+      .select("id, status, execution_status, payment_value, created_at, client_id, clients(name, phone)")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        setContracts(
-          data.map((c) => ({
-            id: c.id,
-            status: c.status,
-            execution_status: c.execution_status ?? "not_started",
-            payment_value: c.payment_value,
-            created_at: c.created_at,
-            client_name: c.clients?.name ?? "—",
-            client_phone: c.clients?.phone ?? null,
-          }))
-        );
-      }
-      setLoading(false);
-    })();
+    if (!error && data) {
+      setContracts(
+        data.map((c) => ({
+          id: c.id,
+          status: c.status,
+          execution_status: c.execution_status ?? "not_started",
+          payment_value: c.payment_value,
+          created_at: c.created_at,
+          client_name: c.clients?.name ?? "—",
+          client_phone: c.clients?.phone ?? null,
+        }))
+      );
+    }
+    setLoading(false);
   }, [workspaceId]);
+
+  useEffect(() => {
+    fetchContracts();
+  }, [fetchContracts]);
 
   const filtered = useMemo(() => {
     let result = contracts;
@@ -160,6 +163,7 @@ export default function Contratos() {
   }
 
   return (
+    <PullToRefresh onRefresh={fetchContracts}>
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -329,5 +333,6 @@ export default function Contratos() {
         </>
       )}
     </div>
+    </PullToRefresh>
   );
 }
