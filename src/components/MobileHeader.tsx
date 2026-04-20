@@ -4,6 +4,7 @@ import { Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useMobileHeaderActionSlot } from "./MobileHeaderActionContext";
+import { ThemeToggle } from "./ThemeToggle";
 
 const titleMap: Record<string, string> = {
   "/": "Dashboard",
@@ -53,7 +54,10 @@ export function MobileHeader() {
         )}
         <h1 className="text-base font-semibold truncate">{title}</h1>
       </div>
-      <div className="flex items-center gap-2 shrink-0">{action}</div>
+      <div className="flex items-center gap-1 shrink-0">
+        <ThemeToggle className="h-9 w-9" />
+        {action}
+      </div>
     </header>
   );
 }
