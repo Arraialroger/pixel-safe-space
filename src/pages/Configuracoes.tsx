@@ -10,7 +10,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, User, KeyRound } from "lucide-react";
+import { Loader2, User, KeyRound, Palette } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const profileSchema = z.object({
   full_name: z.string().min(1, "Nome é obrigatório"),
@@ -218,4 +220,29 @@ export default function Configuracoes() {
       </form>
     </div>);
 
+}
+
+function AppearanceCard() {
+  const { theme } = useTheme();
+  const label = theme === "light" ? "Claro" : theme === "dark" ? "Escuro" : "Sistema";
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Palette className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">Aparência</CardTitle>
+        </div>
+        <CardDescription>
+          Escolha como o PixelSafe é exibido. A preferência é sincronizada entre seus dispositivos.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">Tema</p>
+          <p className="text-xs text-muted-foreground">Atual: {label}</p>
+        </div>
+        <ThemeToggle />
+      </CardContent>
+    </Card>
+  );
 }
