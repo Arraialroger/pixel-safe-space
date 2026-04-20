@@ -45,7 +45,7 @@ export default function Login() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 lg:hidden mb-6">
               <Shield className="h-7 w-7 text-primary" />
-              <span className="text-xl font-bold">Pixel Safe</span>
+              <span className="text-xl font-bold">PixelSafe</span>
             </div>
             <h2 className="text-2xl font-semibold tracking-tight">Entrar</h2>
             <p className="text-muted-foreground text-sm">Insira suas credenciais para acessar sua conta.</p>
