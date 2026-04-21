@@ -71,17 +71,20 @@ export default function ClientTable({
               <TableCell>{c.document ?? "—"}</TableCell>
               <TableCell>{c.email ?? "—"}</TableCell>
               <TableCell>
-                {c.phone ? (
-                  <a
-                    href={`https://wa.me/${c.phone.replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors"
-                  >
-                    <MessageCircle className="h-3.5 w-3.5" />
-                    {c.phone}
-                  </a>
-                ) : "—"}
+                {(() => {
+                  const waUrl = c.phone ? `https://wa.me/${c.phone.replace(/\D/g, "")}` : null;
+                  return c.phone ? (
+                    <a
+                      href={waUrl!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      {c.phone}
+                    </a>
+                  ) : "—";
+                })()}
               </TableCell>
               <TableCell>
                 {format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}

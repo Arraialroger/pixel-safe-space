@@ -6,6 +6,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { haptic } from "@/lib/haptics";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 interface Props {
   client: Client;
@@ -14,7 +15,7 @@ interface Props {
 }
 
 export default function ClienteMobileCard({ client, onEdit, onDelete }: Props) {
-  const phoneDigits = client.phone?.replace(/\D/g, "") ?? "";
+  const whatsappUrl = buildWhatsAppUrl(client.phone);
 
   return (
     <Card className="p-4 space-y-3">
@@ -61,11 +62,11 @@ export default function ClienteMobileCard({ client, onEdit, onDelete }: Props) {
           variant="outline"
           size="sm"
           className="flex-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-300"
-          disabled={!phoneDigits}
-          asChild={!!phoneDigits}
+          disabled={!whatsappUrl}
+          asChild={!!whatsappUrl}
         >
-          {phoneDigits ? (
-            <a href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noopener noreferrer" onClick={() => haptic(10)}>
+          {whatsappUrl ? (
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" onClick={() => haptic(10)}>
               <MessageCircle className="h-3.5 w-3.5" />
               WhatsApp
             </a>
