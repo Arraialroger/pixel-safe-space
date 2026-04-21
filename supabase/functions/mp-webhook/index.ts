@@ -57,7 +57,8 @@ Deno.serve(async (req) => {
       return ok();
     }
 
-    const payment_id = body.data?.id || extractIdFromResource(body.resource);
+    const rawPaymentId = body.data?.id ?? extractIdFromResource(body.resource);
+    const payment_id = rawPaymentId != null ? String(rawPaymentId) : null;
     if (!payment_id) {
       console.error(">>> Missing payment_id");
       return ok();
