@@ -8,6 +8,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -130,108 +131,115 @@ export default function Assinatura() {
         </p>
       </div>
 
-      {/* Status Banner */}
-      {!isLoading && (
-        <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            {status === "trialing" && (
-              <>
-                <div className="rounded-full bg-yellow-500/15 p-2.5">
-                  <Clock className="h-5 w-5 text-yellow-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">Período de Teste</p>
-                  <p className="text-sm text-muted-foreground">
-                    {daysLeft > 0
-                      ? `Você tem ${daysLeft} dia${daysLeft !== 1 ? "s" : ""} restante${daysLeft !== 1 ? "s" : ""} no trial.`
-                      : "Seu período de teste expirou."}
-                  </p>
-                </div>
-                <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30 hover:bg-yellow-500/20">
-                  Trial
-                </Badge>
-              </>
-            )}
-            {isActive && (
-              <>
-                <div className="rounded-full bg-emerald-500/15 p-2.5">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">Plano Ativo</p>
-                  <p className="text-sm text-muted-foreground">Acesso Total (R$ 49,00/mês)</p>
-                </div>
-                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20">
-                  Ativo
-                </Badge>
-              </>
-            )}
-            {(status === "past_due" || status === "canceled") && (
-              <>
-                <div className="rounded-full bg-destructive/15 p-2.5">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
+      {isLoading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      ) : (
+        <>
+          {/* Status Banner */}
+          <Card>
+            <CardContent className="flex items-center gap-4 py-5">
+              {status === "trialing" && (
+                <>
+                  <div className="rounded-full bg-yellow-500/15 p-2.5">
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Período de Teste</p>
+                    <p className="text-sm text-muted-foreground">
+                      {daysLeft > 0
+                        ? `Você tem ${daysLeft} dia${daysLeft !== 1 ? "s" : ""} restante${daysLeft !== 1 ? "s" : ""} no trial.`
+                        : "Seu período de teste expirou."}
+                    </p>
+                  </div>
+                  <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30 hover:bg-yellow-500/20">
+                    Trial
+                  </Badge>
+                </>
+              )}
+              {isActive && (
+                <>
+                  <div className="rounded-full bg-emerald-500/15 p-2.5">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Plano Ativo</p>
+                    <p className="text-sm text-muted-foreground">Acesso Total (R$ 49,00/mês)</p>
+                  </div>
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20">
+                    Ativo
+                  </Badge>
+                </>
+              )}
+              {(status === "past_due" || status === "canceled") && (
+                <>
+                  <div className="rounded-full bg-destructive/15 p-2.5">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {status === "past_due" ? "Pagamento Pendente" : "Assinatura Cancelada"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Regularize seu acesso assinando o plano abaixo.
+                    </p>
+                  </div>
+                  <Badge variant="destructive">
+                    {status === "past_due" ? "Pendente" : "Cancelado"}
+                  </Badge>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Next billing date — Asaas */}
+          {isActive && nextDueDateFormatted && (
+            <Card className={isBillingSoon ? "border-yellow-500/40 bg-yellow-500/5" : ""}>
+              <CardContent className="flex items-center gap-4 py-5">
+                <div className={`rounded-full p-2.5 ${isBillingSoon ? "bg-yellow-500/15" : "bg-primary/15"}`}>
+                  {isBillingSoon ? (
+                    <AlertTriangle className="h-5 w-5 text-yellow-400" />
+                  ) : (
+                    <CalendarDays className="h-5 w-5 text-primary" />
+                  )}
                 </div>
                 <div className="flex-1">
                   <p className="font-medium">
-                    {status === "past_due" ? "Pagamento Pendente" : "Assinatura Cancelada"}
+                    {isBillingSoon ? "Cobrança Próxima" : "Próxima Cobrança"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Regularize seu acesso assinando o plano abaixo.
+                    {isBillingSoon ? (
+                      <>
+                        Sua próxima cobrança de{" "}
+                        <span className="font-medium text-foreground">R$ 49,00</span> será{" "}
+                        <span className="font-medium text-yellow-300">{billingSoonMessage}</span>{" "}
+                        (<span className="font-medium text-foreground">{nextDueDateFormatted}</span>).
+                      </>
+                    ) : (
+                      <>
+                        Você será cobrado{" "}
+                        <span className="font-medium text-foreground">R$ 49,00</span> em{" "}
+                        <span className="font-medium text-foreground">{nextDueDateFormatted}</span>.
+                      </>
+                    )}
                   </p>
                 </div>
-                <Badge variant="destructive">
-                  {status === "past_due" ? "Pendente" : "Cancelado"}
-                </Badge>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              </CardContent>
+            </Card>
+          )}
 
-      {/* Next billing date — Asaas */}
-      {isActive && nextDueDateFormatted && (
-        <Card className={isBillingSoon ? "border-yellow-500/40 bg-yellow-500/5" : ""}>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className={`rounded-full p-2.5 ${isBillingSoon ? "bg-yellow-500/15" : "bg-primary/15"}`}>
-              {isBillingSoon ? (
-                <AlertTriangle className="h-5 w-5 text-yellow-400" />
-              ) : (
-                <CalendarDays className="h-5 w-5 text-primary" />
-              )}
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">
-                {isBillingSoon ? "Cobrança Próxima" : "Próxima Cobrança"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {isBillingSoon ? (
-                  <>
-                    Sua próxima cobrança de{" "}
-                    <span className="font-medium text-foreground">R$ 49,00</span> será{" "}
-                    <span className="font-medium text-yellow-300">{billingSoonMessage}</span>{" "}
-                    (<span className="font-medium text-foreground">{nextDueDateFormatted}</span>).
-                  </>
-                ) : (
-                  <>
-                    Você será cobrado{" "}
-                    <span className="font-medium text-foreground">R$ 49,00</span> em{" "}
-                    <span className="font-medium text-foreground">{nextDueDateFormatted}</span>.
-                  </>
-                )}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Histórico de Faturas link */}
-      {isActive && (
-        <Button asChild variant="outline" className="w-full sm:w-auto">
-          <Link to="/assinatura/faturas">
-            <Receipt className="h-4 w-4" />
-            Ver Histórico de Faturas
-          </Link>
-        </Button>
+          {/* Histórico de Faturas link */}
+          {isActive && (
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link to="/assinatura/faturas">
+                <Receipt className="h-4 w-4" />
+                Ver Histórico de Faturas
+              </Link>
+            </Button>
+          )}
+        </>
       )}
 
       {/* Plan Card — apenas para não-assinantes */}
