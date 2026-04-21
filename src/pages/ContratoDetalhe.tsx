@@ -239,11 +239,11 @@ export default function ContratoDetalhe() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !id) return;
+    if (!file || !id || !workspaceId) return;
 
     setUploading(true);
     const fileExt = file.name.split(".").pop();
-    const filePath = `contracts/${id}/${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `${workspaceId}/contracts/${id}/${crypto.randomUUID()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from("vault")
