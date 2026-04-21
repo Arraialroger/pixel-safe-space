@@ -1,5 +1,13 @@
-// mp-webhook v5.0 — session-driven, zero inference, hard-block on amount mismatch
+// mp-webhook v5.1 — session-driven, zero inference, hard-block on amount mismatch, fully typed
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type {
+  AdminSupabase,
+  ContractRow,
+  MPPaymentResponse,
+  MPWebhookPayload,
+  PaymentEventLog,
+  PaymentSessionRow,
+} from "../_shared/mercadopago-types.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,9 +41,9 @@ Deno.serve(async (req) => {
     const rawText = await req.text();
     console.log(">>> Raw body:", rawText);
 
-    let body: any;
+    let body: MPWebhookPayload;
     try {
-      body = JSON.parse(rawText);
+      body = JSON.parse(rawText) as MPWebhookPayload;
     } catch {
       console.log(">>> Body is NOT valid JSON");
       return ok();
@@ -49,7 +57,8 @@ Deno.serve(async (req) => {
       return ok();
     }
 
-    const payment_id = body.data?.id || extractIdFromResource(body.resource);
+    const rawPaymentId = body.data?.id ?? extractIdFromResource(body.resource);
+    const payment_id = rawPaymentId != null ? String(rawPaymentId) : null;
     if (!payment_id) {
       console.error(">>> Missing payment_id");
       return ok();
@@ -75,7 +84,7 @@ Deno.serve(async (req) => {
     // =====================================================
     // SESSION LOOKUP: direct by session_id or fallback to external_reference
     // =====================================================
-    let session: any = null;
+    let session: PaymentSessionRow | null = null;
     let contract_id: string | null = null;
 
     if (query_session_id) {
@@ -85,7 +94,7 @@ Deno.serve(async (req) => {
         .select("id, contract_id, phase, expected_amount, status")
         .eq("id", query_session_id)
         .single();
-      session = data;
+      session = data as PaymentSessionRow | null;
       contract_id = session?.contract_id || null;
       console.log(">>> Session found via query_session_id:", !!session);
     }
@@ -102,11 +111,12 @@ Deno.serve(async (req) => {
     }
 
     // Load contract
-    const { data: contract, error: contractError } = await supabase
+    const { data: contractData, error: contractError } = await supabase
       .from("contracts")
       .select("id, status, down_payment, payment_value, is_fully_paid, execution_status, workspace_id")
       .eq("id", contract_id!)
       .single();
+    const contract = contractData as ContractRow | null;
 
     if (contractError || !contract) {
       console.error(">>> Contract not found:", contract_id, contractError);
@@ -148,7 +158,7 @@ Deno.serve(async (req) => {
       return ok();
     }
 
-    const payment = await mpRes.json();
+    const payment = (await mpRes.json()) as MPPaymentResponse;
     console.log(">>> MP payment status:", payment.status, "amount:", payment.transaction_amount, "external_reference:", payment.external_reference);
 
     if (payment.status !== "approved") {
@@ -170,8 +180,8 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (data) {
-        session = data;
-        contract_id = data.contract_id;
+        session = data as PaymentSessionRow;
+        contract_id = session.contract_id;
         console.log(">>> Session found via external_reference:", session.id);
       }
     }
@@ -202,7 +212,8 @@ Deno.serve(async (req) => {
     }
 
     // Determine state transition from session.phase
-    let updateData: Record<string, any>;
+    type ContractUpdate = { status: string; is_fully_paid?: boolean; execution_status?: string };
+    let updateData: ContractUpdate;
 
     if (session.phase === "entrance") {
       updateData = { status: "partially_paid" };
@@ -266,12 +277,12 @@ Deno.serve(async (req) => {
 // Uses state-based inference (will be deprecated)
 // =====================================================
 async function handleLegacyPayment(
-  supabase: any,
-  contract: any,
-  payment: any,
+  supabase: AdminSupabase,
+  contract: ContractRow,
+  payment: MPPaymentResponse,
   payment_id: string,
   query_phase: string,
-  body: any,
+  body: MPWebhookPayload,
 ) {
   const contract_id = contract.id;
   const amountReceived = Number(payment.transaction_amount) || 0;
@@ -280,7 +291,7 @@ async function handleLegacyPayment(
   const hasEntrance = downPayment > 0;
 
   let inferred_phase: string;
-  let updateData: Record<string, any>;
+  let updateData: { status?: string; is_fully_paid?: boolean; execution_status?: string };
 
   if (!hasEntrance) {
     inferred_phase = "balance";
@@ -363,7 +374,7 @@ async function handleLegacyPayment(
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
-async function logEvent(supabase: any, event: Record<string, any>) {
+async function logEvent(supabase: AdminSupabase, event: PaymentEventLog) {
   try {
     await supabase.from("payment_events").insert({
       contract_id: event.contract_id || null,
