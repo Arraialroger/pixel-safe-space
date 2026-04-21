@@ -237,12 +237,54 @@ export default function ContratoDetalhe() {
     toast({ title: "Link copiado!", description: contractLink });
   };
 
+  const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
+  const ALLOWED_MIME_TYPES = new Set([
+    "application/pdf",
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/octet-stream", // PSD/AI/figma/exports diversos
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "video/mp4",
+  ]);
+
+  const getSafeExtension = (fileName: string): string => {
+    if (!fileName.includes(".")) return "bin";
+    const raw = fileName.split(".").pop() ?? "";
+    const cleaned = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!cleaned) return "bin";
+    return cleaned.slice(0, 10);
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !id || !workspaceId) return;
 
+    // Validação prévia: tamanho
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "O limite por arquivo é 50 MB. Compacte ou divida o material antes de enviar.",
+        variant: "destructive",
+      });
+      e.target.value = "";
+      return;
+    }
+
+    // Validação prévia: tipo
+    if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
+      toast({
+        title: "Formato não suportado",
+        description: "Envie PDF, ZIP, PNG, JPG, WEBP, MP4 ou arquivos de design (PSD/AI).",
+        variant: "destructive",
+      });
+      e.target.value = "";
+      return;
+    }
+
     setUploading(true);
-    const fileExt = file.name.split(".").pop();
+    const fileExt = getSafeExtension(file.name);
     const filePath = `${workspaceId}/contracts/${id}/${crypto.randomUUID()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
@@ -255,19 +297,24 @@ export default function ContratoDetalhe() {
       return;
     }
 
+    // Optimistic update: reflete "Entregue" na UI imediatamente
+    setFinalDeliverableUrl(filePath);
+    setExecutionStatus("delivered");
+
     const { error: updateError } = await supabase
       .from("contracts")
       .update({ final_deliverable_url: filePath, execution_status: "delivered" })
       .eq("id", id);
 
     if (updateError) {
+      // Rollback do estado local se a persistência falhar
+      setFinalDeliverableUrl(null);
       toast({ title: "Erro ao salvar referência", description: updateError.message, variant: "destructive" });
     } else {
-      setFinalDeliverableUrl(filePath);
-      setExecutionStatus("delivered");
       toast({ title: "Arquivo enviado com sucesso!", description: "O status de execução foi atualizado para 'Entregue'." });
     }
     setUploading(false);
+    e.target.value = "";
   };
 
   const fetchSignedUrl = async (contractId: string): Promise<string | null> => {
