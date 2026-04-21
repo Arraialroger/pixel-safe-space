@@ -1,37 +1,39 @@
 
 
-## Plano: Hardening mínimo do upload no Cofre
+## Plano: corrigir flash do Plan Card e cor do WhatsApp em Clientes
 
-### Escopo
-Três melhorias pequenas e seguras em `src/pages/ContratoDetalhe.tsx`, no `handleFileUpload`. Nenhuma mudança de schema, RPC, RLS, Edge Function ou outro arquivo.
+### Problema 1 — Flash do "Plano Acesso Total" na página de Assinatura
+**Causa:** em `src/pages/Assinatura.tsx`, enquanto `useQuery` está carregando (`isLoading=true`), `workspace` é `undefined` e o código faz fallback para `status = "trialing"`, então `isActive=false`. Resultado: o bloco `{!isActive && <PlanCard/>}` é renderizado por uma fração de segundo e some assim que a query resolve com `subscription_status='active'`.
 
-### Mudanças
+**Correção:** envolver os blocos condicionais de plano (Plan Card, Próxima Cobrança, Histórico de Faturas, Cancelar Assinatura) em `{!isLoading && (...)}`, e mostrar um skeleton/placeholder enquanto carrega. Assim nada pisca antes do estado real estar definido.
 
-**1. Extração segura de extensão**
-- Detectar se o nome do arquivo tem ponto. Se não tiver, usar fallback `bin`.
-- Para nomes compostos (`entrega.tar.gz`), pegar apenas o último segmento.
-- Sanitizar para letras/números/`.` e cortar em 10 caracteres (evita `filePath` inválido).
+### Problema 2 — Botão WhatsApp em cinza/preto na página Clientes
+**Causa:** em `src/components/clientes/ClienteMobileCard.tsx`, o botão WhatsApp usa só `variant="outline"` sem as classes de cor verde. Em `ContratoMobileCard.tsx` e `PropostaMobileCard.tsx` o mesmo botão recebe:
+```
+text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-300
+```
 
-**2. Validação prévia de tamanho e tipo**
-- Limite: **50 MB** (alinhado ao default do Supabase Storage).
-- Tipos aceitos: `application/pdf`, `application/zip`, `application/x-zip-compressed`, `image/png`, `image/jpeg`, `image/webp`, `video/mp4`, `application/octet-stream` (cobre PSD/AI/figma exports).
-- Se falhar: `toast.error` com mensagem clara e abortar antes de qualquer chamada de rede.
+**Correção:** aplicar exatamente as mesmas classes verdes ao botão WhatsApp em `ClienteMobileCard.tsx` para padronizar a identidade visual entre as três páginas (Cliente, Proposta, Contrato).
 
-**3. Optimistic update do status**
-- Logo após `supabase.storage.upload` retornar sucesso e `update` na tabela `contracts` resolver, atualizar localmente o estado do contrato no componente (ou invalidar a query do React Query) para refletir `execution_status='delivered'` na UI sem esperar refetch round-trip.
+### Detalhes técnicos
+- **Arquivo 1:** `src/pages/Assinatura.tsx`
+  - Adicionar guard `{!isLoading && (...)}` ao redor de: Próxima Cobrança, Histórico de Faturas, Plan Card e Cancelar Assinatura.
+  - Opcional: trocar o atual `{!isLoading && <Card>...status...</Card>}` por um skeleton enxuto enquanto `isLoading` for true para evitar layout shift.
 
-### O que NÃO entra neste plano
-- Barra de progresso real (exige refactor para `XMLHttpRequest`/tus — escopo separado se decidirmos fazer).
-- Suite de testes E2E (validação manual cobre os cenários críticos por enquanto).
+- **Arquivo 2:** `src/components/clientes/ClienteMobileCard.tsx` (linhas ~60–75)
+  - Trocar `className="flex-1"` do botão WhatsApp por:
+    ```
+    className="flex-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-300"
+    ```
+
+### Garantias de não-quebra
+- Nenhuma alteração de schema, RPC, RLS ou edge function.
+- Nenhuma mudança de lógica de negócio — apenas renderização condicional e estilo.
+- Mudanças isoladas em 2 arquivos.
 
 ### Plano de teste
-1. Subir PDF de 2 MB → sucesso, UI muda para "Entregue" instantaneamente.
-2. Tentar subir `.exe` ou arquivo de 80 MB → erro amigável, nenhuma chamada de rede.
-3. Subir arquivo sem extensão (`teste`) → upload funciona com path `.../uuid.bin`, download do Cofre abre normalmente.
-4. Baixar arquivo antigo (path legado `contracts/...`) → continua funcionando via `get-deliverable-url`.
-
-### Garantia de não-quebra
-- Nenhuma alteração em paths já existentes no Storage.
-- Nenhuma policy/RLS tocada.
-- Mudança isolada a uma única função em um único arquivo.
+1. Abrir `/assinatura` como usuário com plano **ativo** → o card "Plano Acesso Total" não deve aparecer em momento algum (nem mesmo piscar).
+2. Abrir `/assinatura` como usuário em **trial** ou **expirado** → Plan Card aparece normalmente após o loading.
+3. Abrir `/clientes` no mobile → botão WhatsApp deve estar em verde, igual ao das páginas Propostas e Contratos.
+4. Botão desabilitado (cliente sem telefone) deve manter o estado disabled visualmente coerente.
 
