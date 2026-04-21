@@ -1,84 +1,59 @@
 
 
-## Fase 1 — Auditoria de Segurança e Dados
+# Atualizar TECH_SPEC.md para v1.3
 
-### Objetivo
-Validar que o PixelSafe está pronto para produção do ponto de vista de segurança: isolamento entre workspaces, integridade de pagamentos, proteção de dados sensíveis e do Cofre Digital.
+## Objetivo
+Sincronizar o `TECH_SPEC.md` com o estado real do código após Fases 1, 2 e 3 (segurança, refactor e performance).
 
-### O que vou executar (read-only nesta fase)
+## Mudanças no documento
 
-**1. Scans automatizados**
-- `supabase--linter` — RLS desabilitado, policies permissivas, índices ausentes, funções sem `search_path`.
-- `security--run_security_scan` + `security--get_scan_results` — exposição de dados, configuração Auth.
+### Cabeçalho
+- Versão: **1.2 → 1.3**
+- Data: **2026-04-21**
+- Nota de changelog no topo resumindo as 3 fases.
 
-**2. Auditoria manual de RLS (tabela por tabela)**
-Verificar isolamento por `workspace_id` em: `workspaces`, `workspace_members`, `workspace_payment_tokens`, `profiles`, `clients`, `proposals`, `contracts`, `payment_sessions`, `payment_events`.
-Pontos específicos a validar:
-- `profiles` não tem policy DELETE — confirmar se é intencional.
-- `workspaces` permite UPDATE só por owner — confirmar que admins não-owners não conseguem mudar dados de billing.
-- `payment_events` / `payment_sessions` — clientes anônimos não devem ler.
-- Tabelas com PII (`clients.email`, `clients.phone`, `clients.document`) — confirmar que só membros do workspace acessam.
+### §2.1 Schema — correções e adições
+- **`workspaces`**: remover `mercado_pago_token` e `stripe_token` (foram movidos para nova tabela `workspace_payment_tokens`). Atualizar `subscription_plan` para refletir plano único `full_access` (não mais `freelancer`/`studio`). Atualizar `subscription_status` enum incluindo `pending`.
+- **`profiles`**: adicionar coluna `theme_preference text NOT NULL DEFAULT 'system'`.
+- **Nova tabela `workspace_payment_tokens`** documentada (workspace_id, mercado_pago_token, stripe_token; RLS owner-only + service_role).
+- Notar índices de performance adicionados na Fase 3 (lista dos 9 índices: `idx_contracts_workspace_status`, `idx_proposals_workspace_status`, `idx_contracts_vault`, `idx_contracts_pending_signature`, `idx_proposals_pending`, `idx_payment_sessions_contract_phase_status`, `idx_payment_events_contract_id`, `idx_workspaces_asaas_subscription_id`, `idx_contracts_workspace_execution`).
 
-**3. Storage bucket `vault`**
-- Listar policies do bucket.
-- Confirmar que cliente anônimo só baixa via `get-deliverable-url` quando `is_fully_paid = true`.
-- Confirmar que upload é restrito a membros do workspace.
+### §2.2 Storage — correção crítica
+- **`vault`**: marcar como **privado** (não público). Acesso via Edge Function `get-deliverable-url` com signed URL.
+- **`logos`**: público para leitura, sem listagem.
 
-**4. Auditoria de Edge Functions (9 funções)**
-Para cada uma, checar: validação de JWT, validação de input (Zod ou manual), autorização (workspace_member/admin), tratamento de erro, logs sem secrets, timeouts, idempotência quando aplicável.
+### §3 Dependências
+- Adicionar `dompurify` (já listado, manter), confirmar versões atuais.
+- Adicionar utilitários compartilhados criados na Fase 2: `src/lib/format.ts`, `src/lib/whatsapp.ts`.
 
-| Função | Foco principal |
-|---|---|
-| `mp-webhook` | Idempotência, validação cruzada com API MP, sem secret em log |
-| `asaas-webhook` | Validação de token (já existe), idempotência |
-| `generate-payment` | Autorização do designer, validação de contract_id |
-| `create-asaas-checkout` | Verificar que usuário é admin do workspace |
-| `cancel-asaas-subscription` | Já verifica admin — confirmar |
-| `get-asaas-subscription-info` | Já verifica membership — confirmar |
-| `list-asaas-payments` | Já verifica membership — confirmar |
-| `get-deliverable-url` | Lógica anon vs autenticado (já parece correta — confirmar) |
-| `generate-proposal` | Rate limit (proteger custo OpenAI), validação de input, autorização |
+### §8 Pagamentos
+- Apontar `supabase/functions/_shared/mercadopago-types.ts` como fonte de tipos.
+- Documentar idempotência via `payment_events` e validação cruzada com API MP.
+- Mencionar `get-deliverable-url` para download seguro do Cofre.
 
-**5. Frontend — exposição de secrets e dados**
-- Buscar `console.log` que vaze tokens, emails, IDs sensíveis.
-- Buscar uso de `dangerouslySetInnerHTML` sem `DOMPurify`.
-- Confirmar que rotas públicas (`/p/:id`, `/c/:id`) usam apenas RPCs `get_public_*` e nunca consultam tabelas diretamente.
-- Conferir que `.env` só contém chaves públicas (anon, project_id) — nunca service_role.
+### §9 SaaS Billing — reescrita
+- Substituir tabela de planos por **plano único "Acesso Total" — R$ 49,00/mês** (`subscription_plan = 'full_access'`).
+- Atualizar Edge Functions: `create-asaas-checkout`, `cancel-asaas-subscription`, `asaas-webhook`, `get-asaas-subscription-info`, `list-asaas-payments`.
+- Regra white-label: marca d'água escondida apenas se `subscription_plan === 'full_access'`.
 
-**6. RPCs SECURITY DEFINER**
-Confirmar que todas têm `SET search_path = public` (proteção contra schema injection) — visível nas db functions.
+### §10 Rotas
+- Adicionar `/assinatura/faturas` (`AssinaturaFaturas`).
 
-**7. Validação de inputs no frontend**
-Conferir uso de Zod nos formulários críticos (clientes, propostas, contratos, assinatura digital).
+### §11 RPCs
+- Adicionar: `get_public_proposal`, `get_public_contract`, `get_public_contract_status`.
 
-### Entregável
-Relatório consolidado com formato:
+### §12 Segurança — expandir
+- Realtime fechado para tabelas com PII.
+- Todas as RPCs `SECURITY DEFINER` com `search_path = public`.
+- Tokens de pagamento isolados em `workspace_payment_tokens`.
+- Pendência manual: ativar **Leaked Password Protection** no painel Supabase.
 
-```
-🔴 CRÍTICO (bloqueia produção)
-  - [Finding] descrição + arquivo + correção sugerida
+### Nova §13 — Changelog
+Resumo das Fases 1 (segurança), 2 (DRY/refactor) e 3 (índices + tipagem webhooks).
 
-🟡 IMPORTANTE (corrigir nas próximas semanas)
-  - ...
+## Arquivos afetados
+- `TECH_SPEC.md` (reescrita completa, mantendo estrutura)
 
-🟢 SAUDÁVEL (boas práticas / longo prazo)
-  - ...
-
-✅ APROVADO
-  - lista do que está correto e validado
-```
-
-Para cada finding 🔴 vou propor a correção exata (SQL de migration ou diff de código) — você decide se aplica antes de avançar para a Fase 2.
-
-### O que NÃO faz parte desta fase
-- Refatoração de código (Fase 2).
-- Performance e índices de carga (Fase 3).
-- Testes automatizados (projeto separado depois).
-- Validação jurídica dos templates (precisa advogado).
-
-### Tempo estimado
-~10–15 minutos de execução de tools + leitura. O relatório vem em uma única resposta consolidada.
-
-### Como prosseguir
-Ao aprovar este plano, eu saio do modo planejamento, executo as 7 verificações acima em paralelo onde possível, e devolvo o relatório completo com findings classificados e correções prontas para você escolher quais aplicar.
+## Detalhes técnicos
+Sem mudança de código ou banco — apenas documentação. Após aprovação, executo a edição em uma única passada com `code--write`.
 
