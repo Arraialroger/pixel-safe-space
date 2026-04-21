@@ -1,52 +1,37 @@
 
 
-## Problema
-O upload no Cofre/Handoff falha com:
-```
-invalid input syntax for type uuid: "contracts"
-```
+## Plano: Hardening mínimo do upload no Cofre
 
-A policy RLS do bucket `vault` (no `storage.objects`) espera que o **primeiro segmento do path seja um UUID** (provavelmente o `workspace_id` ou `contract_id`), para validar que o usuário é membro do workspace. O código atual em `src/pages/ContratoDetalhe.tsx` (linha 246) gera o path como:
+### Escopo
+Três melhorias pequenas e seguras em `src/pages/ContratoDetalhe.tsx`, no `handleFileUpload`. Nenhuma mudança de schema, RPC, RLS, Edge Function ou outro arquivo.
 
-```
-contracts/{contractId}/{uuid}.{ext}
-```
+### Mudanças
 
-O primeiro segmento é a string literal `"contracts"`, então o cast `::uuid` na policy quebra antes mesmo de validar permissão.
+**1. Extração segura de extensão**
+- Detectar se o nome do arquivo tem ponto. Se não tiver, usar fallback `bin`.
+- Para nomes compostos (`entrega.tar.gz`), pegar apenas o último segmento.
+- Sanitizar para letras/números/`.` e cortar em 10 caracteres (evita `filePath` inválido).
 
-## Solução (mínima e segura)
+**2. Validação prévia de tamanho e tipo**
+- Limite: **50 MB** (alinhado ao default do Supabase Storage).
+- Tipos aceitos: `application/pdf`, `application/zip`, `application/x-zip-compressed`, `image/png`, `image/jpeg`, `image/webp`, `video/mp4`, `application/octet-stream` (cobre PSD/AI/figma exports).
+- Se falhar: `toast.error` com mensagem clara e abortar antes de qualquer chamada de rede.
 
-Alinhar o path do upload ao formato esperado pela policy: **começar pelo `workspace_id`** (UUID). Esse é o padrão consistente com o resto do projeto (RLS por workspace) e com a função `get-deliverable-url` (que apenas lê o path de `contracts.final_deliverable_url` — qualquer formato funciona ali, pois usa service role).
+**3. Optimistic update do status**
+- Logo após `supabase.storage.upload` retornar sucesso e `update` na tabela `contracts` resolver, atualizar localmente o estado do contrato no componente (ou invalidar a query do React Query) para refletir `execution_status='delivered'` na UI sem esperar refetch round-trip.
 
-### Mudança única: `src/pages/ContratoDetalhe.tsx` (handleFileUpload)
+### O que NÃO entra neste plano
+- Barra de progresso real (exige refactor para `XMLHttpRequest`/tus — escopo separado se decidirmos fazer).
+- Suite de testes E2E (validação manual cobre os cenários críticos por enquanto).
 
-Antes:
-```ts
-const filePath = `contracts/${id}/${crypto.randomUUID()}.${fileExt}`;
-```
+### Plano de teste
+1. Subir PDF de 2 MB → sucesso, UI muda para "Entregue" instantaneamente.
+2. Tentar subir `.exe` ou arquivo de 80 MB → erro amigável, nenhuma chamada de rede.
+3. Subir arquivo sem extensão (`teste`) → upload funciona com path `.../uuid.bin`, download do Cofre abre normalmente.
+4. Baixar arquivo antigo (path legado `contracts/...`) → continua funcionando via `get-deliverable-url`.
 
-Depois:
-```ts
-// Garante que workspaceId está disponível no escopo (já vem de useWorkspace())
-const filePath = `${workspaceId}/contracts/${id}/${crypto.randomUUID()}.${fileExt}`;
-```
-
-- `workspaceId` é UUID válido → cast `::uuid` na policy não quebra.
-- Estrutura por workspace facilita auditoria e futura limpeza.
-- O download via Edge Function `get-deliverable-url` continua funcionando: lê `final_deliverable_url` do contrato e gera signed URL com service role, independente do prefixo.
-
-### Verificação adicional
-Confirmar (visual) que `useWorkspace()` já está sendo consumido em `ContratoDetalhe.tsx` (está — linha onde fetcha o contrato). Apenas reutilizar a variável.
-
-## Por que isso não quebra nada existente
-- Arquivos antigos já enviados com prefixo `contracts/...` continuam acessíveis pelo download (Edge Function usa service role e lê `final_deliverable_url` diretamente).
-- O bucket `vault` é privado; toda leitura passa por `get-deliverable-url`.
-- Nenhuma migration de banco necessária.
-- Nenhuma policy do storage alterada (mantém o hardening atual).
-
-## Plano de teste
-1. Abrir um contrato assinado → aba "Cofre / Handoff" → enviar arquivo.
-2. Verificar que aparece "Arquivo enviado com sucesso" e status muda para "Entregue".
-3. Em `Meu Cofre`, abrir o item recém-enviado → download via signed URL deve funcionar.
-4. Validar arquivos antigos (se houver) continuam baixando normalmente.
+### Garantia de não-quebra
+- Nenhuma alteração em paths já existentes no Storage.
+- Nenhuma policy/RLS tocada.
+- Mudança isolada a uma única função em um único arquivo.
 
