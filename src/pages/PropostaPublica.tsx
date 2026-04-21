@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Loader2, MessageCircle, Shield } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -87,12 +88,10 @@ export default function PropostaPublica() {
     );
   }
 
-  const whatsappMessage = encodeURIComponent(
+  const whatsappUrl = buildWhatsAppUrl(
+    proposal.workspace_whatsapp,
     `Olá! Acabei de ler a proposta "${proposal.title}" e gostaria de conversar para definirmos o melhor pacote.`
   );
-  const whatsappUrl = proposal.workspace_whatsapp
-    ? `https://wa.me/${proposal.workspace_whatsapp}?text=${whatsappMessage}`
-    : null;
 
   const showWatermark = proposal.workspace_plan !== "full_access";
 

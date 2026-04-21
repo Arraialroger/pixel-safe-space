@@ -21,6 +21,7 @@ import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from
 "@/components/ui/pagination";
 import { statusConfig } from "@/lib/proposal-utils";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { exportToXlsx } from "@/lib/xlsx-export";
 import { usePaywall } from "@/hooks/use-paywall";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -277,7 +278,7 @@ export default function Propostas() {
                           <TableCell>
                             {p.client_phone ?
                         <a
-                          href={`https://wa.me/${p.client_phone.replace(/\D/g, "")}`}
+                          href={buildWhatsAppUrl(p.client_phone)!}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors text-sm">
