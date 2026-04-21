@@ -211,7 +211,8 @@ Deno.serve(async (req) => {
     }
 
     // Determine state transition from session.phase
-    let updateData: Record<string, unknown>;
+    type ContractUpdate = { status: string; is_fully_paid?: boolean; execution_status?: string };
+    let updateData: ContractUpdate;
 
     if (session.phase === "entrance") {
       updateData = { status: "partially_paid" };
@@ -289,7 +290,7 @@ async function handleLegacyPayment(
   const hasEntrance = downPayment > 0;
 
   let inferred_phase: string;
-  let updateData: Record<string, unknown>;
+  let updateData: { status?: string; is_fully_paid?: boolean; execution_status?: string };
 
   if (!hasEntrance) {
     inferred_phase = "balance";

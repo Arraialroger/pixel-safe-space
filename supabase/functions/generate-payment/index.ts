@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
 
     console.log(">>> Payment session created. session.id:", session.id, "phase:", phase);
 
-    const clientName = (contract as any).clients?.name ?? "Cliente";
+    const clientName = (contract.clients as { name?: string } | null)?.name ?? "Cliente";
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/+$/, "") || "https://pixel-safe-space.lovable.app";
     const contractUrl = `${origin}/c/${contract_id}`;
     // notification_url now carries session_id for direct lookup
