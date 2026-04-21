@@ -30,16 +30,5 @@ export const paymentLabels: Record<string, string> = {
   custom: "Personalizado",
 };
 
-export const formatCurrency = (value: number | null): string =>
-  value != null
-    ? `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-    : "—";
-
-export const formatDate = (iso: string | null): string => {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-};
+// Re-exports para retrocompatibilidade. Prefira importar de "@/lib/format".
+export { formatCurrency, formatDateLong as formatDate } from "./format";

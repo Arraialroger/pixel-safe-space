@@ -43,7 +43,5 @@ export const execStatusConfig: Record<string, { label: string; className: string
   completed: { label: "Concluído", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
 };
 
-export function formatCurrency(value: number | null): string {
-  if (value == null) return "—";
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-}
+// Re-export para retrocompatibilidade. Prefira importar de "@/lib/format".
+export { formatCurrency } from "./format";
