@@ -1,8 +1,20 @@
-# PixelSafe — Tech Spec V1.2
+# PixelSafe — Tech Spec V1.3
 
-> **Última atualização:** 2026-04-11
-> **Versão:** 1.2
+> **Última atualização:** 2026-04-21
+> **Versão:** 1.3
 > **Responsável:** Equipa de Engenharia PixelSafe
+
+---
+
+## Changelog v1.3
+
+Esta versão consolida as três fases de hardening pré-produção:
+
+- **Fase 1 — Segurança:** RLS revista, Realtime fechado em tabelas com PII, bucket `vault` privado, RPCs `SECURITY DEFINER` com `search_path` fixo, tokens de pagamento isolados em tabela própria.
+- **Fase 2 — Refactor / DRY:** utilitários compartilhados (`src/lib/format.ts`, `src/lib/whatsapp.ts`) e remoção de duplicação em componentes de propostas, contratos e dashboard.
+- **Fase 3 — Performance & Tipagem:** 9 índices Postgres adicionados para escalar a 1000+ usuários; tipagem completa dos webhooks Mercado Pago via `_shared/mercadopago-types.ts`.
+
+Plano de assinaturas migrado para **plano único "Acesso Total" — R$ 49,00/mês** (`subscription_plan = 'full_access'`).
 
 ---
 
@@ -28,7 +40,7 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 
 - **Client-side only** — sem servidor Node.js; toda a lógica de backend vive em Supabase (RLS + Edge Functions).
 - **Multi-tenant** — isolamento por `workspace_id` com RLS em todas as tabelas.
-- **Security-first** — `SECURITY DEFINER` functions para operações sensíveis; sanitização de HTML com DOMPurify.
+- **Security-first** — `SECURITY DEFINER` functions com `search_path` fixo; sanitização de HTML com DOMPurify; segredos isolados.
 
 ---
 
@@ -47,14 +59,24 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 | `company_document` | text | Sim | — | CNPJ/CPF |
 | `company_address` | text | Sim | — | Endereço fiscal |
 | `whatsapp` | text | Sim | — | WhatsApp do estúdio |
-| `mercado_pago_token` | text | Sim | — | Access token MP |
-| `stripe_token` | text | Sim | — | (Reservado) |
 | `asaas_customer_id` | text | Sim | — | ID do cliente Asaas |
 | `asaas_subscription_id` | text | Sim | — | ID da assinatura Asaas |
-| `subscription_status` | text | Não | `'trialing'` | `trialing` · `active` · `past_due` · `canceled` |
-| `subscription_plan` | text | Sim | — | `freelancer` · `studio` |
+| `subscription_status` | text | Não | `'trialing'` | `trialing` · `pending` · `active` · `past_due` · `canceled` |
+| `subscription_plan` | text | Sim | — | Sempre `'full_access'` quando ativo (plano único) |
 | `trial_ends_at` | timestamptz | Sim | `now() + 7 days` | Fim do período trial |
 | `created_at` | timestamptz | Não | `now()` | — |
+
+> **Nota v1.3:** As colunas `mercado_pago_token` e `stripe_token` foram **removidas** desta tabela e migradas para `workspace_payment_tokens` (acesso restrito ao owner + service_role).
+
+#### `workspace_payment_tokens` (nova em v1.3)
+
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| `workspace_id` | uuid | Não | — (PK, FK → `workspaces`) |
+| `mercado_pago_token` | text | Sim | — |
+| `stripe_token` | text | Sim | — (reservado) |
+
+**RLS:** apenas o `owner_id` do workspace pode ler/escrever; `service_role` tem acesso total para Edge Functions.
 
 #### `profiles`
 
@@ -65,6 +87,7 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 | `avatar_url` | text | Sim | — |
 | `logo_url` | text | Sim | — |
 | `language_preference` | text | Não | `'PT'` |
+| `theme_preference` | text | Não | `'system'` (`system` · `light` · `dark`) |
 | `created_at` | timestamptz | Não | `now()` |
 | `updated_at` | timestamptz | Não | `now()` |
 
@@ -116,7 +139,7 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 | `workspace_id` | uuid | Não | — | FK → `workspaces` |
 | `client_id` | uuid | Não | — | FK → `clients` |
 | `proposal_id` | uuid | Sim | — | FK → `proposals` |
-| `contract_template` | text | Não | `'dynamic'` | **`shield` · `dynamic` · `friendly` · `custom`** |
+| `contract_template` | text | Não | `'dynamic'` | `shield` · `dynamic` · `friendly` · `custom` |
 | `custom_contract_text` | text | Sim | — | HTML do TipTap (apenas quando `contract_template = 'custom'`) |
 | `content_deliverables` | text | Sim | — | Markdown — escopo de entregas |
 | `content_exclusions` | text | Sim | — | Markdown — exclusões de escopo |
@@ -131,7 +154,7 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 | `signed_by_name` | text | Sim | — | Nome de quem assinou |
 | `signed_by_email` | text | Sim | — | E-mail de quem assinou |
 | `signed_at` | timestamptz | Sim | — | Data/hora da assinatura |
-| `final_deliverable_url` | text | Sim | — | Path no Storage (`vault`) |
+| `final_deliverable_url` | text | Sim | — | Path no Storage (`vault`, privado) |
 | `is_fully_paid` | boolean | Não | `false` | Quitação total confirmada |
 | `created_at` | timestamptz | Não | `now()` | — |
 
@@ -146,7 +169,7 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 | `provider` | text | Não | `'mercado_pago'` |
 | `preference_id` | text | Sim | — |
 | `external_reference` | text | Sim | — |
-| `status` | text | Não | `'pending'` (`pending` · `paid`) |
+| `status` | text | Não | `'pending'` (`pending` · `paid` · `amount_mismatch`) |
 | `paid_at` | timestamptz | Sim | — |
 | `created_at` | timestamptz | Não | `now()` |
 
@@ -172,12 +195,30 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 | `raw_payload` | jsonb | Sim | — |
 | `processed_at` | timestamptz | Não | `now()` |
 
-### 2.2 Storage Buckets
+### 2.2 Índices de Performance (Fase 3)
 
-| Bucket | Público | Utilização |
-|--------|---------|------------|
-| `logos` | Sim | Logotipos de workspaces |
-| `vault` | Sim | Ficheiros de entrega final (Cofre Digital) |
+Adicionados em `20260421112443_*.sql` para escalar a 1000+ usuários:
+
+| Índice | Tabela | Tipo | Uso |
+|--------|--------|------|-----|
+| `idx_contracts_workspace_status` | contracts | composto `(workspace_id, status)` | Listagens e dashboard |
+| `idx_contracts_workspace_execution` | contracts | composto `(workspace_id, execution_status)` | Filtros de execução |
+| `idx_proposals_workspace_status` | proposals | composto `(workspace_id, status)` | Listagens e dashboard |
+| `idx_contracts_pending_signature` | contracts | parcial `WHERE status = 'pending_signature'` | Card "assinaturas pendentes" |
+| `idx_proposals_pending` | proposals | parcial `WHERE status = 'pending'` | Card "propostas pendentes" |
+| `idx_contracts_vault` | contracts | parcial `WHERE final_deliverable_url IS NOT NULL` | Página /cofre |
+| `idx_payment_sessions_contract_phase_status` | payment_sessions | composto | Lookup do webhook MP |
+| `idx_payment_events_contract_id` | payment_events | btree | Idempotência de webhooks |
+| `idx_workspaces_asaas_subscription_id` | workspaces | btree | Webhook Asaas |
+
+### 2.3 Storage Buckets
+
+| Bucket | Público | Listagem | Acesso |
+|--------|---------|----------|--------|
+| `logos` | Sim (leitura) | Não | Upload restrito ao owner do workspace |
+| `vault` | **Não (privado)** | Não | Download via Edge Function `get-deliverable-url` (signed URL com expiração) |
+
+> **Vault Hardening (v1.3):** o bucket `vault` é privado. O cliente só obtém acesso ao ficheiro final através de uma signed URL gerada pela Edge Function `get-deliverable-url`, que valida `is_fully_paid = true` antes de assinar.
 
 ---
 
@@ -208,8 +249,6 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 | `@tiptap/starter-kit` | Extensões base (bold, italic, headings, lists) |
 | `@tiptap/extension-underline` | Extensão de sublinhado |
 
-> **Nota:** O TipTap é o editor oficial da plataforma para o template "Personalizado". O HTML gerado é persistido na coluna `custom_contract_text`.
-
 ### 3.4 Segurança
 
 | Pacote | Finalidade |
@@ -222,8 +261,8 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 
 | Pacote | Finalidade |
 |--------|-----------|
-| `html2pdf.js` | Geração de PDF no lado do cliente (via html2canvas + jsPDF) |
-| `react-markdown` | Renderização de Markdown em componentes React |
+| `html2pdf.js` | Geração de PDF no lado do cliente |
+| `react-markdown` | Renderização de Markdown |
 
 ### 3.6 UI
 
@@ -235,6 +274,17 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 | `date-fns` | Formatação de datas |
 | `recharts` | Gráficos (Dashboard) |
 | `sonner` | Toasts |
+
+### 3.7 Utilitários compartilhados (Fase 2)
+
+| Módulo | Finalidade |
+|--------|-----------|
+| `src/lib/format.ts` | Formatação de moeda BRL, datas, documentos |
+| `src/lib/whatsapp.ts` | Geração de links/mensagens dinâmicas para WhatsApp |
+| `src/lib/contract-utils.ts` | Configurações de status e templates de contrato |
+| `src/lib/proposal-utils.ts` | Configurações de status de propostas |
+| `src/lib/pdf-export.ts` | Orquestração do `html2pdf.js` |
+| `supabase/functions/_shared/mercadopago-types.ts` | Tipos compartilhados dos webhooks MP |
 
 ---
 
@@ -264,20 +314,20 @@ O PixelSafe é uma plataforma SaaS multi-tenant para designers e estúdios criat
 | Ficheiro | Responsabilidade |
 |----------|-----------------|
 | `src/components/contratos/ContratoDocumento.tsx` | Renderização visual do contrato na UI (dark mode) |
-| `src/components/contratos/ContratoPDFView.tsx` | Renderização print-friendly com `forwardRef` para captura por `html2pdf.js` |
-| `src/components/contratos/RichTextEditor.tsx` | Wrapper do TipTap com toolbar (bold, italic, underline, headings, lists) |
-| `src/lib/contract-utils.ts` | Configurações de status, templates e formatação de moeda |
-| `src/lib/pdf-export.ts` | Função `exportContractPdf()` — orquestra `html2pdf.js` |
-| `src/pages/ContratoDetalhe.tsx` | Página do designer — edição, preview, PDF, vault |
-| `src/pages/ContratoPublico.tsx` | Página pública do cliente — assinatura, pagamento, PDF |
+| `src/components/contratos/ContratoPDFView.tsx` | Renderização print-friendly com `forwardRef` |
+| `src/components/contratos/RichTextEditor.tsx` | Wrapper do TipTap |
+| `src/lib/contract-utils.ts` | Configurações de status, templates e formatação |
+| `src/lib/pdf-export.ts` | `exportContractPdf()` |
+| `src/pages/ContratoDetalhe.tsx` | Página do designer |
+| `src/pages/ContratoPublico.tsx` | Página pública do cliente |
 
 ### 4.3 Normalização CSS para Template Custom
 
-O `ContratoPDFView` inclui um bloco `<style>` scoped (`.pdf-custom-content`) que normaliza os elementos HTML gerados pelo TipTap para corresponderem visualmente aos templates fixos:
+O `ContratoPDFView` inclui um bloco `<style>` scoped (`.pdf-custom-content`) que normaliza os elementos HTML gerados pelo TipTap:
 
 - `h1`, `h2`, `h3` → 14px, bold, uppercase, letter-spacing
 - `p`, `li` → 13px, line-height 1.65, color #333
-- Primeiro elemento filho → `margin-top: 0` (elimina espaço em branco)
+- Primeiro elemento filho → `margin-top: 0`
 
 ---
 
@@ -285,19 +335,17 @@ O `ContratoPDFView` inclui um bloco `<style>` scoped (`.pdf-custom-content`) que
 
 | Template | Enum | Ícone | Público-Alvo | Nível de Proteção |
 |----------|------|-------|-------------|-------------------|
-| Escudo (Avançado) | `shield` | 🛡️ | B2B, projetos > R$ 5.000, clientes corporativos | Máximo — cláusulas de multa, PI, foro, suspensão |
-| Dinâmico (Padrão) | `dynamic` | ⚡ | Maioria dos projetos (R$ 1k–5k) | Alto — equilíbrio entre proteção e agilidade |
-| Amigável (Simplificado) | `friendly` | 🤝 | Arte avulsa, PF, até R$ 1.000 | Moderado — linguagem acessível, menos fricção |
-| Personalizado | `custom` | 📄 | Cliente com contrato próprio / jurídico corporativo | Variável — texto livre do designer ou do cliente |
+| Escudo (Avançado) | `shield` | 🛡️ | B2B, projetos > R$ 5.000 | Máximo |
+| Dinâmico (Padrão) | `dynamic` | ⚡ | Maioria dos projetos (R$ 1k–5k) | Alto |
+| Amigável (Simplificado) | `friendly` | 🤝 | Arte avulsa, PF, até R$ 1.000 | Moderado |
+| Personalizado | `custom` | 📄 | Cliente com contrato próprio | Variável |
 
 ### 5.1 Elementos Comuns a Todos os Templates
 
-Independentemente do template escolhido, TODOS os contratos gerados incluem obrigatoriamente:
-
 1. **Bloco de Partes** — Identificação do contratante e contratado
 2. **Bloco Financeiro** — Valor, entrada, prazo, condições de pagamento
-3. **Cláusula de Retenção do Cofre Digital** (ver §7 — Regra de Ouro)
-4. **Bloco de Assinatura Digital** — Nome, e-mail, data/hora, IP (quando aplicável)
+3. **Cláusula de Retenção do Cofre Digital** (ver §7)
+4. **Bloco de Assinatura Digital** — Nome, e-mail, data/hora
 
 ---
 
@@ -311,22 +359,13 @@ draft → pending_signature → signed → partially_paid → paid
   └───── rollback ────────────┘
 ```
 
-| Estado | Descrição | Transições Permitidas |
-|--------|-----------|----------------------|
-| `draft` | Rascunho em edição | → `pending_signature` |
-| `pending_signature` | Link público ativo, aguardando assinatura do cliente | → `signed` · → `draft` (rollback) |
-| `signed` | Assinado digitalmente pelo cliente | → `partially_paid` · → `paid` |
-| `partially_paid` | Entrada (down_payment) confirmada | → `paid` |
-| `paid` | Totalmente quitado (`is_fully_paid = true`) | Estado terminal |
-
-**Regras de Rollback:**
-- O designer pode reverter de `pending_signature` para `draft` a qualquer momento.
-- Contratos em `signed` ou posterior NÃO podem ser revertidos (assinatura é irreversível).
-
-**Regras de Exclusão:**
-- Contratos em `draft` podem ser excluídos livremente.
-- Contratos em `pending_signature` podem ser excluídos (cancela o envio).
-- Contratos `signed` ou posterior NÃO podem ser excluídos (proteção jurídica).
+| Estado | Descrição | Transições |
+|--------|-----------|------------|
+| `draft` | Rascunho | → `pending_signature` |
+| `pending_signature` | Aguardando assinatura | → `signed` · → `draft` |
+| `signed` | Assinado | → `partially_paid` · → `paid` |
+| `partially_paid` | Entrada confirmada | → `paid` |
+| `paid` | Quitado | Estado terminal |
 
 ### 6.2 Ciclo de Execução (`execution_status`)
 
@@ -334,18 +373,11 @@ draft → pending_signature → signed → partially_paid → paid
 not_started → in_progress → delivered → completed
 ```
 
-| Estado | Descrição |
-|--------|-----------|
-| `not_started` | Trabalho ainda não iniciado |
-| `in_progress` | Em desenvolvimento |
-| `delivered` | Entregue ao cliente |
-| `completed` | Projeto concluído e finalizado |
-
-> O ciclo de execução é **independente** do ciclo comercial. Um contrato pode estar `signed` (comercial) e `in_progress` (execução) simultaneamente.
+> Independente do ciclo comercial.
 
 ### 6.3 Sincronização com Propostas
 
-O trigger `sync_proposal_status()` atualiza automaticamente o status da proposta vinculada:
+Trigger `sync_proposal_status()`:
 - Contrato `signed` / `partially_paid` → Proposta `accepted`
 - Contrato `paid` → Proposta `completed`
 
@@ -355,23 +387,16 @@ O trigger `sync_proposal_status()` atualiza automaticamente o status da proposta
 
 > ### ⚠️ CLÁUSULA DE RETENÇÃO DO COFRE DIGITAL
 >
-> **Esta cláusula NÃO pode ser removida, editada ou tornada opcional sob NENHUMA circunstância.**
->
-> Todos os contratos — independentemente do template — DEVEM incluir a seguinte disposição:
+> Todos os contratos DEVEM incluir:
 >
 > *"Os ficheiros e propriedade intelectual produzidos permanecem retidos no Cofre Digital da plataforma até a confirmação da quitação total do valor contratado. O download pelo cliente é desbloqueado exclusivamente quando `is_fully_paid = true`."*
 
 ### 7.1 Implementação Técnica
 
-- **Storage:** Bucket `vault` (Supabase Storage).
-- **Upload:** Permitido ao designer a partir do estado `signed`.
-- **Download pelo cliente:** Condicionado a `is_fully_paid = true` na UI pública.
-- **Todos os templates** renderizam esta cláusula como parte integrante do contrato.
-- **Template Custom:** A cláusula é adicionada automaticamente pelo sistema APÓS o texto livre do designer.
-
-### 7.2 Requisito de Engenharia
-
-Qualquer PR ou alteração de código que remova, oculte ou torne condicional esta cláusula DEVE ser rejeitado na revisão de código. Esta é uma invariante de negócio permanente.
+- **Storage:** Bucket `vault` (privado).
+- **Upload:** Designer a partir do estado `signed`.
+- **Download pelo cliente:** Signed URL via `get-deliverable-url`, condicionada a `is_fully_paid = true`.
+- **Template Custom:** A cláusula é adicionada automaticamente APÓS o texto livre.
 
 ---
 
@@ -397,19 +422,17 @@ Edge Function: generate-payment
 Mercado Pago processa pagamento
         │
         ▼
-Webhook: mp-webhook
+Webhook: mp-webhook (v5.1)
         │
-        ├── Verifica pagamento via API MP
-        ├── Idempotência (consulta payment_events)
+        ├── Verifica pagamento via API MP (validação cruzada)
+        ├── Idempotência (consulta payment_events por payment_id)
         ├── Infere fase pelo estado do contrato
         ├── Atualiza contracts (status, is_fully_paid)
         ├── Atualiza payment_sessions (paid)
-        └── Loga em payment_events (auditoria)
+        └── Loga em payment_events (auditoria completa)
 ```
 
 ### 8.2 Inferência de Fase (State-Driven)
-
-O sistema NÃO depende de parâmetros na URL para determinar se o pagamento é entrada ou saldo. A fase é inferida pelo estado do contrato:
 
 | Condição | Fase Inferida |
 |----------|---------------|
@@ -421,96 +444,142 @@ O sistema NÃO depende de parâmetros na URL para determinar se o pagamento é e
 
 | Função | Responsabilidade |
 |--------|-----------------|
-| `generate-payment` | Gera checkout Mercado Pago + cria `payment_session` |
-| `mp-webhook` | Processa notificações MP, atualiza estado, loga auditoria |
+| `generate-payment` | Gera checkout MP + cria `payment_session` |
+| `mp-webhook` | Processa notificações MP, idempotência, auditoria |
+| `get-deliverable-url` | Gera signed URL do Cofre se `is_fully_paid = true` |
+
+### 8.4 Tipagem
+
+`supabase/functions/_shared/mercadopago-types.ts` centraliza:
+- `MPWebhookPayload` — IPN/Webhook
+- `MPPaymentResponse` — `GET /v1/payments/{id}`
+- `ContractRow`, `PaymentSessionRow`, `PaymentEventLog`
+
+Edge Functions de pagamento estão **livres de `any`** e validadas via `deno check`.
 
 ---
 
 ## 9. SaaS Billing (Asaas)
 
-### 9.1 Planos
+### 9.1 Plano Único
 
 | Plano | Preço Mensal | Assentos |
 |-------|-------------|----------|
-| `freelancer` | R$ 29,90 | Até 5 |
-| `studio` | R$ 59,90 | Até 5 |
+| **Acesso Total** (`full_access`) | R$ 49,00 | Até 5 |
 
 ### 9.2 Ciclo de Vida da Assinatura
 
 ```
-trialing (7 dias) → active → past_due → canceled
+trialing (7 dias) → pending → active → past_due → canceled
 ```
 
 ### 9.3 Edge Functions
 
 | Função | Responsabilidade |
 |--------|-----------------|
-| `create-asaas-checkout` | Cria cliente + assinatura Asaas, retorna `checkout_url` |
+| `create-asaas-checkout` | Cria customer + subscription no Asaas, retorna `invoiceUrl` |
+| `cancel-asaas-subscription` | `DELETE /subscriptions/{id}` + atualiza status |
 | `asaas-webhook` | Atualiza `subscription_status` no workspace |
+| `get-asaas-subscription-info` | Detalhes da assinatura ativa |
+| `list-asaas-payments` | Histórico de faturas (página `/assinatura/faturas`) |
 
-### 9.4 Paywall
+### 9.4 Paywall e White-Label
 
-- **Soft-block:** Funcionalidades principais bloqueadas após expiração do trial.
-- **White-label:** Marca d'água condicional baseada no `subscription_plan`.
+- **Soft-block:** funcionalidades principais bloqueadas após expiração do trial.
+- **Marca d'água "Protegido por PixelSafe":** ocultada **apenas quando** `workspace.subscription_plan === 'full_access'`. Workspaces em trial ou sem plano ativo veem a marca d'água em propostas e contratos públicos.
 
 ---
 
 ## 10. Rotas e Navegação
 
-### 10.1 Rotas Protegidas (Requerem Autenticação)
+### 10.1 Rotas Protegidas
 
-| Rota | Página | Descrição |
-|------|--------|-----------|
-| `/` | `Index` | Dashboard com métricas |
-| `/propostas` | `Propostas` | Lista de propostas |
-| `/propostas/nova` | `PropostaNova` | Criar nova proposta |
-| `/propostas/:id` | `PropostaDetalhe` | Detalhe da proposta |
-| `/contratos` | `Contratos` | Lista de contratos |
-| `/contratos/:id` | `ContratoDetalhe` | Detalhe do contrato (edição, preview, PDF, vault) |
-| `/cofre` | `Cofre` | Cofre de ficheiros |
-| `/clientes` | `Clientes` | Gestão de clientes |
-| `/configuracoes` | `Configuracoes` | Configurações do perfil |
-| `/configuracoes-workspace` | `ConfiguracoesWorkspace` | Configurações do workspace |
-| `/assinatura` | `Assinatura` | Gestão de assinatura/plano |
+| Rota | Página |
+|------|--------|
+| `/` | `Index` (Dashboard) |
+| `/propostas` | `Propostas` |
+| `/propostas/nova` | `PropostaNova` |
+| `/propostas/:id` | `PropostaDetalhe` |
+| `/contratos` | `Contratos` |
+| `/contratos/:id` | `ContratoDetalhe` |
+| `/cofre` | `Cofre` |
+| `/clientes` | `Clientes` |
+| `/configuracoes` | `Configuracoes` |
+| `/configuracoes-workspace` | `ConfiguracoesWorkspace` |
+| `/assinatura` | `Assinatura` |
+| `/assinatura/faturas` | `AssinaturaFaturas` |
 
-### 10.2 Rotas Públicas (Sem Autenticação)
+### 10.2 Rotas Públicas
 
-| Rota | Página | Descrição |
-|------|--------|-----------|
-| `/login` | `Login` | Autenticação |
-| `/register` | `Register` | Registo |
-| `/forgot-password` | `ForgotPassword` | Recuperação de password |
-| `/reset-password` | `ResetPassword` | Reset de password |
-| `/p/:id` | `PropostaPublica` | Proposta pública (aceite pelo cliente) |
-| `/c/:id` | `ContratoPublico` | Contrato público (assinatura + pagamento) |
+| Rota | Página |
+|------|--------|
+| `/login`, `/register`, `/forgot-password`, `/reset-password` | Auth |
+| `/p/:id` | `PropostaPublica` |
+| `/c/:id` | `ContratoPublico` |
 
 ---
 
 ## 11. RPCs (Remote Procedure Calls)
 
-| RPC | Parâmetros | Retorno | Descrição |
-|-----|-----------|---------|-----------|
-| `sign_contract` | `_contract_id`, `_name`, `_email` | void | Assina contrato + sincroniza proposta |
-| `accept_proposal` | `_proposal_id`, `_name`, `_email` | void | Aceita proposta |
-| `get_dashboard_metrics` | `_workspace_id` | JSON | Métricas do dashboard |
-| `get_workspace_contract_info` | `_workspace_id` | table | Info do workspace para contratos |
-| `get_workspace_public` | `_workspace_id` | table | Info pública do workspace |
-| `get_workspace_members` | `_workspace_id` | table | Membros do workspace |
-| `invite_workspace_member` | `_workspace_id`, `_email` | text | Convida membro (max 5) |
-| `is_workspace_member` | `_user_id`, `_workspace_id` | boolean | Verifica pertença |
-| `is_workspace_admin` | `_user_id`, `_workspace_id` | boolean | Verifica admin |
+| RPC | Descrição |
+|-----|-----------|
+| `sign_contract` | Assina contrato + sincroniza proposta |
+| `accept_proposal` | Aceita proposta |
+| `get_dashboard_metrics` | Métricas consolidadas do dashboard |
+| `get_workspace_contract_info` | Info do workspace para contratos |
+| `get_workspace_public` | Info pública do workspace (logo, plano) |
+| `get_workspace_members` | Membros do workspace |
+| `invite_workspace_member` | Convida membro (max 5) |
+| `is_workspace_member` | Verifica pertença |
+| `is_workspace_admin` | Verifica admin |
+| `get_public_proposal` | Dados públicos de proposta (`status ≠ 'draft'`) |
+| `get_public_contract` | Dados públicos de contrato (`status ≠ 'draft'`) |
+| `get_public_contract_status` | Polling leve de status para a página pública |
+
+Todas as RPCs usam `SECURITY DEFINER` com `SET search_path = public`.
 
 ---
 
-## 12. Segurança (RLS)
+## 12. Segurança
 
-Todas as tabelas têm Row-Level Security ativado. Padrão de acesso:
+### 12.1 RLS
+
+Todas as tabelas têm Row-Level Security ativado. Padrão:
 
 - **Leitura:** `is_workspace_member(auth.uid(), workspace_id)`
-- **Escrita (INSERT/UPDATE/DELETE):** `is_workspace_member(auth.uid(), workspace_id)` (com exceções para admin-only)
-- **Acesso anónimo:** Limitado a contratos/propostas com `status ≠ 'draft'` (páginas públicas)
-- **Service role:** Acesso total a `payment_sessions` e `payment_events` (processamento de webhooks)
+- **Escrita:** mesmo predicado, com exceções admin-only
+- **Acesso anónimo:** apenas via RPCs `get_public_*` (filtram `status ≠ 'draft'`)
+- **Service role:** acesso total a `payment_sessions`, `payment_events` e `workspace_payment_tokens`
+
+### 12.2 Realtime
+
+Realtime está **desativado** para tabelas com PII:
+`clients`, `contracts`, `proposals`, `profiles`, `workspace_members`, `workspaces`, `workspace_payment_tokens`.
+
+A página pública de contratos faz polling via RPC `get_public_contract_status` (a cada 3s) em vez de subscription Realtime.
+
+### 12.3 Segredos
+
+Tokens de pagamento (`mercado_pago_token`) ficam em `workspace_payment_tokens`, isolados do payload geral de `workspaces`. Segredos de plataforma (`ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `OPENAI_API_KEY`, `LOVABLE_API_KEY`) vivem no Vault de Edge Functions.
+
+### 12.4 Pendência Manual
+
+Ativar **Leaked Password Protection** no painel Supabase (Auth → Providers → Password) antes do go-live público.
 
 ---
 
-*Fim do documento — PixelSafe Tech Spec V1.2*
+## 13. Estado de Produção
+
+| Item | Status |
+|------|--------|
+| RLS / Realtime / Vault hardening | ✅ Concluído (Fase 1) |
+| Refactor DRY | ✅ Concluído (Fase 2) |
+| Índices de performance | ✅ Concluído (Fase 3) |
+| Tipagem webhooks MP | ✅ Concluído (Fase 3) |
+| Leaked Password Protection | ⚠️ Ativação manual no painel |
+| Asaas sandbox → produção | ⚠️ Operacional (após validação) |
+| Revisão jurídica dos templates | ⚠️ Recomendada antes do GA |
+
+---
+
+*Fim do documento — PixelSafe Tech Spec V1.3*
