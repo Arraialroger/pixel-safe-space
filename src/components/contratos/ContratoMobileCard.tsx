@@ -6,7 +6,9 @@ import { Copy, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { contractStatusConfig, execStatusConfig, formatCurrency } from "@/lib/contract-utils";
+import { contractStatusConfig, execStatusConfig } from "@/lib/contract-utils";
+import { formatCurrency } from "@/lib/format";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { haptic } from "@/lib/haptics";
 
 type Props = {
@@ -39,11 +41,10 @@ export function ContratoMobileCard({ contract }: Props) {
 
   const openWhatsApp = (e: React.MouseEvent) => {
     stop(e);
-    if (!contract.client_phone) return;
+    const url = buildWhatsAppUrl(contract.client_phone, `Olá! Segue o contrato: ${publicUrl}`);
+    if (!url) return;
     haptic(10);
-    const phone = contract.client_phone.replace(/\D/g, "");
-    const msg = encodeURIComponent(`Olá! Segue o contrato: ${publicUrl}`);
-    window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+    window.open(url, "_blank");
   };
 
   return (

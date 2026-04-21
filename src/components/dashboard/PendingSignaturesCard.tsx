@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { haptic } from "@/lib/haptics";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 export interface PendingSignatureItem {
   id: string;
@@ -48,15 +49,13 @@ export function PendingSignaturesCard({ items, total }: Props) {
   const handleWhatsApp = (e: React.MouseEvent, item: PendingSignatureItem) => {
     e.stopPropagation();
     if (!item.client_phone) return;
-    haptic(10);
     const path = item.type === "contract" ? "c" : "p";
     const url = `${window.location.origin}/${path}/${item.id}`;
     const docLabel = item.type === "contract" ? "contrato" : "proposta";
-    const msg = encodeURIComponent(
-      `Olá! Segue o link do seu ${docLabel}: ${url}`
-    );
-    const phone = item.client_phone.replace(/\D/g, "");
-    window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+    const waUrl = buildWhatsAppUrl(item.client_phone, `Olá! Segue o link do seu ${docLabel}: ${url}`);
+    if (!waUrl) return;
+    haptic(10);
+    window.open(waUrl, "_blank");
   };
 
   const navigateToItem = (item: PendingSignatureItem) => {

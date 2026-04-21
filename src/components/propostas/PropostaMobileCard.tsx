@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { statusConfig } from "@/lib/proposal-utils";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { haptic } from "@/lib/haptics";
 
 type Props = {
@@ -37,11 +38,10 @@ export function PropostaMobileCard({ proposal }: Props) {
 
   const openWhatsApp = (e: React.MouseEvent) => {
     stop(e);
-    if (!proposal.client_phone) return;
+    const url = buildWhatsAppUrl(proposal.client_phone, `Olá! Segue a proposta: ${publicUrl}`);
+    if (!url) return;
     haptic(10);
-    const phone = proposal.client_phone.replace(/\D/g, "");
-    const msg = encodeURIComponent(`Olá! Segue a proposta: ${publicUrl}`);
-    window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+    window.open(url, "_blank");
   };
 
   return (

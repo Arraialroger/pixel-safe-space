@@ -23,6 +23,7 @@ import {
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { formatBRL as formatCurrency } from "@/lib/format";
 
 type AsaasPayment = {
   id: string;
@@ -61,8 +62,6 @@ const BILLING_LABEL: Record<string, string> = {
 
 const PAID_STATUSES = new Set(["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"]);
 
-const formatCurrency = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const formatDate = (iso: string | null) =>
   iso ? format(parseISO(iso), "dd/MM/yyyy", { locale: ptBR }) : "—";

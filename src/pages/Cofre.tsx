@@ -87,12 +87,21 @@ export default function Cofre() {
       console.error(error);
       setItems([]);
     } else {
+      type VaultRow = {
+        id: string;
+        final_deliverable_url: string | null;
+        status: string;
+        is_fully_paid: boolean | null;
+        created_at: string;
+        clients: { name: string } | null;
+        proposals: { title: string } | null;
+      };
       setItems(
-        (data || []).map((c: any) => ({
+        ((data ?? []) as VaultRow[]).map((c) => ({
           id: c.id,
-          final_deliverable_url: c.final_deliverable_url,
+          final_deliverable_url: c.final_deliverable_url ?? "",
           status: c.status,
-          is_fully_paid: c.is_fully_paid,
+          is_fully_paid: c.is_fully_paid ?? false,
           created_at: c.created_at,
           client_name: c.clients?.name ?? "—",
           project_title: c.proposals?.title ?? null,

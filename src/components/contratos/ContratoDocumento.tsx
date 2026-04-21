@@ -29,9 +29,7 @@ type ContractDocProps = {
   customContractText?: string | null;
 };
 
-function formatBRL(value: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-}
+import { formatBRL } from "@/lib/format";
 
 function formatPaymentTermsLabel(terms: string | null) {
   if (!terms) return null;

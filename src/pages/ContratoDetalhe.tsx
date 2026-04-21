@@ -22,6 +22,7 @@ import RichTextEditor from "@/components/contratos/RichTextEditor";
 import ContratoDocumento from "@/components/contratos/ContratoDocumento";
 import ContratoPDFView from "@/components/contratos/ContratoPDFView";
 import { contractStatusConfig, execStatusConfig, templateConfig } from "@/lib/contract-utils";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { exportContractPdf } from "@/lib/pdf-export";
 import { cn } from "@/lib/utils";
 
@@ -119,8 +120,8 @@ export default function ContratoDetalhe() {
       setSignedAt(data.signed_at);
       setFinalDeliverableUrl(data.final_deliverable_url);
       setIsFullyPaid(data.is_fully_paid ?? false);
-      setContractTemplate((data as any).contract_template ?? "dynamic");
-      setCustomContractText((data as any).custom_contract_text ?? "");
+      setContractTemplate((data.contract_template ?? "dynamic") as "shield" | "dynamic" | "friendly" | "custom");
+      setCustomContractText(data.custom_contract_text ?? "");
       const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: workspaceId });
       if (wsData && wsData.length > 0) {
         const w = wsData[0];
@@ -364,13 +365,11 @@ export default function ContratoDetalhe() {
 
   const sc = contractStatusConfig[status] ?? contractStatusConfig.draft;
   const ec = execStatusConfig[executionStatus] ?? execStatusConfig.not_started;
-  const cleanPhone = clientPhone.replace(/\D/g, "");
-  const whatsappMsg = encodeURIComponent(
+  const whatsappMsg =
     executionStatus === 'delivered'
       ? `Seu projeto está pronto! 🚀 Acesse o link do nosso Cofre Seguro para quitar o saldo final e liberar o download dos seus arquivos finais: ${contractLink}`
-      : `Olá! O contrato do nosso projeto está pronto para assinatura digital. Segue o link: ${contractLink}`
-  );
-  const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
+      : `Olá! O contrato do nosso projeto está pronto para assinatura digital. Segue o link: ${contractLink}`;
+  const whatsappUrl = buildWhatsAppUrl(clientPhone, whatsappMsg);
   const showVaultTab = ['signed', 'partially_paid', 'paid'].includes(status);
 
   return (

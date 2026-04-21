@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { statusConfig, formatDate } from "@/lib/proposal-utils";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -342,9 +343,10 @@ export default function PropostaDetalhe() {
                 </div>
               }
               {(() => {
-                const cleanPhone = proposal.client_phone?.replace(/\D/g, "") ?? "";
-                const whatsappMsg = encodeURIComponent(`Olá! Segue o link da proposta para você analisar: ${publicLink}`);
-                const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${whatsappMsg}` : null;
+                const whatsappUrl = buildWhatsAppUrl(
+                  proposal.client_phone,
+                  `Olá! Segue o link da proposta para você analisar: ${publicLink}`
+                );
                 return (
                   <>
                     {whatsappUrl && !isDraft &&
