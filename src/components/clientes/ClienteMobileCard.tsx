@@ -60,7 +60,7 @@ export default function ClienteMobileCard({ client, onEdit, onDelete }: Props) {
         <Button
           variant="outline"
           size="sm"
-          className="flex-1"
+          className="flex-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-300"
           disabled={!phoneDigits}
           asChild={!!phoneDigits}
         >
