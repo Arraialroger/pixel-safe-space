@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FileCheck, MoreHorizontal, Eye, Search, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -43,11 +43,12 @@ type ContractWithClient = {
 export default function Contratos() {
   const { workspaceId } = useWorkspace();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const [contracts, setContracts] = useState<ContractWithClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "all");
   const [execFilter, setExecFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("contratos", "cards");
