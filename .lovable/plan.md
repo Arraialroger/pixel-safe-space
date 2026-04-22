@@ -1,59 +1,204 @@
 
-
-# Atualizar TECH_SPEC.md para v1.3
+# Implementar Status Explorer no final do Dashboard
 
 ## Objetivo
-Sincronizar o `TECH_SPEC.md` com o estado real do código após Fases 1, 2 e 3 (segurança, refactor e performance).
+Adicionar filtros globais de status para propostas e contratos no Dashboard, com contadores e lista clicável, usando uma RPC separada para aproveitar os índices existentes sem alterar os KPIs principais.
 
-## Mudanças no documento
+## Ordem obrigatória do Dashboard
 
-### Cabeçalho
-- Versão: **1.2 → 1.3**
-- Data: **2026-04-21**
-- Nota de changelog no topo resumindo as 3 fases.
+O Dashboard seguirá exatamente esta sequência:
 
-### §2.1 Schema — correções e adições
-- **`workspaces`**: remover `mercado_pago_token` e `stripe_token` (foram movidos para nova tabela `workspace_payment_tokens`). Atualizar `subscription_plan` para refletir plano único `full_access` (não mais `freelancer`/`studio`). Atualizar `subscription_status` enum incluindo `pending`.
-- **`profiles`**: adicionar coluna `theme_preference text NOT NULL DEFAULT 'system'`.
-- **Nova tabela `workspace_payment_tokens`** documentada (workspace_id, mercado_pago_token, stripe_token; RLS owner-only + service_role).
-- Notar índices de performance adicionados na Fase 3 (lista dos 9 índices: `idx_contracts_workspace_status`, `idx_proposals_workspace_status`, `idx_contracts_vault`, `idx_contracts_pending_signature`, `idx_proposals_pending`, `idx_payment_sessions_contract_phase_status`, `idx_payment_events_contract_id`, `idx_workspaces_asaas_subscription_id`, `idx_contracts_workspace_execution`).
+```text
+1. KPIs
+2. Quick Actions
+3. Gráfico de Receita
+4. Motor de Tarefas
+   - Aguardando assinatura
+   - Prontos para entrega
+5. Status Explorer
+```
 
-### §2.2 Storage — correção crítica
-- **`vault`**: marcar como **privado** (não público). Acesso via Edge Function `get-deliverable-url` com signed URL.
-- **`logos`**: público para leitura, sem listagem.
+O Status Explorer será colocado no final da página, abaixo dos cards de tarefas.
 
-### §3 Dependências
-- Adicionar `dompurify` (já listado, manter), confirmar versões atuais.
-- Adicionar utilitários compartilhados criados na Fase 2: `src/lib/format.ts`, `src/lib/whatsapp.ts`.
+## O que será implementado
 
-### §8 Pagamentos
-- Apontar `supabase/functions/_shared/mercadopago-types.ts` como fonte de tipos.
-- Documentar idempotência via `payment_events` e validação cruzada com API MP.
-- Mencionar `get-deliverable-url` para download seguro do Cofre.
+### 1. Nova RPC separada
+Criar uma função SQL, por exemplo:
 
-### §9 SaaS Billing — reescrita
-- Substituir tabela de planos por **plano único "Acesso Total" — R$ 49,00/mês** (`subscription_plan = 'full_access'`).
-- Atualizar Edge Functions: `create-asaas-checkout`, `cancel-asaas-subscription`, `asaas-webhook`, `get-asaas-subscription-info`, `list-asaas-payments`.
-- Regra white-label: marca d'água escondida apenas se `subscription_plan === 'full_access'`.
+```sql
+get_dashboard_filtered_items(
+  _workspace_id uuid,
+  _entity text,
+  _status text
+)
+```
 
-### §10 Rotas
-- Adicionar `/assinatura/faturas` (`AssinaturaFaturas`).
+Ela retornará um JSON com:
 
-### §11 RPCs
-- Adicionar: `get_public_proposal`, `get_public_contract`, `get_public_contract_status`.
+- `total_count`
+- `total_value`
+- `items`
 
-### §12 Segurança — expandir
-- Realtime fechado para tabelas com PII.
-- Todas as RPCs `SECURITY DEFINER` com `search_path = public`.
-- Tokens de pagamento isolados em `workspace_payment_tokens`.
-- Pendência manual: ativar **Leaked Password Protection** no painel Supabase.
+Comportamento:
 
-### Nova §13 — Changelog
-Resumo das Fases 1 (segurança), 2 (DRY/refactor) e 3 (índices + tipagem webhooks).
+- `_entity = 'proposals'`
+  - filtra a tabela `proposals`
+  - usa `workspace_id + status`
+  - retorna propostas recentes com cliente e data
+  - `total_value` será `0`, pois propostas não têm valor financeiro direto no schema atual
+
+- `_entity = 'contracts'`
+  - filtra a tabela `contracts`
+  - usa `workspace_id + status`
+  - retorna contratos recentes com cliente, valor e data
+  - `total_value` soma `payment_value`
+
+Segurança:
+
+- A RPC validará `is_workspace_member(auth.uid(), _workspace_id)`
+- Se o usuário não for membro do workspace, retorna erro de autorização
+- A função será `SECURITY DEFINER`, seguindo o padrão atual do projeto
+
+Performance:
+
+- A consulta usará os índices já existentes por `workspace_id/status`
+- A lista será limitada aos 20 itens mais recentes
+
+## 2. Novo componente `StatusExplorer`
+
+Criar:
+
+```text
+src/components/dashboard/StatusExplorer.tsx
+```
+
+Responsabilidades:
+
+- Mostrar um card/seção “Explorar por Status”
+- Permitir alternar entre:
+  - Propostas
+  - Contratos
+- Permitir selecionar status conforme o tipo escolhido
+- Buscar dados via React Query chamando a nova RPC
+- Exibir:
+  - contador total
+  - valor total quando for contrato
+  - lista clicável com até 20 itens
+
+## 3. Status disponíveis
+
+### Propostas
+
+Usar os status compatíveis com o projeto:
+
+```text
+draft
+pending
+accepted
+completed
+```
+
+Labels sugeridos:
+
+```text
+Rascunho
+Pendente
+Aceita
+Concluída
+```
+
+### Contratos
+
+Usar os status comerciais existentes:
+
+```text
+draft
+pending_signature
+signed
+partially_paid
+paid
+```
+
+Labels sugeridos:
+
+```text
+Rascunho
+Aguardando assinatura
+Assinado
+Parcialmente pago
+Pago
+```
+
+## 4. Lista clicável
+
+Cada item da lista navegará para a tela de detalhe correspondente:
+
+```text
+Proposta  -> /propostas/:id
+Contrato  -> /contratos/:id
+```
+
+Também será possível incluir um link de “Ver todos” apontando para:
+
+```text
+/propostas?status=...
+/contratos?status=...
+```
+
+## 5. Suporte a `?status=` nas páginas existentes
+
+Atualizar:
+
+```text
+src/pages/Propostas.tsx
+src/pages/Contratos.tsx
+```
+
+Para que, quando receberem `?status=...`, já iniciem filtradas por aquele status.
+
+Isso mantém o Dashboard como ponto de exploração e permite continuidade natural para a listagem completa.
+
+## 6. Integração no Dashboard
+
+Atualizar:
+
+```text
+src/pages/Index.tsx
+```
+
+Inserindo o novo componente apenas no final, depois do Motor de Tarefas:
+
+```tsx
+<div className="grid gap-4 lg:grid-cols-2">
+  <PendingSignaturesCard ... />
+  <ReadyForDeliveryCard ... />
+</div>
+
+<StatusExplorer />
+```
+
+Nada será colocado acima dos KPIs.
+
+## 7. Estados de UI
+
+O componente terá tratamento para:
+
+- carregamento
+- lista vazia
+- erro de RPC
+- workspace ainda não carregado
+- troca de tipo/status com refetch automático
 
 ## Arquivos afetados
-- `TECH_SPEC.md` (reescrita completa, mantendo estrutura)
 
-## Detalhes técnicos
-Sem mudança de código ou banco — apenas documentação. Após aprovação, executo a edição em uma única passada com `code--write`.
+```text
+supabase/migrations/...
+src/components/dashboard/StatusExplorer.tsx
+src/pages/Index.tsx
+src/pages/Propostas.tsx
+src/pages/Contratos.tsx
+```
 
+## Resultado esperado
+
+O Dashboard continuará com os KPIs como topo absoluto e ganhará, ao final da página, uma seção analítica leve para explorar propostas e contratos por status, com métricas filtradas e navegação direta para os registros.
