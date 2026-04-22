@@ -39,6 +39,7 @@ interface FilteredResult {
 }
 
 const PROPOSAL_STATUSES: StatusOption[] = [
+  { value: "all", label: "Todos os status" },
   { value: "draft", label: "Rascunho" },
   { value: "pending", label: "Em Negociação" },
   { value: "accepted", label: "Aceita" },
@@ -46,6 +47,7 @@ const PROPOSAL_STATUSES: StatusOption[] = [
 ];
 
 const CONTRACT_STATUSES: StatusOption[] = [
+  { value: "all", label: "Todos os status" },
   { value: "draft", label: "Rascunho" },
   { value: "pending_signature", label: "Aguardando assinatura" },
   { value: "signed", label: "Assinado" },
@@ -59,14 +61,14 @@ export function StatusExplorer() {
   const navigate = useNavigate();
   const { workspaceId } = useWorkspace();
   const [entity, setEntity] = useState<ExplorerEntity>("proposals");
-  const [proposalStatus, setProposalStatus] = useState(PROPOSAL_STATUSES[1].value);
-  const [contractStatus, setContractStatus] = useState(CONTRACT_STATUSES[1].value);
+  const [proposalStatus, setProposalStatus] = useState("all");
+  const [contractStatus, setContractStatus] = useState("all");
 
   const status = entity === "proposals" ? proposalStatus : contractStatus;
   const statusOptions = entity === "proposals" ? PROPOSAL_STATUSES : CONTRACT_STATUSES;
-  const config = entity === "proposals" ? proposalStatusConfig[status] : contractStatusConfig[status];
   const entityLabel = entity === "proposals" ? "Propostas" : "Contratos";
   const detailBasePath = entity === "proposals" ? "/propostas" : "/contratos";
+  const listPath = status === "all" ? detailBasePath : `${detailBasePath}?status=${encodeURIComponent(status)}`;
 
   const { data = EMPTY_RESULT, isLoading, isError } = useQuery({
     queryKey: ["dashboard-status-explorer", workspaceId, entity, status],
@@ -92,6 +94,10 @@ export function StatusExplorer() {
     () => statusOptions.find((option) => option.value === status)?.label ?? status,
     [status, statusOptions],
   );
+  const emptyMessage =
+    status === "all"
+      ? `Nenhum item encontrado em ${entityLabel.toLowerCase()} ainda.`
+      : `Nenhum ${entity === "proposals" ? "item" : "contrato"} encontrado em “${selectedStatusLabel}”.`;
 
   const handleEntityChange = (value: string) => {
     setEntity(value as ExplorerEntity);
@@ -140,11 +146,13 @@ export function StatusExplorer() {
       <CardContent className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-lg border border-border bg-muted/20 p-4">
-            <p className="text-sm text-muted-foreground">Total em {selectedStatusLabel}</p>
+            <p className="text-sm text-muted-foreground">
+              {status === "all" ? `Total de ${entityLabel.toLowerCase()}` : `Total em ${selectedStatusLabel}`}
+            </p>
             {isLoading ? <Skeleton className="mt-2 h-8 w-24" /> : <p className="mt-1 text-2xl font-semibold">{data.total_count}</p>}
           </div>
           <div className="rounded-lg border border-border bg-muted/20 p-4">
-            <p className="text-sm text-muted-foreground">Valor filtrado</p>
+            <p className="text-sm text-muted-foreground">{status === "all" ? "Valor total" : "Valor filtrado"}</p>
             {isLoading ? (
               <Skeleton className="mt-2 h-8 w-32" />
             ) : (
@@ -158,7 +166,7 @@ export function StatusExplorer() {
         {isError ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-border py-10 text-center text-sm text-muted-foreground">
             <Search className="h-8 w-8 text-muted-foreground/50" />
-            Não foi possível carregar os itens filtrados.
+            Não foi possível carregar os itens. Tente novamente.
           </div>
         ) : isLoading ? (
           <div className="space-y-2">
@@ -169,38 +177,42 @@ export function StatusExplorer() {
         ) : data.items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-border py-10 text-center text-sm text-muted-foreground">
             {entity === "proposals" ? <FileText className="h-8 w-8 text-muted-foreground/50" /> : <FileCheck className="h-8 w-8 text-muted-foreground/50" />}
-            Nenhum item encontrado neste status.
+            {emptyMessage}
           </div>
         ) : (
           <div className="divide-y divide-border rounded-lg border border-border">
-            {data.items.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => navigate(`${detailBasePath}/${item.id}`)}
-                className="group flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/40"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-medium">{item.title}</p>
-                    {config && (
-                      <Badge variant={config.variant} className={config.className}>
-                        {config.label}
-                      </Badge>
-                    )}
+            {data.items.map((item) => {
+              const itemConfig = entity === "proposals" ? proposalStatusConfig[item.status] : contractStatusConfig[item.status];
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(`${detailBasePath}/${item.id}`)}
+                  className="group flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/40"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-medium">{item.title}</p>
+                      {itemConfig && (
+                        <Badge variant={itemConfig.variant} className={itemConfig.className}>
+                          {itemConfig.label}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {item.client_name ?? "Cliente"} · há {formatDistanceToNow(new Date(item.created_at), { locale: ptBR })}
+                      {entity === "contracts" && item.payment_value != null ? ` · ${formatCurrency(item.payment_value)}` : ""}
+                    </p>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {item.client_name ?? "Cliente"} · há {formatDistanceToNow(new Date(item.created_at), { locale: ptBR })}
-                    {entity === "contracts" && item.payment_value != null ? ` · ${formatCurrency(item.payment_value)}` : ""}
-                  </p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-              </button>
-            ))}
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                </button>
+              );
+            })}
           </div>
         )}
 
         <Button asChild variant="ghost" className="w-full sm:w-auto">
-          <Link to={`${detailBasePath}?status=${encodeURIComponent(status)}`}>
+          <Link to={listPath}>
             Ver todos em {entityLabel}
             <ChevronRight className="h-4 w-4" />
           </Link>
