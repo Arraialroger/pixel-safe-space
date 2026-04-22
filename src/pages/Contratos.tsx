@@ -29,6 +29,12 @@ import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
 import { SortSelector, sortItems, useSortPreference } from "@/components/SortSelector";
 
 const ITEMS_PER_PAGE = 10;
+const VALID_STATUS_FILTERS = new Set(["all", "draft", "pending_signature", "signed", "partially_paid", "paid"]);
+
+function getStatusFilterFromParams(searchParams: URLSearchParams) {
+  const status = searchParams.get("status") ?? "all";
+  return VALID_STATUS_FILTERS.has(status) ? status : "all";
+}
 
 type ContractWithClient = {
   id: string;
@@ -48,12 +54,16 @@ export default function Contratos() {
   const [contracts, setContracts] = useState<ContractWithClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "all");
+  const [statusFilter, setStatusFilter] = useState(() => getStatusFilterFromParams(searchParams));
   const [execFilter, setExecFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("contratos", "cards");
   const [cardSort, setCardSort] = useSortPreference("contratos");
   const showSort = isMobile || viewMode === "cards";
+
+  useEffect(() => {
+    setStatusFilter(getStatusFilterFromParams(searchParams));
+  }, [searchParams]);
 
   useEffect(() => {
     setCurrentPage(1);

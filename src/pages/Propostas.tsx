@@ -32,6 +32,12 @@ import { ViewModeToggle, useViewMode } from "@/components/ViewModeToggle";
 import { SortSelector, sortItems, useSortPreference } from "@/components/SortSelector";
 
 const ITEMS_PER_PAGE = 10;
+const VALID_STATUS_FILTERS = new Set(["all", "draft", "pending", "accepted", "completed"]);
+
+function getStatusFilterFromParams(searchParams: URLSearchParams) {
+  const status = searchParams.get("status") ?? "all";
+  return VALID_STATUS_FILTERS.has(status) ? status : "all";
+}
 
 type ProposalWithClient = {
   id: string;
@@ -59,11 +65,15 @@ export default function Propostas() {
   const [proposals, setProposals] = useState<ProposalWithClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "all");
+  const [statusFilter, setStatusFilter] = useState(() => getStatusFilterFromParams(searchParams));
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("propostas", "cards");
   const [cardSort, setCardSort] = useSortPreference("propostas");
   const showSort = isMobile || viewMode === "cards";
+
+  useEffect(() => {
+    setStatusFilter(getStatusFilterFromParams(searchParams));
+  }, [searchParams]);
 
   useEffect(() => {
     setCurrentPage(1);
