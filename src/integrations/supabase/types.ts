@@ -462,7 +462,7 @@ export type Database = {
         Returns: undefined
       }
       get_dashboard_filtered_items: {
-        Args: { _entity: string; _status: string; _workspace_id: string }
+        Args: { _entity: string; _status?: string; _workspace_id: string }
         Returns: Json
       }
       get_dashboard_metrics: { Args: { _workspace_id: string }; Returns: Json }
