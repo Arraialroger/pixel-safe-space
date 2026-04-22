@@ -21,6 +21,7 @@ import {
   ReadyForDeliveryCard,
   type ReadyForDeliveryItem,
 } from "@/components/dashboard/ReadyForDeliveryCard";
+import { StatusExplorer } from "@/components/dashboard/StatusExplorer";
 
 interface DashboardMetrics {
   protected_revenue: number;
@@ -230,6 +231,9 @@ const Index = () => {
           total={metrics?.ready_for_delivery_total ?? 0}
         />
       </div>
+
+      {/* Status Explorer */}
+      <StatusExplorer />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FileText, Plus, Eye, MessageCircle, MoreHorizontal, Search, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -46,6 +46,7 @@ export default function Propostas() {
   const { workspaceId } = useWorkspace();
   const { guard } = usePaywall();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
 
   useMobileHeaderAction(
@@ -58,7 +59,7 @@ export default function Propostas() {
   const [proposals, setProposals] = useState<ProposalWithClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useViewMode("propostas", "cards");
   const [cardSort, setCardSort] = useSortPreference("propostas");
