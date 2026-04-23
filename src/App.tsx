@@ -142,7 +142,14 @@ const App = () => (
               />
               <Route path="/p/:id" element={<PropostaPublica />} />
               <Route path="/c/:id" element={<ContratoPublico />} />
-              <Route path="*" element={<NotFound />} />
+              <Route
+                path="*"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><NotFound /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </WorkspaceProvider>
         </AuthProvider>
