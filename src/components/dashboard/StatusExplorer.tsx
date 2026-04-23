@@ -57,6 +57,60 @@ const CONTRACT_STATUSES: StatusOption[] = [
 
 const EMPTY_RESULT: FilteredResult = { total_count: 0, total_value: 0, items: [] };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function toNullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  return toNumber(value);
+}
+
+function normalizeFilteredItem(value: unknown): FilteredItem | null {
+  if (!isRecord(value)) return null;
+
+  const { id, title, status, created_at, client_name, payment_value } = value;
+
+  if (
+    typeof id !== "string" ||
+    typeof title !== "string" ||
+    typeof status !== "string" ||
+    typeof created_at !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    title,
+    status,
+    created_at,
+    client_name: typeof client_name === "string" ? client_name : null,
+    payment_value: toNullableNumber(payment_value),
+  };
+}
+
+function normalizeFilteredResult(value: unknown): FilteredResult {
+  if (!isRecord(value)) {
+    throw new Error("Resposta inválida ao carregar itens filtrados.");
+  }
+
+  return {
+    total_count: toNumber(value.total_count),
+    total_value: toNumber(value.total_value),
+    items: Array.isArray(value.items) ? value.items.map(normalizeFilteredItem).filter((item): item is FilteredItem => item !== null) : [],
+  };
+}
+
 export function StatusExplorer() {
   const navigate = useNavigate();
   const { workspaceId } = useWorkspace();
@@ -73,19 +127,14 @@ export function StatusExplorer() {
   const { data = EMPTY_RESULT, isLoading, isError } = useQuery({
     queryKey: ["dashboard-status-explorer", workspaceId, entity, status],
     queryFn: async () => {
-      const rpc = supabase.rpc as unknown as (
-        fn: string,
-        args: Record<string, unknown>,
-      ) => Promise<{ data: unknown; error: { message: string } | null }>;
-
-      const { data, error } = await rpc("get_dashboard_filtered_items", {
+      const { data, error } = await supabase.rpc("get_dashboard_filtered_items", {
         _workspace_id: workspaceId!,
         _entity: entity,
         _status: status,
       });
 
       if (error) throw new Error(error.message);
-      return data as FilteredResult;
+      return normalizeFilteredResult(data);
     },
     enabled: !!workspaceId,
   });
