@@ -391,7 +391,7 @@ export default function ContratoDetalhe() {
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         {whatsappUrl && (
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-            <Button size="sm" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input h-10 px-4 py-2 gap-2 text-primary-foreground bg-destructive hover:bg-destructive/90 w-full sm:w-auto">
+            <Button size="sm" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input h-10 px-4 py-2 gap-2 text-primary-foreground bg-destructive">
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </Button>
           </a>
