@@ -391,7 +391,7 @@ export default function ContratoDetalhe() {
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         {whatsappUrl && (
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-            <Button size="sm" className="gap-1 bg-whatsapp hover:bg-whatsapp/80 text-primary-foreground w-full sm:w-auto">
+            <Button size="sm" className="gap-1 bg-destructive text-primary-foreground w-full sm:w-auto hover:bg-destructive/90">
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </Button>
           </a>
