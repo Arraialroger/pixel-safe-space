@@ -351,7 +351,7 @@ export default function PropostaDetalhe() {
                   <>
                     {whatsappUrl && !isDraft &&
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                        <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-500 text-white">
+                        <Button className="w-full gap-2 text-primary-foreground bg-whatsapp">
                           <MessageCircle className="h-4 w-4" /> Enviar via WhatsApp
                         </Button>
                       </a>
