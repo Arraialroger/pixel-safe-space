@@ -400,7 +400,7 @@ export default function ContratoDetalhe() {
           <Button variant="outline" size="icon" className="h-8 w-8 border border-input" onClick={handleExportPdf} disabled={exportingPdf} title="Baixar PDF">
             {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink} title="Copiar link">
+          <Button variant="outline" size="icon" className="h-8 w-8 border border-input" onClick={handleCopyLink} title="Copiar link">
             <Copy className="h-4 w-4" />
           </Button>
           {status === "pending_signature" && (
