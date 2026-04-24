@@ -215,6 +215,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "payment_events_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "payment_events_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -260,7 +267,15 @@ export type Database = {
           provider?: string
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payment_sessions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -493,6 +508,39 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      get_public_contract_full: {
+        Args: { _contract_id: string }
+        Returns: {
+          client_address: string
+          client_company: string
+          client_document: string
+          client_name: string
+          content_deliverables: string
+          content_exclusions: string
+          content_revisions: string
+          contract_template: string
+          custom_contract_text: string
+          deadline: string
+          down_payment: number
+          has_deliverable: boolean
+          id: string
+          is_fully_paid: boolean
+          payment_link: string
+          payment_terms: string
+          payment_value: number
+          signed_at: string
+          signed_by_email: string
+          signed_by_name: string
+          status: string
+          workspace_company_address: string
+          workspace_company_document: string
+          workspace_id: string
+          workspace_logo_url: string
+          workspace_name: string
+          workspace_subscription_plan: string
+          workspace_whatsapp: string
+        }[]
+      }
       get_public_contract_status: {
         Args: { _contract_id: string }
         Returns: {
@@ -509,6 +557,21 @@ export type Database = {
           status: string
           title: string
           workspace_id: string
+        }[]
+      }
+      get_public_proposal_full: {
+        Args: { _proposal_id: string }
+        Returns: {
+          ai_generated_scope: string
+          client_name: string
+          id: string
+          status: string
+          title: string
+          workspace_id: string
+          workspace_logo_url: string
+          workspace_name: string
+          workspace_subscription_plan: string
+          workspace_whatsapp: string
         }[]
       }
       get_workspace_contract_info: {
