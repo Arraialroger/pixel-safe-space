@@ -397,7 +397,7 @@ export default function ContratoDetalhe() {
           </a>
         )}
         <div className="flex items-center gap-1 sm:ml-auto">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleExportPdf} disabled={exportingPdf} title="Baixar PDF">
+          <Button variant="outline" size="icon" className="h-8 w-8 border border-input" onClick={handleExportPdf} disabled={exportingPdf} title="Baixar PDF">
             {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           </Button>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink} title="Copiar link">
