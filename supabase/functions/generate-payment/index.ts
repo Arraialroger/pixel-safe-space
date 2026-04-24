@@ -40,19 +40,42 @@ Deno.serve(async (req) => {
       return error("Contract already fully paid", 400);
     }
 
+    // HARDENED STATE VALIDATION
+    // Block payments for invalid contract states
+    const blockedStatuses = ["draft", "pending_signature"];
+    if (blockedStatuses.includes(contract.status)) {
+      console.error(">>> Payment blocked: contract not signed yet. status:", contract.status);
+      return error("Contract must be signed before generating payment", 400);
+    }
+
     const downPayment = Number(contract.down_payment) || 0;
     const totalValue = Number(contract.payment_value) || 0;
     const hasEntrance = downPayment > 0;
 
-    // Validation
-    if (payment_type === "entrance" && !hasEntrance) {
-      console.error(">>> Cannot generate entrance for contract without down_payment");
-      return error("This contract has no entrance payment", 400);
+    // Per-phase validation
+    if (payment_type === "entrance") {
+      if (!hasEntrance) {
+        console.error(">>> Cannot generate entrance for contract without down_payment");
+        return error("This contract has no entrance payment", 400);
+      }
+      if (contract.status !== "signed") {
+        console.error(">>> Entrance only allowed when status=signed. current:", contract.status);
+        return error("Entrance payment only allowed for signed contracts", 400);
+      }
     }
 
-    if (payment_type === "balance" && !contract.final_deliverable_url) {
-      console.error(">>> Cannot generate balance without deliverable");
-      return error("Deliverable not uploaded yet", 400);
+    if (payment_type === "balance") {
+      const balanceAllowedStatus =
+        contract.status === "partially_paid" ||
+        (contract.status === "signed" && !hasEntrance);
+      if (!balanceAllowedStatus) {
+        console.error(">>> Balance not allowed in current state. status:", contract.status, "hasEntrance:", hasEntrance);
+        return error("Balance payment not allowed in current contract state", 400);
+      }
+      if (!contract.final_deliverable_url) {
+        console.error(">>> Cannot generate balance without deliverable");
+        return error("Deliverable not uploaded yet", 400);
+      }
     }
 
     // Calculate amount
@@ -73,6 +96,19 @@ Deno.serve(async (req) => {
     if (!amount || amount <= 0) {
       console.error(">>> Invalid amount:", amount);
       return error("No valid amount", 400);
+    }
+
+    // Prevent duplicate active sessions for the same phase
+    const { data: existingSessions } = await supabase
+      .from("payment_sessions")
+      .select("id, status")
+      .eq("contract_id", contract_id)
+      .eq("phase", phase)
+      .in("status", ["paid"]);
+
+    if (existingSessions && existingSessions.length > 0) {
+      console.error(">>> Phase already paid. phase:", phase);
+      return error("This payment phase is already settled", 400);
     }
 
     // Fetch workspace name
