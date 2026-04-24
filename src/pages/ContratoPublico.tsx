@@ -185,7 +185,7 @@ export default function ContratoPublico() {
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const { data, error } = await supabase.rpc("get_public_contract", { _contract_id: id });
+      const { data, error } = await supabase.rpc("get_public_contract_full", { _contract_id: id });
 
       if (error || !data || data.length === 0) {
         setLoading(false);
@@ -216,12 +216,14 @@ export default function ContratoPublico() {
       };
       setContract(contractData);
 
-      const { data: wsData } = await supabase.rpc("get_workspace_contract_info", {
-        _workspace_id: contractData.workspace_id,
+      setWorkspace({
+        id: row.workspace_id,
+        name: row.workspace_name ?? "Estúdio",
+        logo_url: row.workspace_logo_url ?? null,
+        company_document: row.workspace_company_document ?? null,
+        company_address: row.workspace_company_address ?? null,
+        subscription_plan: row.workspace_subscription_plan ?? null,
       });
-      if (wsData && wsData.length > 0) {
-        setWorkspace(wsData[0] as WorkspaceInfo);
-      }
 
       const hasEntrance = (contractData.down_payment ?? 0) > 0;
       if (contractData.status === "signed" && hasEntrance) {
