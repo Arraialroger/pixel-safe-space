@@ -1,141 +1,454 @@
 
-# Corrigir o fluxo do “Explorar por Status”
+# Plano definitivo para colocar o PixelSafe em produção
 
-## Causa raiz identificada
+## Parecer direto sobre o estado atual
 
-O problema principal não está mais na lógica do filtro em si nem, ao que tudo indica, nos dados do banco.
+O PixelSafe está em estágio avançado. A maior parte do produto já existe e funciona como um SaaS real:
 
-A falha está no **frontend do `StatusExplorer`**, especificamente nesta parte:
+- login e rotas internas protegidas;
+- dashboard;
+- clientes;
+- propostas;
+- contratos;
+- assinatura digital;
+- pagamentos de contrato via Mercado Pago;
+- assinatura SaaS via Asaas;
+- cofre privado para entregáveis;
+- links públicos para clientes;
+- paywall;
+- white-label;
+- multi-workspace.
 
-```ts
-const rpc = supabase.rpc as unknown as (...)
-const { data, error } = await rpc("get_dashboard_filtered_items", ...)
-```
+O projeto não precisa de novas funcionalidades agora.
 
-Ao extrair `supabase.rpc` para uma variável e chamá-la solta, o método perde o contexto original do cliente Supabase. Na prática, isso pode fazer a chamada falhar **antes mesmo de disparar a requisição HTTP**.
+O que falta para produção não é “melhorar o produto”, e sim fechar segurança, validar fluxos críticos e publicar corretamente.
 
-## Evidências encontradas
-
-### 1. A RPC existe e já aceita `all`
-A função `get_dashboard_filtered_items` no banco já está correta para o fluxo atual:
-
-- aceita `_status = 'all'`
-- valida `proposals` e `contracts`
-- retorna `total_count`, `total_value` e `items`
-
-### 2. Há dados reais para retornar
-No workspace atual existem registros compatíveis:
+A partir daqui, o foco deve ser apenas:
 
 ```text
-Propostas:
-- accepted: 2
-- completed: 4
-
-Contratos:
-- paid: 4
-- signed: 2
+Segurança → Fluxo principal → Pagamentos → Publicação
 ```
 
-Ou seja: o banco não está vazio.
-
-### 3. A dashboard já consegue falar com o Supabase
-A RPC `get_dashboard_metrics` está respondendo com sucesso no preview.
-
-Então não é problema geral de autenticação, sessão ou workspace.
-
-### 4. Não aparece requisição de rede para `get_dashboard_filtered_items`
-Isso é o sinal mais forte:
-- a UI entra em erro
-- mas não há request correspondente para a RPC filtrada
-
-Isso indica falha no cliente/browser antes da ida ao banco.
+Sem adicionar novas ideias, telas ou melhorias opcionais.
 
 ---
 
-## O que será corrigido
+# O que falta obrigatoriamente para produção
 
-### 1. Chamar a RPC corretamente
-Substituir a chamada solta por chamada direta no cliente:
+## 1. Corrigir segurança/RLS do Supabase
 
-```ts
-const { data, error } = await supabase.rpc("get_dashboard_filtered_items", {
-  _workspace_id: workspaceId!,
-  _entity: entity,
-  _status: status,
-});
+Estado atual:
+
+- As tabelas principais estão com RLS ativado.
+- As rotas internas já exigem login.
+- As rotas públicas de cliente continuam abertas corretamente:
+  - `/p/:id`
+  - `/c/:id`
+- O bucket `vault` está privado.
+- O linter do Supabase aponta apenas um aviso: Leaked Password Protection desativado.
+
+Mas ainda há pontos obrigatórios de hardening antes de produção:
+
+### O que corrigir
+
+1. Restringir RPC interna que expõe dados do workspace.
+   - Problema: `get_workspace_contract_info` pode ser chamada publicamente com um `workspace_id`.
+   - Correção: ela deve ser usada apenas por usuários logados/membros do workspace.
+
+2. Criar RPCs públicas específicas para páginas de cliente.
+   - `/p/:id` deve receber apenas os dados necessários da proposta pública.
+   - `/c/:id` deve receber apenas os dados necessários do contrato público.
+   - O cliente não deve conseguir consultar dados internos do estúdio por `workspace_id`.
+
+3. Restringir `accept_proposal`.
+   - O fluxo atual usa WhatsApp, não aceite digital direto de proposta.
+   - Essa função não deve continuar pública.
+
+4. Endurecer permissões de update.
+   - Garantir que clientes, propostas e contratos não possam ser movidos para outro workspace.
+
+5. Recriar o trigger de sincronização.
+   - Hoje não há triggers ativos no banco.
+   - Precisa existir sincronização automática:
+     - contrato assinado/entrada paga → proposta aceita;
+     - contrato quitado → proposta concluída.
+
+6. Adicionar integridade relacional mínima.
+   - Criar foreign keys e índices entre:
+     - workspaces;
+     - workspace_members;
+     - clients;
+     - proposals;
+     - contracts;
+     - payment_sessions;
+     - payment_events;
+     - workspace_payment_tokens.
+
+7. Ativar manualmente Leaked Password Protection no Supabase.
+   - Isso é feito no painel Supabase.
+   - Não é código.
+
+Resultado esperado desta etapa:
+
+```text
+Usuário logado vê apenas seus próprios workspaces.
+Cliente sem login vê apenas o link público recebido.
+Atacante sem login não consegue consultar dados internos.
+Cofre continua privado.
+Pagamentos só funcionam em contrato válido.
 ```
 
-Isso preserva o contexto do Supabase client e deve destravar a execução real da RPC.
+---
 
-### 2. Remover o cast inseguro
-Remover este trecho:
+## 2. Ajustar páginas públicas após a correção de segurança
 
-```ts
-const rpc = supabase.rpc as unknown as ...
+Estado atual:
+
+- `/p/:id` e `/c/:id` ainda usam `get_workspace_contract_info` para buscar dados do estúdio.
+- Isso funciona, mas depende de uma RPC que precisa ser restringida.
+
+### O que corrigir
+
+1. Atualizar `PropostaPublica.tsx`.
+   - Usar uma RPC pública segura específica para proposta.
+
+2. Atualizar `ContratoPublico.tsx`.
+   - Usar uma RPC pública segura específica para contrato.
+
+3. Manter as páginas públicas sem login.
+   - Clientes não devem precisar criar conta para ver proposta ou contrato.
+
+Resultado esperado:
+
+```text
+Links públicos continuam funcionando.
+Dados sensíveis ficam protegidos.
+Nenhum cliente precisa fazer login.
 ```
 
-Além de desnecessário, ele mascara o problema e enfraquece a segurança de tipos do projeto.
+---
 
-### 3. Normalizar o parse do retorno JSON
-Como a RPC retorna `Json`, o componente deve:
-- validar que o payload tem `total_count`, `total_value` e `items`
-- usar fallback seguro caso o retorno venha incompleto
-- evitar depender apenas de cast estrutural
+## 3. Endurecer geração de pagamento de contrato
 
-### 4. Melhorar o tratamento de erro no `StatusExplorer`
-Hoje qualquer falha cai em um estado genérico. Será ajustado para:
-- distinguir erro de RPC de payload inválido
-- manter `EMPTY_RESULT` apenas para ausência real de dados
-- evitar que um erro de execução pareça “sem itens”
+Estado atual:
 
-### 5. Validar o fluxo completo de filtros
-Após a correção, o fluxo deve funcionar assim:
+- A função `generate-payment` é pública porque o cliente precisa pagar pelo link público do contrato.
+- Isso está correto.
+- Mas ela usa permissões elevadas no backend, então precisa validar melhor o estado do contrato.
+
+### O que corrigir
+
+1. Bloquear pagamento se o contrato estiver:
+   - `draft`;
+   - `pending_signature`;
+   - `paid`.
+
+2. Permitir entrada somente se:
+   - contrato estiver `signed`;
+   - existir valor de entrada.
+
+3. Permitir saldo somente se:
+   - contrato estiver `partially_paid`; ou
+   - contrato estiver `signed` sem entrada;
+   - e, quando aplicável, o entregável final já tiver sido enviado.
+
+4. Impedir criação de sessões de pagamento duplicadas ou inválidas quando o estado do contrato não permitir.
+
+Resultado esperado:
+
+```text
+Cliente só consegue pagar quando o contrato estiver no momento correto.
+Não há cobrança indevida.
+Não há sessão de pagamento inválida.
+```
+
+---
+
+## 4. Testar o fluxo principal completo
+
+Depois das correções de segurança, testar somente o fluxo essencial.
+
+## Fluxo que precisa passar
+
+```text
+1. Criar conta
+2. Entrar no sistema
+3. Criar cliente
+4. Criar proposta
+5. Liberar proposta para cliente
+6. Abrir link público da proposta
+7. Gerar contrato a partir da proposta
+8. Preparar contrato para assinatura
+9. Abrir link público do contrato
+10. Cliente assina contrato
+11. Cliente paga entrada ou valor total
+12. Webhook confirma pagamento
+13. Designer envia arquivo final ao Cofre
+14. Cliente paga saldo, se houver
+15. Cliente consegue baixar arquivo final apenas após quitação
+16. Dashboard e listagens refletem os status corretos
+```
+
+Se esse fluxo passar, o produto está funcionalmente pronto para uso real.
+
+---
+
+## 5. Validar assinatura SaaS do PixelSafe
+
+O PixelSafe cobra o usuário do sistema via Asaas.
+
+### O que validar
+
+1. Criar checkout da assinatura.
+2. Pagar ou simular pagamento no Asaas.
+3. Confirmar que o webhook atualiza o workspace para `active`.
+4. Confirmar que o paywall bloqueia workspace sem acesso.
+5. Confirmar que plano `full_access` remove a marca d’água pública.
+
+Resultado esperado:
+
+```text
+Usuário consegue assinar.
+Workspace ativo libera uso.
+Workspace vencido/bloqueado perde acesso de criação.
+White-label funciona apenas para plano ativo.
+```
+
+---
+
+## 6. Publicar em produção
+
+Depois dos testes, fazer a publicação.
+
+### O que fazer
+
+1. Publicar/update do frontend no Lovable.
+2. Confirmar domínio:
+   - `https://app.pixelsafe.com.br`
+3. Confirmar URLs públicas:
+   - proposta pública;
+   - contrato público;
+   - retorno do Mercado Pago;
+   - webhook Mercado Pago;
+   - webhook Asaas.
+4. Confirmar que as Edge Functions estão respondendo.
+5. Fazer um teste real pequeno em produção.
+
+Resultado esperado:
+
+```text
+PixelSafe acessível no domínio final.
+Login funcionando.
+Clientes acessando links públicos.
+Pagamentos funcionando.
+Cofre protegido.
+```
+
+---
+
+# Cronograma objetivo
+
+## Etapa 1 — Segurança Supabase/RLS
+
+Objetivo: fechar exposição de dados e permissões antes do lançamento.
+
+Tarefas:
+
+```text
+- Restringir RPC interna do workspace.
+- Criar RPCs públicas seguras para proposta/contrato.
+- Restringir accept_proposal.
+- Endurecer políticas de update.
+- Criar foreign keys e índices essenciais.
+- Recriar trigger de sincronização.
+- Ajustar páginas públicas para novas RPCs.
+- Endurecer generate-payment.
+```
+
+Critério de conclusão:
+
+```text
+Rotas públicas continuam abrindo.
+Rotas internas seguem protegidas.
+Dados internos não ficam expostos publicamente.
+Pagamento inválido é bloqueado.
+```
+
+---
+
+## Etapa 2 — Teste funcional completo
+
+Objetivo: validar o caminho real do usuário.
+
+Tarefas:
+
+```text
+- Testar cadastro/login.
+- Testar cliente.
+- Testar proposta.
+- Testar contrato.
+- Testar assinatura pública.
+- Testar pagamento.
+- Testar envio ao Cofre.
+- Testar download apenas após pagamento total.
+- Testar dashboard/listagens.
+```
+
+Critério de conclusão:
+
+```text
+Fluxo Proposta → Contrato → Assinatura → Pagamento → Cofre funciona do início ao fim.
+```
+
+---
+
+## Etapa 3 — Teste de assinatura do PixelSafe
+
+Objetivo: validar monetização do SaaS.
+
+Tarefas:
+
+```text
+- Testar checkout Asaas.
+- Testar webhook Asaas.
+- Confirmar plano ativo.
+- Confirmar paywall.
+- Confirmar white-label.
+```
+
+Critério de conclusão:
+
+```text
+Usuário pagante tem acesso.
+Usuário vencido fica bloqueado.
+Marca d’água some apenas para plano ativo.
+```
+
+---
+
+## Etapa 4 — Publicação final
+
+Objetivo: colocar o sistema no ar.
+
+Tarefas:
+
+```text
+- Publicar frontend.
+- Conferir domínio app.pixelsafe.com.br.
+- Conferir links públicos.
+- Conferir webhooks em produção.
+- Fazer teste real pequeno.
+```
+
+Critério de conclusão:
+
+```text
+PixelSafe pronto para uso real com usuários e clientes reais.
+```
+
+---
+
+# Ordem exata que seguiremos a partir de agora
+
+## Próximo passo imediato
+
+Executar somente a Etapa 1:
+
+```text
+Auditoria e correção de segurança/RLS para produção.
+```
+
+Não vamos adicionar:
+
+```text
+- skeletons;
+- melhorias visuais;
+- persistência extra de filtros;
+- novas telas;
+- novas funcionalidades;
+- testes opcionais;
+- paginação extra no dashboard;
+- refinamentos estéticos.
+```
+
+Depois da Etapa 1, seguimos para a Etapa 2.
+
+---
+
+# Decisões técnicas já definidas
+
+## Rotas públicas
+
+Manter públicas:
+
+```text
+/p/:id
+/c/:id
+```
+
+Motivo prático:
+
+```text
+Clientes precisam abrir proposta e contrato sem criar conta.
+```
+
+## Rotas internas
+
+Exigir login:
 
 ```text
 Dashboard
-→ Explorar por Status
-→ troca entre Propostas / Contratos
-→ troca de status
-→ RPC executa
-→ contadores atualizam
-→ lista clicável atualiza
-→ “Ver todos” abre listagem correspondente
+Clientes
+Propostas
+Contratos
+Cofre
+Configurações
+Assinatura
+Faturas
 ```
 
-### 6. Conferir coerência com as listagens
-As páginas `/propostas` e `/contratos` já estão sincronizando `?status=` adequadamente. A correção principal permanece no `StatusExplorer`, mas a integração final será verificada para garantir:
+Motivo prático:
 
-- `all` abre listagem sem filtro
-- status específico abre listagem filtrada
-- nenhum filtro antigo fica preso na navegação
+```text
+São áreas administrativas do estúdio.
+```
+
+## Cofre
+
+Manter privado.
+
+Motivo prático:
+
+```text
+O cliente só deve baixar o arquivo final depois da quitação total.
+```
+
+## Pagamento de contrato
+
+Manter público via contrato, mas com validação forte no backend.
+
+Motivo prático:
+
+```text
+Cliente precisa pagar sem login, mas não pode gerar cobrança em contrato inválido.
+```
 
 ---
 
-## Arquivos afetados
+# Definição de “pronto para produção”
+
+O PixelSafe estará pronto quando estas 7 condições forem verdadeiras:
 
 ```text
-src/components/dashboard/StatusExplorer.tsx
+1. Usuário não logado não acessa área interna.
+2. Cliente acessa /p/:id e /c/:id sem login.
+3. Dados de um workspace não aparecem para outro workspace.
+4. RPCs públicas expõem apenas o necessário.
+5. Pagamento só é gerado para contrato válido.
+6. Cofre libera download apenas após pagamento total.
+7. Fluxo completo foi testado com sucesso no domínio final.
 ```
 
-Possivelmente apenas esse arquivo precisará de ajuste funcional.
+Esse é o plano fechado.
 
-Se necessário, pode haver pequeno refinamento em:
-
-```text
-src/pages/Propostas.tsx
-src/pages/Contratos.tsx
-```
-
-mas, pela análise atual, eles não são a causa raiz do erro mostrado no Dashboard.
-
----
-
-## Resultado esperado
-
-Depois da correção:
-
-- o card “Explorar por Status” deixará de cair em erro falso
-- os filtros passarão a carregar itens reais do banco
-- “Todos os status” mostrará os registros existentes imediatamente
-- trocar entre status atualizará os contadores e a lista corretamente
-- o botão “Ver todos” continuará levando para as páginas filtradas de forma consistente
+A partir daqui, qualquer item fora dessa lista deve ficar para depois do lançamento.
