@@ -404,7 +404,7 @@ export default function ContratoDetalhe() {
             <Copy className="h-4 w-4" />
           </Button>
           {status === "pending_signature" && (
-            <Button variant="outline" size="sm" onClick={handleRevertToDraft} disabled={reverting} className="gap-1">
+            <Button variant="outline" size="sm" onClick={handleRevertToDraft} disabled={reverting} className="gap-1 border border-input">
               {reverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
               <span className="hidden sm:inline">Reverter para Rascunho</span>
               <span className="sm:hidden">Reverter</span>
