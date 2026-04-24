@@ -29,7 +29,7 @@ export default function PropostaPublica() {
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const { data, error } = await supabase.rpc("get_public_proposal", { _proposal_id: id });
+      const { data, error } = await supabase.rpc("get_public_proposal_full", { _proposal_id: id });
 
       if (error || !data || data.length === 0) {
         setNotFound(true);
@@ -39,31 +39,16 @@ export default function PropostaPublica() {
 
       const row = data[0];
 
-      let wsName = "Estúdio";
-      let logoUrl: string | null = null;
-      let whatsapp: string | null = null;
-      let plan: string | null = null;
-
-      if (row.workspace_id) {
-        const { data: wsData } = await supabase.rpc("get_workspace_contract_info", { _workspace_id: row.workspace_id });
-        if (wsData && wsData.length > 0) {
-          wsName = wsData[0].name;
-          logoUrl = wsData[0].logo_url ?? null;
-          whatsapp = wsData[0].whatsapp ?? null;
-          plan = wsData[0].subscription_plan ?? null;
-        }
-      }
-
       setProposal({
         id: row.id,
         title: row.title,
         status: row.status,
         ai_generated_scope: row.ai_generated_scope,
         client_name: row.client_name ?? "—",
-        workspace_name: wsName,
-        workspace_logo: logoUrl,
-        workspace_whatsapp: whatsapp,
-        workspace_plan: plan,
+        workspace_name: row.workspace_name ?? "Estúdio",
+        workspace_logo: row.workspace_logo_url ?? null,
+        workspace_whatsapp: row.workspace_whatsapp ?? null,
+        workspace_plan: row.workspace_subscription_plan ?? null,
       });
       setLoading(false);
     })();
