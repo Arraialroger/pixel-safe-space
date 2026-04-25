@@ -13,15 +13,6 @@ import {
 } from "@/components/ui/chart";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { QuickActions } from "@/components/dashboard/QuickActions";
-import {
-  PendingSignaturesCard,
-  type PendingSignatureItem,
-} from "@/components/dashboard/PendingSignaturesCard";
-import {
-  ReadyForDeliveryCard,
-  type ReadyForDeliveryItem,
-} from "@/components/dashboard/ReadyForDeliveryCard";
-import { StatusExplorer } from "@/components/dashboard/StatusExplorer";
 
 interface DashboardMetrics {
   protected_revenue: number;
@@ -33,9 +24,7 @@ interface DashboardMetrics {
   pending_proposals: number;
   // New optional fields (graceful fallbacks if RPC cache is stale)
   current_month_revenue?: number;
-  pending_signatures?: PendingSignatureItem[];
   pending_signatures_total?: number;
-  ready_for_delivery?: ReadyForDeliveryItem[];
   ready_for_delivery_total?: number;
 }
 
@@ -127,7 +116,7 @@ const Index = () => {
       </div>
 
       {/* KPI cards: 2x2 mobile, 4-col desktop */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card, i) => (
           <Card
             key={card.label}
@@ -220,20 +209,6 @@ const Index = () => {
         </CardContent>
       </Card>
 
-      {/* Task Engine */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <PendingSignaturesCard
-          items={metrics?.pending_signatures ?? []}
-          total={metrics?.pending_signatures_total ?? 0}
-        />
-        <ReadyForDeliveryCard
-          items={metrics?.ready_for_delivery ?? []}
-          total={metrics?.ready_for_delivery_total ?? 0}
-        />
-      </div>
-
-      {/* Status Explorer */}
-      <StatusExplorer />
     </div>
   );
 };
