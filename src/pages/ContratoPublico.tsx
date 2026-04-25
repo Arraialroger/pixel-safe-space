@@ -568,9 +568,9 @@ export default function ContratoPublico() {
                     </Button>
                   ) : paymentUrl ? (
                     <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
-                      <Button size="lg" className="w-full text-lg py-6 gap-3 bg-success hover:bg-success/80 text-primary-foreground shadow-lg shadow-success/25 animate-glow-pulse">
+                      <Button size="lg" className="w-full text-base sm:text-lg py-6 gap-3 whitespace-normal leading-tight bg-success hover:bg-success/80 text-primary-foreground shadow-lg shadow-success/25 animate-glow-pulse">
                         <ExternalLink className="h-5 w-5" />
-                        Pagar Saldo de {formatCurrency(balanceAmount)} para Liberar Arquivos
+                        Pagar saldo — {formatCurrency(balanceAmount)}
                       </Button>
                     </a>
                   ) : paymentError ? (
