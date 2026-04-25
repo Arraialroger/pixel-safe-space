@@ -13,15 +13,6 @@ import {
 } from "@/components/ui/chart";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { QuickActions } from "@/components/dashboard/QuickActions";
-import {
-  PendingSignaturesCard,
-  type PendingSignatureItem,
-} from "@/components/dashboard/PendingSignaturesCard";
-import {
-  ReadyForDeliveryCard,
-  type ReadyForDeliveryItem,
-} from "@/components/dashboard/ReadyForDeliveryCard";
-import { StatusExplorer } from "@/components/dashboard/StatusExplorer";
 
 interface DashboardMetrics {
   protected_revenue: number;

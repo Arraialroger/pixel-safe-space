@@ -1,53 +1,35 @@
-## Limpeza total do banco e do storage para começar a Etapa 2 do zero
+## Ajustes no Dashboard
 
-### Operação irreversível
+### 1. Cards KPI empilhados no celular
+**Arquivo:** `src/pages/Index.tsx`
 
-Vai apagar **tudo**: 5 usuários, todos os workspaces, clientes, propostas, contratos, pagamentos e arquivos do Cofre/Logos. Depois você cria uma conta nova em `/register` e o sistema gera automaticamente seu workspace zerado.
+Alterar o grid dos 4 cards (Faturamento, No Cofre, Taxa de Conversão, Contratos Ativos):
+- De: `grid-cols-2 lg:grid-cols-4`
+- Para: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`
 
-### Ordem de execução (precisa ser nessa ordem por causa das foreign keys)
+Assim, no celular (<640px) os cards ficam um por linha; em tablets (≥640px) voltam para 2 colunas; em desktop (≥1024px) ficam em 4 colunas.
 
-**1. Apagar dados de negócio (SQL)**
-```sql
-DELETE FROM public.payment_events;
-DELETE FROM public.payment_sessions;
-DELETE FROM public.contracts;
-DELETE FROM public.proposals;
-DELETE FROM public.clients;
-DELETE FROM public.workspace_payment_tokens;
-DELETE FROM public.workspaces;
--- workspace_members e profiles cascateiam sozinhos
-```
+### 2. Remover seções do Dashboard
+**Arquivo:** `src/pages/Index.tsx`
 
-**2. Apagar arquivos do Storage**
-```sql
-DELETE FROM storage.objects WHERE bucket_id = 'vault';
-DELETE FROM storage.objects WHERE bucket_id = 'logos';
-```
+Remover do JSX:
+- Bloco `<PendingSignaturesCard />` (Aguardando Assinatura)
+- Bloco `<ReadyForDeliveryCard />` (Prontos para Entrega)
+- Bloco `<StatusExplorer />` (Explorar por Status)
+- O wrapper `<div className="grid gap-4 lg:grid-cols-2">` que envolvia os dois primeiros
 
-**3. Apagar os 5 usuários do auth**
-```sql
-DELETE FROM auth.users;
--- profiles cascateia sozinho via ON DELETE CASCADE
-```
+Remover também os imports não utilizados:
+- `PendingSignaturesCard` e o tipo `PendingSignatureItem`
+- `ReadyForDeliveryCard` e o tipo `ReadyForDeliveryItem`
+- `StatusExplorer`
 
-**4. Verificação final**
-Rodo SELECT COUNT(*) em todas as tabelas e te mostro tudo zerado.
+Os campos opcionais (`pending_signatures`, `ready_for_delivery`, etc.) na interface `DashboardMetrics` podem ser mantidos sem impacto, já que vêm da RPC e não causam erro se não consumidos. Não vou alterar a RPC para evitar mexer no backend.
 
-### Por que essa ordem
+### Resultado final do Dashboard
+Ordem visual após as alterações:
+1. Header ("Dashboard" + saudação)
+2. 4 KPI cards (1 col mobile / 2 col tablet / 4 col desktop)
+3. Quick Actions (Nova Proposta / Novo Cliente)
+4. Gráfico de Receita Mensal
 
-A tabela `contracts` não tem `ON DELETE CASCADE` para `workspaces`, `clients` e `proposals`. Se eu apagar workspace direto, dá erro de FK. Por isso apago contratos primeiro, depois subo a hierarquia.
-
-### Resultado esperado
-
-- Painel Authentication do Supabase: **0 usuários**
-- Todas as tabelas públicas: **0 registros**
-- Storage `vault` e `logos`: **vazios**
-- Você acessa `/register`, cria conta nova, faz login e começa a Etapa 2 com banco limpo
-
-### O que NÃO será afetado
-
-- Estrutura das tabelas (schema)
-- Edge functions
-- Secrets
-- Configurações do projeto
-- Código da aplicação
+Nada além disso. Após sua aprovação, sigo para a Etapa 3 dos testes.
