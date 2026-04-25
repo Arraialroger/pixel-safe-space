@@ -413,8 +413,8 @@ export default function ContratoDetalhe() {
           {(status === "draft" || status === "pending_signature") && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Excluir contrato">
-                  <Trash2 className="h-4 w-4" />
+                <Button variant="outline" size="sm" className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4" /> Excluir
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
