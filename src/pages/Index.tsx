@@ -209,20 +209,6 @@ const Index = () => {
         </CardContent>
       </Card>
 
-      {/* Task Engine */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <PendingSignaturesCard
-          items={metrics?.pending_signatures ?? []}
-          total={metrics?.pending_signatures_total ?? 0}
-        />
-        <ReadyForDeliveryCard
-          items={metrics?.ready_for_delivery ?? []}
-          total={metrics?.ready_for_delivery_total ?? 0}
-        />
-      </div>
-
-      {/* Status Explorer */}
-      <StatusExplorer />
     </div>
   );
 };
