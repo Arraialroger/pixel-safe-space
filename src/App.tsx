@@ -27,6 +27,7 @@ import ConfiguracoesWorkspace from "./pages/ConfiguracoesWorkspace";
 import Assinatura from "./pages/Assinatura";
 import AssinaturaFaturas from "./pages/AssinaturaFaturas";
 import NotFound from "./pages/NotFound";
+import Install from "./pages/Install";
 
 const queryClient = new QueryClient();
 
@@ -140,6 +141,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/install" element={<Install />} />
               <Route path="/p/:id" element={<PropostaPublica />} />
               <Route path="/c/:id" element={<ContratoPublico />} />
               <Route

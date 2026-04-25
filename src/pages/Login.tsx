@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield } from "lucide-react";
+import { Shield, Smartphone } from "lucide-react";
 
 export default function Login() {
   const { session } = useAuth();
@@ -87,6 +87,13 @@ export default function Login() {
                 Cadastre-se
               </Link>
             </p>
+            <Link
+              to="/install"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline pt-1"
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              Instalar no celular
+            </Link>
           </div>
         </div>
       </div>
