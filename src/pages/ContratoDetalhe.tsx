@@ -617,14 +617,14 @@ export default function ContratoDetalhe() {
 
                 {finalDeliverableUrl ? (
                   <div className="space-y-4">
-                    <div className="rounded-xl border border-success/20 bg-success/10 p-4 flex items-center justify-between gap-4">
-                      <div className="space-y-1">
+                    <div className="rounded-xl border border-success/20 bg-success/10 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="space-y-1 min-w-0 flex-1">
                         <p className="text-sm font-medium text-success flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4" /> Arquivo entregue
                         </p>
-                        <p className="text-xs text-muted-foreground truncate max-w-md">{finalDeliverableUrl.split("/").pop()}</p>
+                        <p className="text-xs text-muted-foreground truncate max-w-full sm:max-w-md">{finalDeliverableUrl.split("/").pop()}</p>
                       </div>
-                      <Button size="sm" variant="outline" className="gap-1" onClick={handleDownloadDeliverable}>
+                      <Button size="sm" variant="outline" className="gap-1 w-full sm:w-auto shrink-0" onClick={handleDownloadDeliverable}>
                           <Download className="h-4 w-4" /> Baixar
                       </Button>
                     </div>
