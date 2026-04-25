@@ -24,9 +24,7 @@ interface DashboardMetrics {
   pending_proposals: number;
   // New optional fields (graceful fallbacks if RPC cache is stale)
   current_month_revenue?: number;
-  pending_signatures?: PendingSignatureItem[];
   pending_signatures_total?: number;
-  ready_for_delivery?: ReadyForDeliveryItem[];
   ready_for_delivery_total?: number;
 }
 
