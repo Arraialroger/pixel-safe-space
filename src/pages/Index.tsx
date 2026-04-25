@@ -116,7 +116,7 @@ const Index = () => {
       </div>
 
       {/* KPI cards: 2x2 mobile, 4-col desktop */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card, i) => (
           <Card
             key={card.label}
