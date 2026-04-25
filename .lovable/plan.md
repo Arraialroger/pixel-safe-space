@@ -1,35 +1,41 @@
-## Ajustes no Dashboard
+## Diagnóstico
 
-### 1. Cards KPI empilhados no celular
-**Arquivo:** `src/pages/Index.tsx`
+Sua proposta está correta e é a melhor prática de UX/conversão:
+- Botão = **ação curta e direta** (verbo + valor)
+- Microcopy de apoio = **fora do botão**, logo abaixo, em texto pequeno
 
-Alterar o grid dos 4 cards (Faturamento, No Cofre, Taxa de Conversão, Contratos Ativos):
-- De: `grid-cols-2 lg:grid-cols-4`
-- Para: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`
+Isso resolve o corte no mobile, melhora a leitura (o olho lê o valor instantaneamente) e mantém a clareza do que acontece após o pagamento. É o padrão usado por Stripe Checkout, Mercado Pago, Hotmart, etc.
 
-Assim, no celular (<640px) os cards ficam um por linha; em tablets (≥640px) voltam para 2 colunas; em desktop (≥1024px) ficam em 4 colunas.
+Como reforço de robustez, aplicar também `whitespace-normal leading-tight text-base sm:text-lg` no botão, para que mesmo se algum valor longo aparecer no futuro, ele quebre linha em vez de cortar.
 
-### 2. Remover seções do Dashboard
-**Arquivo:** `src/pages/Index.tsx`
+## Mudanças em `src/pages/ContratoPublico.tsx`
 
-Remover do JSX:
-- Bloco `<PendingSignaturesCard />` (Aguardando Assinatura)
-- Bloco `<ReadyForDeliveryCard />` (Prontos para Entrega)
-- Bloco `<StatusExplorer />` (Explorar por Status)
-- O wrapper `<div className="grid gap-4 lg:grid-cols-2">` que envolvia os dois primeiros
+Três botões de pagamento serão ajustados (linhas ~496, ~522, ~566):
 
-Remover também os imports não utilizados:
-- `PendingSignaturesCard` e o tipo `PendingSignatureItem`
-- `ReadyForDeliveryCard` e o tipo `ReadyForDeliveryItem`
-- `StatusExplorer`
+**1. Entrada (status `signed` com entrada):**
+- Botão: `Pagar entrada — R$ X,XX`
+- Microcopy abaixo: *"Após a confirmação, seu projeto será iniciado automaticamente."*
 
-Os campos opcionais (`pending_signatures`, `ready_for_delivery`, etc.) na interface `DashboardMetrics` podem ser mantidos sem impacto, já que vêm da RPC e não causam erro se não consumidos. Não vou alterar a RPC para evitar mexer no backend.
+**2. Pagamento total (sem entrada, entregável pronto):**
+- Botão: `Pagar R$ X,XX`
+- Microcopy abaixo: *"Após a confirmação, os arquivos finais serão liberados para download."*
+- (já existe explicação acima — vamos manter só uma das duas para não duplicar)
 
-### Resultado final do Dashboard
-Ordem visual após as alterações:
-1. Header ("Dashboard" + saudação)
-2. 4 KPI cards (1 col mobile / 2 col tablet / 4 col desktop)
-3. Quick Actions (Nova Proposta / Novo Cliente)
-4. Gráfico de Receita Mensal
+**3. Saldo final (status `partially_paid`, entregável pronto):**
+- Botão: `Pagar saldo — R$ X,XX`
+- Microcopy abaixo: *"Após a confirmação, os arquivos finais serão liberados para download."*
+- (idem: remover duplicidade com o texto acima do botão)
 
-Nada além disso. Após sua aprovação, sigo para a Etapa 3 dos testes.
+## Detalhes técnicos
+
+- Texto do botão: substituir pelo formato curto acima.
+- Adicionar `whitespace-normal leading-tight` nas classes do `<Button>` como salvaguarda.
+- Reduzir `text-lg` para `text-base sm:text-lg` para garantir folga em telas estreitas (≤360px).
+- Inserir um `<p className="text-xs text-muted-foreground text-center mt-2">` logo após cada `<a>` do botão, com a microcopy correspondente.
+- Nos blocos 2 e 3, o card já contém a frase explicativa acima do botão ("O designer finalizou seu projeto. Efetue o pagamento…"). Vamos mantê-la como está (contexto) e não duplicar a microcopy abaixo — apenas encurtar o botão. No bloco 1 (entrada) não há contexto acima, então a microcopy abaixo é adicionada.
+
+## Resultado esperado
+
+- Mobile (≤390px): botão exibe `Pagar entrada — R$ 1,00` em uma única linha confortável.
+- Mensagem de o-que-acontece-depois fica visível, mas sem competir com o CTA.
+- Zero risco de texto cortado, mesmo com valores como `R$ 12.500,00`.

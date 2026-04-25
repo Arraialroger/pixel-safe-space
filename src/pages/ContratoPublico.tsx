@@ -492,12 +492,17 @@ export default function ContratoPublico() {
                     <Loader2 className="h-5 w-5 animate-spin" /> Gerando link de pagamento...
                   </Button>
                 ) : paymentUrl ? (
-                  <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
-                    <Button size="lg" className="w-full text-lg py-6 gap-3 bg-success hover:bg-success/80 text-primary-foreground shadow-lg shadow-success/25 animate-glow-pulse">
-                      <ExternalLink className="h-5 w-5" />
-                      Pagar Entrada de {formatCurrency(contract.down_payment)} e Liberar Projeto
-                    </Button>
-                  </a>
+                  <div className="space-y-2">
+                    <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
+                      <Button size="lg" className="w-full text-base sm:text-lg py-6 gap-3 whitespace-normal leading-tight bg-success hover:bg-success/80 text-primary-foreground shadow-lg shadow-success/25 animate-glow-pulse">
+                        <ExternalLink className="h-5 w-5" />
+                        Pagar entrada — {formatCurrency(contract.down_payment)}
+                      </Button>
+                    </a>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Após a confirmação, seu projeto será iniciado automaticamente.
+                    </p>
+                  </div>
                 ) : paymentError ? (
                   <div className="rounded-lg border border-warning/20 bg-warning/10 p-4 text-center">
                     <p className="text-warning text-sm">{paymentError}</p>
@@ -519,9 +524,9 @@ export default function ContratoPublico() {
                     </Button>
                   ) : paymentUrl ? (
                     <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
-                      <Button size="lg" className="w-full text-lg py-6 gap-3 bg-success hover:bg-success/80 text-primary-foreground shadow-lg shadow-success/25 animate-glow-pulse">
+                      <Button size="lg" className="w-full text-base sm:text-lg py-6 gap-3 whitespace-normal leading-tight bg-success hover:bg-success/80 text-primary-foreground shadow-lg shadow-success/25 animate-glow-pulse">
                         <ExternalLink className="h-5 w-5" />
-                        Pagar {formatCurrency(contract.payment_value)} para Liberar Arquivos
+                        Pagar {formatCurrency(contract.payment_value)}
                       </Button>
                     </a>
                   ) : paymentError ? (
@@ -563,9 +568,9 @@ export default function ContratoPublico() {
                     </Button>
                   ) : paymentUrl ? (
                     <a href={paymentUrl} target="_blank" rel="noopener noreferrer" className="block">
-                      <Button size="lg" className="w-full text-lg py-6 gap-3 bg-success hover:bg-success/80 text-primary-foreground shadow-lg shadow-success/25 animate-glow-pulse">
+                      <Button size="lg" className="w-full text-base sm:text-lg py-6 gap-3 whitespace-normal leading-tight bg-success hover:bg-success/80 text-primary-foreground shadow-lg shadow-success/25 animate-glow-pulse">
                         <ExternalLink className="h-5 w-5" />
-                        Pagar Saldo de {formatCurrency(balanceAmount)} para Liberar Arquivos
+                        Pagar saldo — {formatCurrency(balanceAmount)}
                       </Button>
                     </a>
                   ) : paymentError ? (
