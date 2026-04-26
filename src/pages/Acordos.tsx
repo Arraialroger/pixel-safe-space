@@ -59,20 +59,24 @@ export default function Acordos() {
 
   const fetchDeals = useCallback(async () => {
     if (!workspaceId) return;
-    const { data, error } = await supabase
-      .from("deals")
-      .select("id, title, stage, created_at, payment_value, clients(name)")
-      .eq("workspace_id", workspaceId)
-      .order("created_at", { ascending: false });
-    if (!error && data) {
+    const [{ data: dealsData, error }, { data: clientsData }] = await Promise.all([
+      supabase
+        .from("deals")
+        .select("id, title, stage, created_at, payment_value, client_id")
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: false }),
+      supabase.from("clients").select("id, name").eq("workspace_id", workspaceId),
+    ]);
+    if (!error && dealsData) {
+      const nameById = new Map((clientsData ?? []).map((c) => [c.id, c.name]));
       setDeals(
-        data.map((d) => ({
+        dealsData.map((d) => ({
           id: d.id,
           title: d.title,
           stage: d.stage,
           created_at: d.created_at,
           payment_value: d.payment_value,
-          client_name: d.clients?.name ?? "—",
+          client_name: nameById.get(d.client_id) ?? "—",
         })),
       );
     }
