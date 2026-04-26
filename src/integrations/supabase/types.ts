@@ -155,6 +155,146 @@ export type Database = {
           },
         ]
       }
+      deal_revisions: {
+        Row: {
+          created_at: string
+          deal_id: string
+          from_stage: string
+          id: string
+          note: string | null
+          requested_by: string
+          to_stage: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          from_stage: string
+          id?: string
+          note?: string | null
+          requested_by: string
+          to_stage: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          from_stage?: string
+          id?: string
+          note?: string | null
+          requested_by?: string
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_revisions_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_email: string | null
+          accepted_by_name: string | null
+          ai_generated_scope: string | null
+          client_id: string
+          content_deliverables: string | null
+          content_exclusions: string | null
+          content_revisions: string | null
+          contract_template: string
+          created_at: string
+          deadline: string | null
+          down_payment: number | null
+          execution_status: string
+          final_deliverable_url: string | null
+          id: string
+          is_fully_paid: boolean
+          payment_link: string | null
+          payment_terms: string | null
+          payment_value: number | null
+          previous_stage: string | null
+          revision_count: number
+          revision_note: string | null
+          signed_at: string | null
+          signed_by_email: string | null
+          signed_by_name: string | null
+          stage: string
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_email?: string | null
+          accepted_by_name?: string | null
+          ai_generated_scope?: string | null
+          client_id: string
+          content_deliverables?: string | null
+          content_exclusions?: string | null
+          content_revisions?: string | null
+          contract_template?: string
+          created_at?: string
+          deadline?: string | null
+          down_payment?: number | null
+          execution_status?: string
+          final_deliverable_url?: string | null
+          id?: string
+          is_fully_paid?: boolean
+          payment_link?: string | null
+          payment_terms?: string | null
+          payment_value?: number | null
+          previous_stage?: string | null
+          revision_count?: number
+          revision_note?: string | null
+          signed_at?: string | null
+          signed_by_email?: string | null
+          signed_by_name?: string | null
+          stage?: string
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_email?: string | null
+          accepted_by_name?: string | null
+          ai_generated_scope?: string | null
+          client_id?: string
+          content_deliverables?: string | null
+          content_exclusions?: string | null
+          content_revisions?: string | null
+          contract_template?: string
+          created_at?: string
+          deadline?: string | null
+          down_payment?: number | null
+          execution_status?: string
+          final_deliverable_url?: string | null
+          id?: string
+          is_fully_paid?: boolean
+          payment_link?: string | null
+          payment_terms?: string | null
+          payment_value?: number | null
+          previous_stage?: string | null
+          revision_count?: number
+          revision_note?: string | null
+          signed_at?: string | null
+          signed_by_email?: string | null
+          signed_by_name?: string | null
+          stage?: string
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       payment_events: {
         Row: {
           amount_received: number | null
@@ -472,8 +612,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_deal_proposal: {
+        Args: { _deal_id: string; _email: string; _name: string }
+        Returns: undefined
+      }
       accept_proposal: {
         Args: { _email: string; _name: string; _proposal_id: string }
+        Returns: undefined
+      }
+      advance_deal_stage: {
+        Args: { _deal_id: string; _to_stage: string }
         Returns: undefined
       }
       get_dashboard_filtered_items: {
@@ -548,6 +696,57 @@ export type Database = {
           status: string
         }[]
       }
+      get_public_deal: {
+        Args: { _deal_id: string }
+        Returns: {
+          accepted_at: string
+          accepted_by_email: string
+          accepted_by_name: string
+          ai_generated_scope: string
+          client_address: string
+          client_company: string
+          client_document: string
+          client_name: string
+          content_deliverables: string
+          content_exclusions: string
+          content_revisions: string
+          contract_template: string
+          deadline: string
+          down_payment: number
+          execution_status: string
+          has_deliverable: boolean
+          id: string
+          is_fully_paid: boolean
+          payment_link: string
+          payment_terms: string
+          payment_value: number
+          revision_count: number
+          revision_note: string
+          signed_at: string
+          signed_by_email: string
+          signed_by_name: string
+          stage: string
+          status: string
+          summary: string
+          title: string
+          workspace_company_address: string
+          workspace_company_document: string
+          workspace_id: string
+          workspace_logo_url: string
+          workspace_name: string
+          workspace_subscription_plan: string
+          workspace_whatsapp: string
+        }[]
+      }
+      get_public_deal_status: {
+        Args: { _deal_id: string }
+        Returns: {
+          execution_status: string
+          is_fully_paid: boolean
+          stage: string
+          status: string
+        }[]
+      }
       get_public_proposal: {
         Args: { _proposal_id: string }
         Returns: {
@@ -616,8 +815,16 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      request_deal_revision: {
+        Args: { _deal_id: string; _note: string }
+        Returns: undefined
+      }
       sign_contract: {
         Args: { _contract_id: string; _email: string; _name: string }
+        Returns: undefined
+      }
+      sign_deal_contract: {
+        Args: { _deal_id: string; _email: string; _name: string }
         Returns: undefined
       }
     }
