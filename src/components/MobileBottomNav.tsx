@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, FileCheck, FolderLock, Menu } from "lucide-react";
+import { LayoutDashboard, Handshake, FolderLock, Menu } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -7,8 +7,7 @@ import { MobileMoreSheet } from "./MobileMoreSheet";
 
 const slots = [
   { label: "Dashboard", url: "/", icon: LayoutDashboard, exact: true },
-  { label: "Propostas", url: "/propostas", icon: FileText },
-  { label: "Contratos", url: "/contratos", icon: FileCheck },
+  { label: "Acordos", url: "/acordos", icon: Handshake },
   { label: "Cofre", url: "/cofre", icon: FolderLock },
 ];
 
@@ -25,7 +24,7 @@ export function MobileBottomNav() {
         className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-4 h-16">
           {slots.map((s) => {
             const active = isActive(s.url, s.exact);
             const Icon = s.icon;
