@@ -28,6 +28,9 @@ import Assinatura from "./pages/Assinatura";
 import AssinaturaFaturas from "./pages/AssinaturaFaturas";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
+import Acordos from "./pages/Acordos";
+import AcordoNovo from "./pages/AcordoNovo";
+import AcordoDetalhe from "./pages/AcordoDetalhe";
 
 const queryClient = new QueryClient();
 
@@ -138,6 +141,30 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AppLayout><AssinaturaFaturas /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/acordos"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><Acordos /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/acordos/novo"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><AcordoNovo /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/acordos/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><AcordoDetalhe /></AppLayout>
                   </ProtectedRoute>
                 }
               />
