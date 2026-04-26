@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, FileCheck, Users, UserCircle, LogOut, Shield, Building2, CreditCard, ChevronsUpDown, Check, FolderLock } from "lucide-react";
+import { LayoutDashboard, Handshake, Users, UserCircle, LogOut, Shield, Building2, CreditCard, ChevronsUpDown, Check, FolderLock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,8 +26,7 @@ import {
 
 const navItems = [
 { title: "Dashboard", url: "/", icon: LayoutDashboard },
-{ title: "Propostas", url: "/propostas", icon: FileText },
-{ title: "Contratos", url: "/contratos", icon: FileCheck },
+{ title: "Acordos", url: "/acordos", icon: Handshake },
 { title: "Meu Cofre", url: "/cofre", icon: FolderLock },
 { title: "Clientes", url: "/clientes", icon: Users },
 { title: "Meu Perfil", url: "/configuracoes", icon: UserCircle },
